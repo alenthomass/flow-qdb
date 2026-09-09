@@ -27,6 +27,7 @@ export {
   deactivatePaymentLink,
   ingestShopifyOrder,
   pauseSubscriber,
+  paymentLinkById,
   payPublishedCheckout,
   publishCheckoutPage,
   runSimulatedBilling,

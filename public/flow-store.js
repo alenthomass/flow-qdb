@@ -50,6 +50,7 @@ var FlowStore = (() => {
     offsetFromLabel: () => offsetFromLabel,
     pauseSubscriber: () => pauseSubscriber,
     payPublishedCheckout: () => payPublishedCheckout,
+    paymentLinkById: () => paymentLinkById,
     persistStore: () => persistStore,
     publishCheckoutPage: () => publishCheckoutPage,
     resetGateway: () => resetGateway,
@@ -1145,8 +1146,8 @@ var FlowStore = (() => {
           created: formatDate(link.createdOffset),
           uses: link.uses,
           expiry: link.expiry,
-          payUrl: link.payUrl,
-          url: link.payUrl.replace(/^https?:\/\//, ""),
+          payUrl: appPayUrl(link.id),
+          url: appPayUrl(link.id).replace(/^https?:\/\//, ""),
           invoiceId: link.invoiceId || "",
           clientId: link.clientId || "",
           canSimulate: status === "active",
@@ -1165,6 +1166,14 @@ var FlowStore = (() => {
         paid: page.paidCount,
         accent: page.accent,
         logoDataUrl: page.logoDataUrl || "",
+        email: page.supportEmail || emailFromName(owner),
+        phone: page.supportPhone || "",
+        terms: page.terms !== false,
+        payLabel: page.payLabel || "Pay",
+        fields: (page.fields && page.fields.length ? page.fields : [
+          { label: "Amount", kind: "price" },
+          { label: "Email", kind: "mail" }
+        ]).map((field) => Object.assign({}, field)),
         path: "/pay/" + page.slug
       })),
       plans: db2().subscriptionPlans.map((plan) => {
@@ -1179,8 +1188,8 @@ var FlowStore = (() => {
           customerName: plan.customerName,
           status: titleStatus(plan.status),
           slug: plan.slug,
-          signupUrl: plan.signupUrl,
-          url: plan.signupUrl.replace(/^https?:\/\//, ""),
+          signupUrl: appPayUrl(plan.slug),
+          url: appPayUrl(plan.slug).replace(/^https?:\/\//, ""),
           subs: people.length,
           mrr: major(monthly * people.length)
         };
@@ -1321,6 +1330,10 @@ var FlowStore = (() => {
       }
     };
   }
+  function appPayUrl(pathId) {
+    const origin = typeof location !== "undefined" && location.origin ? location.origin : "";
+    return origin + "/pay/" + pathId;
+  }
   function sourceVolume(source) {
     const rows = db2().transactions.filter((txn) => txn.source === source);
     const settledIn = rows.filter((txn) => txn.direction === "in" && txn.status === "settled").reduce((sum, txn) => sum + txn.amountMinor, 0);
@@ -1445,6 +1458,10 @@ var FlowStore = (() => {
     if (!Number.isFinite(n)) return 0;
     return Math.round(n * 100);
   }
+  function hostedPayUrl(id) {
+    const origin = typeof location !== "undefined" && location.origin ? location.origin : "";
+    return origin + "/pay/" + id;
+  }
   function asWebhook(payload) {
     if (!payload || typeof payload !== "object") throw new Error("SkipCash webhook body is missing");
     const row = payload;
@@ -1482,7 +1499,7 @@ var FlowStore = (() => {
         const id = uuid();
         const record = {
           id,
-          payUrl: "https://skipcashtest.azurewebsites.net/pay/" + id,
+          payUrl: hostedPayUrl(id),
           amountMinor: input.amountMinor,
           currency: input.currency,
           statusId: 0,
@@ -1614,6 +1631,9 @@ var FlowStore = (() => {
     appendPaymentLink(link);
     return link;
   }
+  function paymentLinkById(id) {
+    return getStore().paymentLinks.find((row) => row.id === id);
+  }
   async function simulatePayment(linkId, outcome) {
     const gateway = getGateway();
     const payload = await gateway.simulatePayment(linkId, outcome);
@@ -1721,6 +1741,12 @@ var FlowStore = (() => {
       });
     }
   }
+  function defaultCheckoutFields() {
+    return [
+      { label: "Amount", kind: "price", optional: false },
+      { label: "Email", kind: "mail", optional: false }
+    ];
+  }
   function publishCheckoutPage(input) {
     if (!input.productName || !String(input.productName).trim()) {
       throw new Error("Checkout page needs a product name");
@@ -1732,6 +1758,11 @@ var FlowStore = (() => {
     const existing = input.id ? store.checkoutPages.find((page2) => page2.id === input.id) : void 0;
     const others = store.checkoutPages.filter((page2) => page2.id !== existing?.id).map((page2) => page2.slug);
     const slug = uniqueSlug(input.slug || input.productName, others);
+    const fields = (input.fields && input.fields.length ? input.fields : existing?.fields || defaultCheckoutFields()).map((field) => ({
+      label: String(field.label || "Field").trim() || "Field",
+      kind: String(field.kind || "text"),
+      optional: !!field.optional
+    }));
     const page = {
       id: existing?.id || "pp_" + Date.now().toString(36),
       slug,
@@ -1745,7 +1776,12 @@ var FlowStore = (() => {
       views: existing?.views ?? 0,
       paidCount: existing?.paidCount ?? 0,
       createdOffset: existing?.createdOffset ?? 0,
-      txnIds: existing?.txnIds ?? []
+      txnIds: existing?.txnIds ?? [],
+      supportEmail: (input.supportEmail ?? existing?.supportEmail ?? ownerContact().email).trim(),
+      supportPhone: (input.supportPhone ?? existing?.supportPhone ?? "").trim(),
+      terms: input.terms ?? existing?.terms ?? true,
+      payLabel: String(input.payLabel ?? existing?.payLabel ?? "Pay").trim() || "Pay",
+      fields
     };
     if (existing) replaceCheckoutPage(existing.id, page);
     else appendCheckoutPage(page);
@@ -1793,12 +1829,6 @@ var FlowStore = (() => {
     if (!input.amountMinor || input.amountMinor <= 0) throw new Error("Plan needs an amount");
     const store = getStore();
     const slug = uniqueSlug(input.name, store.subscriptionPlans.map((plan2) => plan2.slug));
-    const record = await getGateway().createPaymentLink({
-      amountMinor: input.amountMinor,
-      currency: store.merchant.currency,
-      description: input.name,
-      customer: ownerContact()
-    });
     const plan = {
       id: "plan_" + Date.now().toString(36),
       name: String(input.name).trim(),
@@ -1809,7 +1839,7 @@ var FlowStore = (() => {
       status: "active",
       createdOffset: 0,
       slug,
-      signupUrl: record.payUrl
+      signupUrl: "/pay/" + slug
     };
     appendSubscriptionPlan(plan);
     if (input.customerName && String(input.customerName).trim()) {

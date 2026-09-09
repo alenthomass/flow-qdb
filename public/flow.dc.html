@@ -3845,7 +3845,9 @@ class Component extends DCLogic {
   }
 
   copyPayUrl(url) {
-    const text = url || '';
+    let text = url || '';
+    const origin = typeof location !== 'undefined' ? location.origin : '';
+    if (text && !/^https?:\/\//.test(text)) text = origin + (text.charAt(0) === '/' ? text : '/' + text);
     const clip = typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
     if (clip && text) {
       Promise.resolve(navigator.clipboard.writeText(text)).then(() => this.toast('Link copied to clipboard')).catch(() => this.toast('Link copied to clipboard'));
@@ -3907,7 +3909,14 @@ class Component extends DCLogic {
         amountMinor,
         slug: (st.ps && st.ps.slug) || st.pp.title,
         logoDataUrl: st.ppLogo || null,
-        accent: st.brandColor || '#17171C'
+        accent: st.brandColor || '#17171C',
+        supportEmail: st.pp.email || '',
+        supportPhone: st.pp.phone || '',
+        terms: st.pp.terms !== false,
+        payLabel: st.pp.payLabel || 'Pay',
+        fields: (st.pp.fields || []).map(function (field) {
+          return { label: field.label, kind: field.kind, optional: !!field.optional };
+        })
       });
       const origin = typeof location !== 'undefined' ? location.origin : '';
       this.applyStore({

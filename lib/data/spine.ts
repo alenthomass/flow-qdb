@@ -88,6 +88,10 @@ export async function createPaymentLink(input: CreateLinkInput): Promise<Payment
   return link;
 }
 
+export function paymentLinkById(id: string): PaymentLink | undefined {
+  return getStore().paymentLinks.find(row => row.id === id);
+}
+
 export async function simulatePayment(linkId: string, outcome: PaymentOutcome) {
   const gateway = getGateway();
   const payload = await gateway.simulatePayment(linkId, outcome);
@@ -227,6 +231,18 @@ export interface PublishCheckoutInput {
   logoDataUrl?: string | null;
   accent?: string;
   id?: string;
+  supportEmail?: string;
+  supportPhone?: string;
+  terms?: boolean;
+  payLabel?: string;
+  fields?: { label: string; kind: string; optional?: boolean }[];
+}
+
+function defaultCheckoutFields() {
+  return [
+    { label: "Amount", kind: "price", optional: false },
+    { label: "Email", kind: "mail", optional: false }
+  ];
 }
 
 export function publishCheckoutPage(input: PublishCheckoutInput): CheckoutPage {
@@ -240,6 +256,12 @@ export function publishCheckoutPage(input: PublishCheckoutInput): CheckoutPage {
   const existing = input.id ? store.checkoutPages.find(page => page.id === input.id) : undefined;
   const others = store.checkoutPages.filter(page => page.id !== existing?.id).map(page => page.slug);
   const slug = uniqueSlug(input.slug || input.productName, others);
+  const fields = (input.fields && input.fields.length ? input.fields : existing?.fields || defaultCheckoutFields())
+    .map(field => ({
+      label: String(field.label || "Field").trim() || "Field",
+      kind: String(field.kind || "text"),
+      optional: !!(field as { optional?: boolean }).optional
+    }));
   const page: CheckoutPage = {
     id: existing?.id || "pp_" + Date.now().toString(36),
     slug,
@@ -253,7 +275,12 @@ export function publishCheckoutPage(input: PublishCheckoutInput): CheckoutPage {
     views: existing?.views ?? 0,
     paidCount: existing?.paidCount ?? 0,
     createdOffset: existing?.createdOffset ?? 0,
-    txnIds: existing?.txnIds ?? []
+    txnIds: existing?.txnIds ?? [],
+    supportEmail: (input.supportEmail ?? existing?.supportEmail ?? ownerContact().email).trim(),
+    supportPhone: (input.supportPhone ?? existing?.supportPhone ?? "").trim(),
+    terms: input.terms ?? existing?.terms ?? true,
+    payLabel: String(input.payLabel ?? existing?.payLabel ?? "Pay").trim() || "Pay",
+    fields
   };
   if (existing) replaceCheckoutPage(existing.id, page);
   else appendCheckoutPage(page);
@@ -313,12 +340,6 @@ export async function createSubscriptionPlan(input: CreatePlanInput): Promise<Su
   if (!input.amountMinor || input.amountMinor <= 0) throw new Error("Plan needs an amount");
   const store = getStore();
   const slug = uniqueSlug(input.name, store.subscriptionPlans.map(plan => plan.slug));
-  const record = await getGateway().createPaymentLink({
-    amountMinor: input.amountMinor,
-    currency: store.merchant.currency,
-    description: input.name,
-    customer: ownerContact()
-  });
   const plan: SubscriptionPlan = {
     id: "plan_" + Date.now().toString(36),
     name: String(input.name).trim(),
@@ -329,7 +350,7 @@ export async function createSubscriptionPlan(input: CreatePlanInput): Promise<Su
     status: "active",
     createdOffset: 0,
     slug,
-    signupUrl: record.payUrl
+    signupUrl: "/pay/" + slug
   };
   appendSubscriptionPlan(plan);
   if (input.customerName && String(input.customerName).trim()) {

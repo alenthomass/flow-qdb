@@ -32,6 +32,11 @@ function parseAmountMinor(amount: string | number): number {
   return Math.round(n * 100);
 }
 
+function hostedPayUrl(id: string): string {
+  const origin = typeof location !== "undefined" && location.origin ? location.origin : "";
+  return origin + "/pay/" + id;
+}
+
 function asWebhook(payload: unknown): SkipCashWebhookPayload {
   if (!payload || typeof payload !== "object") throw new Error("SkipCash webhook body is missing");
   const row = payload as Record<string, unknown>;
@@ -71,7 +76,7 @@ export function createMockSkipCash(): PaymentGateway {
       const id = uuid();
       const record: PaymentRecord = {
         id,
-        payUrl: "https://skipcashtest.azurewebsites.net/pay/" + id,
+        payUrl: hostedPayUrl(id),
         amountMinor: input.amountMinor,
         currency: input.currency,
         statusId: 0,

@@ -5,7 +5,8 @@ const nextConfig = {
     return {
       beforeFiles: [
         { source: "/", destination: "/flow.dc.html" },
-        { source: "/pay/:slug", destination: "/pay.html" }
+        { source: "/pay/:slug", destination: "/pay.html" },
+        { source: "/pay/:slug/receipt", destination: "/pay.html" }
       ]
     };
   }

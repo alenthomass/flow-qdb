@@ -5,42 +5,84 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pay · Flow</title>
 <script src="/flow-store.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&amp;family=Cairo:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
 <style>
+  @font-face { font-family: 'Clash Display'; font-weight: 600; font-style: normal; font-display: swap; src: url('https://cdn.fontshare.com/wf/FPDAZ2S6SW4QMSRIIKNNGTPM6VIXYMKO/5HNPQ453FRLIQWV2FNOBUU3FKTDZQVSG/Z3MGHFHX6DCTLQ55LJYRJ5MDCZPMFZU6.woff2') format('woff2'); }
   * { box-sizing: border-box; }
   :root {
-    --surface: #FFFFFF; --panel: #F6F6F8; --line: rgba(18,18,24,.1);
-    --ink: #121217; --ink-3: #5C5C68; --ink-4: #7C7C88; --ink-5: #9B9BA6;
+    --bar-solid: #FFFFFF;
+    --page-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%231B1B26' stroke-opacity='.055' stroke-width='1'%3E%3Crect x='24' y='24' width='48' height='48'/%3E%3Cpath d='M48 14 82 48 48 82 14 48Z'/%3E%3Cpath d='M0 48h14M82 48h14M48 0v14M48 82v14M0 0l14 14M96 0L82 14M0 96l14-14M96 96L82 82'/%3E%3C/g%3E%3C/svg%3E");
+    --page-wash: radial-gradient(760px 520px at 100% 0%, rgba(120,132,170,.16) 0%, rgba(120,132,170,0) 68%);
+    --panel-2: #FAFAFB;
+    --line: rgba(18,18,24,.1); --divider: rgba(18,18,24,.07); --chip: rgba(18,18,24,.06);
+    --ink: #121217; --ink-2: #3A3A44; --ink-3: #5C5C68; --ink-4: #7C7C88; --ink-5: #9B9BA6; --ink-6: #C6C6CE;
     --on-block: #FFFFFF; --btn-dark: linear-gradient(315deg,#3B4058 0%,#262A3B 48%,#17181F 100%);
-    --pos: #3D7D66;
+    --btn-light: linear-gradient(315deg,#EDEFF6 0%,#F7F7FA 52%,#FFFFFF 100%);
+    --accent: #17171C; --pos: #3D7D66; --neg: #C0453E;
   }
-  html, body { margin: 0; min-height: 100%; background: #F2F2F5; color: var(--ink);
+  html, body { margin: 0; min-height: 100%; background: var(--panel-2); color: var(--ink);
     font-family: Urbanist, Cairo, system-ui, sans-serif; }
-  .wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
-  .card { width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--line);
-    border-radius: 16px; padding: 32px 28px; box-shadow: 0 18px 40px -30px rgba(10,10,16,.45); }
-  .brand { display: flex; align-items: center; gap: 12px; }
-  .logo { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; display: flex;
-    align-items: center; justify-content: center; font-size: 11px; font-weight: 650; color: var(--ink-5);
-    border: 1px dashed var(--line); background: var(--panel); overflow: hidden; }
+  .shell { position: relative; min-height: 100vh; overflow: hidden; }
+  .wash { position: absolute; inset: 0; pointer-events: none; background: var(--page-wash); }
+  .pattern { position: absolute; inset: 0; pointer-events: none; background: var(--page-pattern); background-size: 120px 120px;
+    mask-image: linear-gradient(115deg, transparent 18%, rgba(0,0,0,.55) 52%, #000 100%);
+    -webkit-mask-image: linear-gradient(115deg, transparent 18%, rgba(0,0,0,.55) 52%, #000 100%); }
+  .page { position: relative; padding: 40px 32px 48px; }
+  .grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,470px); gap: 36px; align-items: start; max-width: 1160px; margin: 0 auto; }
+  .logo { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 13px; border: 1px dashed var(--ink-6); display: flex;
+    align-items: center; justify-content: center; overflow: hidden; font-size: 10px; font-weight: 650; color: var(--ink-5); background: var(--bar-solid); }
   .logo img { width: 100%; height: 100%; object-fit: cover; }
-  .biz { font-size: 14px; font-weight: 650; }
-  h1 { margin: 22px 0 8px; font-size: 26px; letter-spacing: -.03em; }
-  .desc { font-size: 13.5px; color: var(--ink-3); line-height: 1.55; }
-  .price { margin-top: 22px; font-size: 32px; font-weight: 600; letter-spacing: -.03em; }
-  .cur { font-size: 13px; color: var(--ink-4); margin-top: 4px; }
-  button { width: 100%; margin-top: 24px; padding: 13px 16px; border: none; border-radius: 10px;
-    font-size: 14px; font-weight: 650; color: var(--on-block); background: var(--btn-dark); cursor: pointer; }
-  button[disabled] { opacity: .55; cursor: default; }
-  .note { margin-top: 16px; font-size: 12px; color: var(--ink-4); line-height: 1.5; }
+  .biz { font-family: 'Clash Display', Urbanist, sans-serif; font-size: 19px; font-weight: 600; letter-spacing: -.025em; }
+  h1 { margin: 26px 0 0; font-family: 'Clash Display', Urbanist, sans-serif; font-size: 32px; font-weight: 600; letter-spacing: -.035em; }
+  .desc { margin-top: 20px; font-size: 14px; line-height: 1.6; color: var(--ink-2); white-space: pre-wrap; }
+  .block { margin-top: 30px; }
+  .block h2 { margin: 0; font-size: 13.5px; font-weight: 650; letter-spacing: -.01em; }
+  .share { display: flex; gap: 9px; margin-top: 12px; }
+  .share a { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--btn-light);
+    display: flex; align-items: center; justify-content: center; color: var(--ink-3); text-decoration: none; }
+  .contact { display: flex; flex-direction: column; gap: 11px; margin-top: 12px; }
+  .contact-row { display: flex; align-items: center; gap: 11px; font-size: 13.5px; color: var(--ink-2); }
+  .terms { font-size: 12px; color: var(--ink-5); line-height: 1.65; margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--divider); }
+  .flow { margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--divider); }
+  .flow-mark { display: inline-flex; align-items: center; gap: 8px; font-family: 'Clash Display', Urbanist, sans-serif; font-size: 16px; font-weight: 600; letter-spacing: -.02em; }
+  .flow p { margin: 10px 0 0; font-size: 12px; color: var(--ink-4); line-height: 1.6; }
+  .card { background: var(--bar-solid); border: 1px solid var(--line); border-radius: 11px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.55); overflow: hidden; }
+  .card-head { padding: 22px 22px 6px; }
+  .card-head h2 { margin: 0; font-family: 'Clash Display', Urbanist, sans-serif; font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
+  .rule { width: 26px; height: 3px; border-radius: 2px; background: var(--ink); margin-top: 10px; }
+  .fields { padding: 18px 22px 0; display: flex; flex-direction: column; gap: 14px; }
+  .field { display: flex; align-items: center; gap: 10px; }
+  .field label { width: 82px; flex: 0 0 82px; font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
+  .field .req { color: var(--neg); margin-left: 3px; }
+  .box { flex: 1; min-width: 0; border: 1px solid var(--ink-6); border-radius: 9px; padding: 10px 12px; font-size: 12.5px; color: var(--ink);
+    background: var(--bar-solid); display: flex; align-items: center; gap: 7px; }
+  .box input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 12.5px; color: var(--ink); font-family: inherit; }
+  .chip { width: 18px; height: 18px; border-radius: 50%; background: var(--chip); display: flex; align-items: center; justify-content: center;
+    font-size: 9.5px; font-weight: 700; color: var(--ink-3); flex: 0 0 18px; }
+  .foot { display: flex; align-items: center; gap: 12px; margin-top: 22px; padding: 14px 22px; border-top: 1px solid var(--divider); background: var(--panel-2); }
+  .brands { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .brand { display: inline-flex; align-items: center; justify-content: center; height: 22px; padding: 0 7px; border-radius: 5px; background: #FFFFFF; border: 1px solid var(--line); }
+  .brand img { height: 13px; width: auto; max-width: 32px; object-fit: contain; display: block; }
+  .secured { display: block; font-size: 10px; color: var(--ink-5); margin-top: 7px; }
+  .pay { flex: 0 0 auto; max-width: 220px; font-size: 12.5px; font-weight: 650; color: var(--on-block); background: var(--btn-dark);
+    padding: 11px 18px; border: none; border-radius: 9px; white-space: nowrap; cursor: pointer; font-family: inherit; }
+  .pay[disabled] { opacity: .55; cursor: default; }
+  .note { font-size: 12px; color: var(--ink-4); line-height: 1.5; }
   .ok { color: var(--pos); font-weight: 650; }
-  .err { color: #C0453E; }
+  .err { color: var(--neg); }
+  @media (max-width: 1160px) {
+    .grid { grid-template-columns: minmax(0,1fr); gap: 28px; }
+    .page { padding: 28px 18px 40px; }
+  }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card" id="card">
-      <div class="note">Loading checkout…</div>
-    </div>
+  <div class="shell">
+    <div class="wash"></div>
+    <div class="pattern"></div>
+    <div class="page"><div class="grid" id="card"><div class="note">Loading checkout…</div></div></div>
   </div>
 <script>
 (function () {
@@ -50,57 +92,217 @@
   function money(minor) {
     return "QR " + (minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+  function esc(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
+    });
+  }
   function show(html) { card.innerHTML = html; }
-  if (typeof FlowStore === "undefined" || !FlowStore.checkoutPageBySlug) {
-    show('<div class="err">Checkout is not available.</div>');
+  function dash() {
+    return (FlowStore.dashboardState && FlowStore.dashboardState()) || {};
+  }
+  function merchantName() {
+    return dash().merchantName || "Al Bidda Trading W.L.L.";
+  }
+  function supportEmail(page) {
+    return (page && page.supportEmail) || dash().acctEmail || "";
+  }
+  function logoHtml(page) {
+    if (page && page.logoDataUrl) return '<img src="' + esc(page.logoDataUrl) + '" alt="">';
+    return "Logo";
+  }
+  function shareRow() {
+    var url = encodeURIComponent(location.href);
+    var text = encodeURIComponent(document.title);
+    var icons = [
+      { href: "https://www.facebook.com/sharer/sharer.php?u=" + url, d: "M12.4 6.4H14V3.6h-2.2a3.2 3.2 0 0 0-3.2 3.2v1.8H6.8v2.9h1.8v6.9h3v-6.9h2.2l.4-2.9h-2.6V7.2c0-.5.3-.8.8-.8Z" },
+      { href: "https://twitter.com/intent/tweet?url=" + url + "&text=" + text, d: "M3.6 3.6h3.6l4 5.4 4.4-5.4h1.6l-5.2 6.4 5.6 7.4h-3.6l-4.2-5.6-4.6 5.6H3.6l5.4-6.6L3.6 3.6Z" },
+      { href: "https://wa.me/?text=" + text + "%20" + url, d: "M3.4 16.6l.9-3.2a6.2 6.2 0 1 1 2.4 2.3l-3.3.9ZM7.6 7.4c.3-.1.6 0 .8.3l.7 1.2c.1.3.1.6-.1.8l-.5.5a4.6 4.6 0 0 0 2.3 2.3l.5-.5c.2-.2.5-.2.8-.1l1.2.7c.3.2.4.5.3.8" }
+    ];
+    return '<div class="block"><h2>Share this on</h2><div class="share">' + icons.map(function (icon) {
+      return '<a href="' + icon.href + '" target="_blank" rel="noopener noreferrer"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="' + icon.d + '" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>';
+    }).join("") + "</div></div>";
+  }
+  function contactBlock(page) {
+    var email = supportEmail(page);
+    var phone = page && page.supportPhone ? page.supportPhone : "";
+    var rows = "";
+    if (email) {
+      rows += '<div class="contact-row"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" style="flex:0 0 16px"><path d="M3 6.2h14v7.6H3V6.2Zm0 .4 7 4.6 7-4.6" stroke="var(--ink-5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>' + esc(email) + "</span></div>";
+    }
+    if (phone) {
+      rows += '<div class="contact-row"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" style="flex:0 0 16px"><path d="M6.2 3.4h2.2l1.1 2.8-1.5 1.1a8.4 8.4 0 0 0 3.7 3.7l1.1-1.5 2.8 1.1v2.2a1.4 1.4 0 0 1-1.5 1.4A11.6 11.6 0 0 1 4.8 4.9a1.4 1.4 0 0 1 1.4-1.5Z" stroke="var(--ink-5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>' + esc(phone) + "</span></div>";
+    }
+    if (!rows) return "";
+    return '<div class="block"><h2>Contact us</h2><div class="contact">' + rows + "</div></div>";
+  }
+  function termsBlock(page) {
+    if (page && page.terms === false) return "";
+    return '<div class="terms">By paying you agree to share these details with ' + esc(merchantName()) + ", in line with applicable law.</div>";
+  }
+  function flowFoot() {
+    return '<div class="flow"><div class="flow-mark"><svg width="17" height="17" viewBox="0 0 20 20" fill="none"><path d="M3 4.5h10M3 8h6.5M3 11.5h4" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round"></path></svg><span>Flow</span></div><p>Want a payment page like this for your business?<br>Visit <span style="color:var(--accent);font-weight:600">Flow Payment Pages</span> to get started.</p></div>';
+  }
+  function brands() {
+    return '<span class="brands">' +
+      '<span class="brand"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Visa%20Inc.%20logo%20(2021%E2%80%93present).svg" alt="VISA"></span>' +
+      '<span class="brand"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Mastercard-logo.svg" alt="MASTERCARD"></span>' +
+      '<span class="brand"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Apple%20Pay%20logo.svg" alt="APPLE PAY"></span>' +
+      '<span class="brand" style="padding:0 8px"><span style="font-size:9px;font-weight:800;letter-spacing:.03em;color:#15151A">NAPS</span></span>' +
+      "</span>";
+  }
+  function leftCol(page, title, description) {
+    return '<div>' +
+      '<div style="display:flex;align-items:center;gap:13px"><span class="logo">' + logoHtml(page) + '</span><div class="biz">' + esc(merchantName()) + "</div></div>" +
+      "<h1>" + esc(title) + "</h1>" +
+      (description ? '<div class="desc">' + esc(description) + "</div>" : "") +
+      shareRow() +
+      contactBlock(page) +
+      termsBlock(page) +
+      flowFoot() +
+      "</div>";
+  }
+  function fieldRow(field, amountMinor) {
+    var required = !field.optional;
+    var label = esc(field.label || "Field") + (required ? '<span class="req">*</span>' : "");
+    if (field.kind === "price") {
+      return '<div class="field"><label>' + label + '</label><div class="box"><span class="chip">QR</span><span>' + esc(money(amountMinor).replace(/^QR /, "")) + "</span></div></div>";
+    }
+    var type = field.kind === "mail" ? "email" : field.kind === "phone" ? "tel" : "text";
+    var ph = field.kind === "mail" ? "name@company.com" : "";
+    return '<div class="field"><label>' + label + '</label><div class="box"><input id="f-' + esc(field.kind) + '" type="' + type + '" placeholder="' + ph + '" ' + (required ? "required" : "") + "></div></div>";
+  }
+  function payCard(opts) {
+    var fields = (opts.fields && opts.fields.length) ? opts.fields : [{ label: "Amount", kind: "price" }, { label: "Email", kind: "mail" }];
+    var rows = fields.map(function (field) { return fieldRow(field, opts.amountMinor); }).join("");
+    var label = esc(opts.payLabel || "Pay") + " " + money(opts.amountMinor);
+    var status = opts.statusHtml || "";
+    return '<div class="card"><div class="card-head"><h2>Payment details</h2><div class="rule"></div></div>' +
+      '<div class="fields">' + rows + status + "</div>" +
+      '<div class="foot"><span style="flex:1;min-width:0">' + brands() + '<span class="secured">Secured by SkipCash · SANDBOX</span></span>' +
+      (opts.hidePay ? "" : '<button class="pay" id="pay">' + label + "</button>") +
+      "</div></div>";
+  }
+  function layout(left, right) {
+    return left + right;
+  }
+  function bindPay(amountMinor, fields, start) {
+    var btn = document.getElementById("pay");
+    if (!btn) return;
+    btn.onclick = function () {
+      var mail = document.getElementById("f-mail");
+      var needsEmail = (fields || []).some(function (field) { return field.kind === "mail" && !field.optional; });
+      if (needsEmail && mail && !String(mail.value || "").trim()) {
+        mail.focus();
+        return;
+      }
+      btn.disabled = true;
+      var original = btn.textContent;
+      btn.textContent = "Processing…";
+      start().then(function (result) {
+        if (!result || !result.pending) {
+          btn.disabled = false;
+          btn.textContent = original;
+          var fieldsEl = card.querySelector(".fields");
+          if (fieldsEl) fieldsEl.insertAdjacentHTML("beforeend", '<div class="note err">Payment was not recorded.</div>');
+          return;
+        }
+        var delay = result.delayMs || 1200;
+        setTimeout(function () {
+          if (result.settle) result.settle();
+          show(result.paidHtml);
+        }, delay);
+      }).catch(function () {
+        btn.disabled = false;
+        btn.textContent = original;
+      });
+    };
+  }
+  if (typeof FlowStore === "undefined") {
+    show('<div class="note err">Checkout is not available.</div>');
     return;
   }
   if (FlowStore.hydrateFromStorage) FlowStore.hydrateFromStorage();
-  var page = slug ? FlowStore.checkoutPageBySlug(slug) : null;
-  if (!page) {
-    show('<h1>Page not found</h1><div class="desc">This checkout link is not published, or it was created in another browser profile.</div>');
+  var page = slug && FlowStore.checkoutPageBySlug ? FlowStore.checkoutPageBySlug(slug) : null;
+  var link = (!page && slug && FlowStore.paymentLinkById) ? FlowStore.paymentLinkById(slug) : null;
+
+  if (page) {
+    var fields = page.fields && page.fields.length ? page.fields : [{ label: "Amount", kind: "price" }, { label: "Email", kind: "mail" }];
+    var paidRight = payCard({
+      amountMinor: page.amountMinor,
+      fields: [{ label: "Amount", kind: "price" }],
+      payLabel: page.payLabel,
+      hidePay: true,
+      statusHtml: '<div class="note ok">Payment settled. It now appears in Money In.</div>'
+    });
+    show(layout(
+      leftCol(page, page.productName, page.description),
+      payCard({ amountMinor: page.amountMinor, fields: fields, payLabel: page.payLabel || "Pay" })
+    ));
+    bindPay(page.amountMinor, fields, function () {
+      return FlowStore.payPublishedCheckout(page.slug).then(function (result) {
+        return {
+          pending: result && result.pending,
+          delayMs: result && result.delayMs,
+          settle: function () { if (FlowStore.settleCheckoutPayment) FlowStore.settleCheckoutPayment(result.txnId); },
+          paidHtml: layout(leftCol(page, page.productName, page.description), paidRight.replace("Payment details", "Paid"))
+        };
+      });
+    });
     return;
   }
-  var logo = page.logoDataUrl
-    ? '<img src="' + page.logoDataUrl + '" alt="">'
-    : 'Logo';
-  var merchant = (FlowStore.dashboardState && FlowStore.dashboardState().merchantName) || "Al Bidda Trading W.L.L.";
-  show(
-    '<div class="brand"><span class="logo" style="border-color:' + (page.accent || "#17171C") + '">' + logo + '</span>' +
-    '<div class="biz">' + merchant + '</div></div>' +
-    '<h1>' + page.productName + '</h1>' +
-    (page.description ? '<div class="desc">' + page.description + '</div>' : '') +
-    '<div class="price">' + money(page.amountMinor) + '</div>' +
-    '<div class="cur">QAR</div>' +
-    '<button id="pay">Pay ' + money(page.amountMinor) + '</button>' +
-    '<div class="note">Simulated checkout. Money movement uses the sandbox gateway.</div>'
-  );
-  document.getElementById("pay").onclick = function () {
-    var btn = this;
-    btn.disabled = true;
-    btn.textContent = "Processing…";
-    FlowStore.payPublishedCheckout(page.slug).then(function (result) {
-      if (!result || !result.pending) {
-        btn.disabled = false;
-        btn.textContent = "Pay " + money(page.amountMinor);
-        show(card.innerHTML + '<div class="note err">Payment was not recorded.</div>');
-        return;
-      }
-      var delay = result.delayMs || 1200;
-      setTimeout(function () {
-        if (FlowStore.settleCheckoutPayment) FlowStore.settleCheckoutPayment(result.txnId);
-        show(
-          '<div class="brand"><span class="logo">' + logo + '</span><div class="biz">' + merchant + '</div></div>' +
-          '<h1>Paid</h1><div class="desc">' + page.productName + '</div>' +
-          '<div class="price">' + money(page.amountMinor) + '</div>' +
-          '<div class="note ok">Payment settled. It now appears in Money In.</div>'
-        );
-      }, delay);
-    }).catch(function () {
-      btn.disabled = false;
-      btn.textContent = "Pay " + money(page.amountMinor);
+
+  if (link) {
+    var linkPage = {
+      supportEmail: dash().acctEmail || "",
+      supportPhone: "",
+      terms: true,
+      logoDataUrl: null
+    };
+    var linkFields = [{ label: "Amount", kind: "price" }, { label: "Email", kind: "mail" }];
+    var title = link.description || "Payment";
+    if (link.status === "deactivated" || link.status === "expired") {
+      show(layout(leftCol(linkPage, title, ""), payCard({
+        amountMinor: link.amountMinor,
+        fields: [{ label: "Amount", kind: "price" }],
+        hidePay: true,
+        statusHtml: '<div class="note">This simulated payment link is no longer accepting payments.</div>'
+      })));
+      return;
+    }
+    if (link.status === "paid" || link.status === "pending" || link.txnId) {
+      show(layout(leftCol(linkPage, title, ""), payCard({
+        amountMinor: link.amountMinor,
+        fields: [{ label: "Amount", kind: "price" }],
+        hidePay: true,
+        statusHtml: '<div class="note">This simulated link has already been used.</div>'
+      })));
+      return;
+    }
+    var linkPaid = payCard({
+      amountMinor: link.amountMinor,
+      fields: [{ label: "Amount", kind: "price" }],
+      hidePay: true,
+      statusHtml: '<div class="note ok">Payment settled. It now appears in Money In.</div>'
     });
-  };
+    show(layout(leftCol(linkPage, title, ""), payCard({ amountMinor: link.amountMinor, fields: linkFields, payLabel: "Pay" })));
+    bindPay(link.amountMinor, linkFields, function () {
+      return FlowStore.simulatePayment(link.id, "success").then(function (result) {
+        return {
+          pending: result && result.pending,
+          delayMs: result && result.delayMs,
+          settle: function () { if (FlowStore.settlePayment) FlowStore.settlePayment(link.id); },
+          paidHtml: layout(leftCol(linkPage, title, ""), linkPaid.replace("Payment details", "Paid"))
+        };
+      });
+    });
+    return;
+  }
+
+  show(layout(
+    leftCol({ supportEmail: dash().acctEmail || "", terms: false }, "Page not found", "This simulated checkout is not in this browser. Open the link from the same Flow session, or it was created in another profile."),
+    payCard({ amountMinor: 0, fields: [{ label: "Amount", kind: "price" }], hidePay: true, statusHtml: '<div class="note">No payment is available on this link.</div>' })
+  ));
 })();
 </script>
 </body>

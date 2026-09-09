@@ -94,6 +94,7 @@ function gatedTimeout(fn, ms) {
   return setTimeout(fn, ms);
 }
 const html = readFileSync(new URL("../public/flow.dc.html", import.meta.url), "utf8");
+const payPage = readFileSync(new URL("../public/pay.html", import.meta.url), "utf8");
 const rootSource = html.match(/<script\b[^>]*data-dc-script[^>]*>([\s\S]*?)<\/script>/)[1];
 const root = runInNewContext(rootSource + "; new Component()", {
   DCLogic: class {
@@ -533,6 +534,14 @@ const link = await createPaymentLink({
   clientId: "cli_07",
   invoiceId: "inv_0148"
 });
+check("Payment link URL stays on Flow, not SkipCash test",
+  /\/pay\//.test(link.payUrl) && !/skipcashtest|azurewebsites/i.test(link.payUrl),
+  link.payUrl);
+check("Copied payment links open Flow checkout",
+  /\/pay\//.test(dashboardState().links.find(row => row.id === link.id)?.payUrl || "") &&
+    /paymentLinkById/.test(payPage) &&
+    !/skipcashtest|azurewebsites/i.test(payPage),
+  "pay.html handles payment links");
 check("Spine create leaves Money In unchanged",
   getMoneyIn("month") === moneyIn0 && getNet("month") === net0,
   "Money In " + money(getMoneyIn("month")));
@@ -680,6 +689,15 @@ check("Hosted checkout publishes a shareable /pay/ slug",
     /\/pay\/:slug/.test(readFileSync(new URL("../next.config.js", import.meta.url), "utf8")) &&
     /\/pay\//.test(html),
   "pay.html + rewrite + UI URL");
+check("Public payment page matches the builder without edit chrome",
+  /Payment details/.test(payPage) &&
+    /Share this on/.test(payPage) &&
+    /Secured by SkipCash · SANDBOX/.test(payPage) &&
+    /Contact us/.test(payPage) &&
+    !/Click any text to edit/i.test(payPage) &&
+    !/Add new/.test(payPage) &&
+    !/pp\.setTitle/.test(payPage),
+  "customer checkout chrome");
 const page = publishCheckoutPage({
   productName: "Eid hamper",
   description: "Pickup from the Doha store",
@@ -853,9 +871,8 @@ check("SANDBOX tooltip string present",
     /envLabel:\s*'SANDBOX'/.test(rootSource) &&
     /title="Simulated gateway\. Live payment processing pending Qatar commercial registration\."/.test(html),
   "SANDBOX hover tooltip");
-const payHtml = readFileSync(new URL("../public/pay.html", import.meta.url), "utf8");
 check("No Peppol or VAT in public HTML",
-  !/Peppol/i.test(html) && !/\bVAT\b/i.test(html) && !/Peppol/i.test(payHtml) && !/\bVAT\b/i.test(payHtml),
+  !/Peppol/i.test(html) && !/\bVAT\b/i.test(html) && !/Peppol/i.test(payPage) && !/\bVAT\b/i.test(payPage),
   "flow.dc.html and pay.html");
 check("Simulated labels on Payment Setup and Connected Apps",
   /money settles straight to you/.test(html) &&

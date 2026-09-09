@@ -147,6 +147,12 @@ export type PlanStatus = "active" | "paused" | "canceled";
 export type SubscriberStatus = "active" | "paused" | "canceled";
 export type ChargeStatus = "upcoming" | "paid" | "canceled";
 
+export interface CheckoutField {
+  label: string;
+  kind: string;
+  optional?: boolean;
+}
+
 export interface CheckoutPage {
   id: string;
   slug: string;
@@ -161,6 +167,11 @@ export interface CheckoutPage {
   paidCount: number;
   createdOffset: number;
   txnIds: string[];
+  supportEmail: string;
+  supportPhone: string;
+  terms: boolean;
+  payLabel: string;
+  fields: CheckoutField[];
 }
 
 export interface SubscriptionPlan {

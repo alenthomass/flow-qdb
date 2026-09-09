@@ -371,8 +371,8 @@ export function dashboardState() {
         created: formatDate(link.createdOffset),
         uses: link.uses,
         expiry: link.expiry,
-        payUrl: link.payUrl,
-        url: link.payUrl.replace(/^https?:\/\//, ""),
+        payUrl: appPayUrl(link.id),
+        url: appPayUrl(link.id).replace(/^https?:\/\//, ""),
         invoiceId: link.invoiceId || "",
         clientId: link.clientId || "",
         canSimulate: status === "active",
@@ -391,6 +391,14 @@ export function dashboardState() {
       paid: page.paidCount,
       accent: page.accent,
       logoDataUrl: page.logoDataUrl || "",
+      email: page.supportEmail || emailFromName(owner),
+      phone: page.supportPhone || "",
+      terms: page.terms !== false,
+      payLabel: page.payLabel || "Pay",
+      fields: (page.fields && page.fields.length ? page.fields : [
+        { label: "Amount", kind: "price" },
+        { label: "Email", kind: "mail" }
+      ]).map(field => Object.assign({}, field)),
       path: "/pay/" + page.slug
     })),
     plans: db().subscriptionPlans.map(plan => {
@@ -411,8 +419,8 @@ export function dashboardState() {
         customerName: plan.customerName,
         status: titleStatus(plan.status),
         slug: plan.slug,
-        signupUrl: plan.signupUrl,
-        url: plan.signupUrl.replace(/^https?:\/\//, ""),
+        signupUrl: appPayUrl(plan.slug),
+        url: appPayUrl(plan.slug).replace(/^https?:\/\//, ""),
         subs: people.length,
         mrr: major(monthly * people.length)
       };
@@ -558,6 +566,11 @@ export function dashboardState() {
       deductionRate: seed.payrollRuns[0]?.deductionRate ?? 0
     }
   };
+}
+
+function appPayUrl(pathId: string): string {
+  const origin = typeof location !== "undefined" && location.origin ? location.origin : "";
+  return origin + "/pay/" + pathId;
 }
 
 function sourceVolume(source: string) {
