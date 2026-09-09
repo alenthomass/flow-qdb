@@ -134,6 +134,12 @@ export const seed: Seed = {
   clients,
   paymentLinks: [],
   exportHistory: [],
+  checkoutPages: [],
+  subscriptionPlans: [],
+  subscribers: [],
+  upcomingCharges: [],
+  shopify: { connected: false, shopDomain: "" },
+  smartCheckout: { on: false, walletDetect: true, retryOnDecline: true },
   matchProposals: [
     { id: "mp_01", transactionId: "txn_13", invoiceId: "inv_0142", confidence: 0.94, reason: "Exact amount and reference match, one day apart.", status: "open" },
     { id: "mp_02", transactionId: "txn_02", invoiceId: "inv_0145", confidence: 0.88, reason: "Refund of a paid invoice for the same client and amount.", status: "open" },

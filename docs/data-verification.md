@@ -72,7 +72,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Extraction returns vendor, date, total, tax, lines and tag: Barzan Water / Al Maha Stationery
 - PASS Scan accepts an image or PDF: file input accept image/*,application/pdf
 - PASS Extraction delay is 1.5-2.5s: 1800ms
-- PASS Scan shows extraction in progress: 1544ms
+- PASS Scan shows extraction in progress: 2057ms
 - PASS Extracted fields are correctable with confidence: Barzan Water tax QR 0 · vendor 96%
 - PASS Scan save recomputes Money Out: Money Out QR 34,545.00 (was QR 33,365.00)
 - PASS Scan save drops Reports net profit: net profit QR 11,965 (was QR 13,145.00)
@@ -82,7 +82,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Spine create leaves Money In unchanged: Money In QR 46,510.00
 - PASS Home Net equals Reports after creating a link: QR 13,145.00
 - PASS Who owes me equals Outstanding after creating a link: QR 20,900.00 across 3
-- PASS Spine success appends a pending ledger row: txn_link_6a8e1fcf49 pending
+- PASS Spine success appends a pending ledger row: txn_link_b581934a13 pending
 - PASS Pending payment is excluded from Money In: Money In QR 46,510.00; pending QR 11,700.00
 - PASS Linked invoice awaits settlement while pending: awaiting settlement
 - PASS Needs Your Attention includes the new proposal: 4 open
@@ -110,11 +110,35 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Export XML downloads a file: runTallyExport writes XML
 - PASS Tally export history appears in the UI: 2 history row(s)
 - PASS Zoho sync success is visible: Last push simulated · 19 items · 9 Sept 2026
+- PASS Hosted checkout publishes a shareable /pay/ slug: pay.html + rewrite + UI URL
+- PASS Published checkout stores product name, QAR price and slug: eid-hamper QR 250.00
+- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_4bd80e6bea
+- PASS Hosted checkout pending is excluded from Money In: QR 46,510.00
+- PASS Hosted checkout settle lifts Money In by the page price: Money In QR 46,760.00
+- PASS Home Net equals Reports after hosted checkout: QR 13,395.00
+- PASS matched + open after hosted checkout: 9 + 4 = 13
+- PASS Payment link deactivate updates status: Deactivated
+- PASS Payment links expose expiry, uses and copy URL: 16 Sept 2026 · uses 0
+- PASS Subscription plan creates a customer and upcoming charge: 1 upcoming · QR 400.00
+- PASS Simulated billing appends a pending ledger row: txn_sub_2eb151071d
+- PASS Simulated billing settle lifts Money In: QR 46,910.00
+- PASS Cancel stops further upcoming charges: 0 upcoming
+- PASS Smart Checkout lives on Get Paid overview: overview toggle card
+- PASS Smart Checkout on shows labelled sample analytics: Sample analytics. Checkout drop-off is not stored for this merchant.
+- PASS Shopify starts disconnected: disconnected
+- PASS Connected Shopify tags the new sample order: Shopify sample order #1042
+- PASS Shopify sample order lifts Money In: QR 46,695.00
+- PASS matched + open after Shopify sample: 10 + 3 = 13
+- PASS Seed Shopify rows were not rewritten: 3 seed shopify rows
+- PASS Sample bank connect is labelled and does not change cash: QR 98,145.00
+- PASS Bank onboarding is wired in the UI: onboarding steps
 
 ## Not stored in the seed
 
 - Bank account number is not stored. Opening balance is stored on bank_01 (QR 85,000 as of ANCHOR_DATE minus 30 days).
-- Subscription plans, payment-page totals, checkout product price, checkout drop-off and saved report packs are not in the seed, so those lists are empty.
+- Subscription plans, payment-page totals, checkout product price and saved report packs are not in the seed, so those lists start empty. Checkout drop-off uses labelled sample analytics in lib/data/sample-checkout.ts.
+- Shopify starts disconnected. Seed shopify transactions stay as historical rows; only new incoming after connect are tagged by the plugin.
+- Extra bank connections are labelled sample and store opening QR 0 so cash on hand does not change.
 - Recurring invoice schedules, sync payloads and approval caps are not in the seed.
 - Other Flow billing tiers besides the current Starter plan are not in the seed.
 - Reports profit and loss, the four stat cards and the branch table use their own 30-day period. They do not follow the Home 24h / 7 days / 30 days toggle.

@@ -4,7 +4,8 @@ const nextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
-        { source: "/", destination: "/flow.dc.html" }
+        { source: "/", destination: "/flow.dc.html" },
+        { source: "/pay/:slug", destination: "/pay.html" }
       ]
     };
   }

@@ -3,6 +3,8 @@ import { chartScale } from "../chart";
 import { seed } from "./seed";
 import { getStore } from "./store";
 import { SAMPLE_BILL, SAMPLE_BILLS } from "./sample-bill";
+import { SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS } from "./sample-checkout";
+import { offsetFromLabel } from "../format";
 import type { Period } from "./types";
 import {
   getBranchComparison,
@@ -356,19 +358,114 @@ export function dashboardState() {
     ageing: ageingView(),
     txns,
     invoices,
-    links: db().paymentLinks.map(link => ({
-      id: link.id,
-      amount: major(link.amountMinor),
-      desc: link.description,
-      status: titleStatus(link.status),
-      created: formatDate(link.createdOffset),
-      uses: link.uses,
-      expiry: link.expiry,
-      payUrl: link.payUrl,
-      url: link.payUrl.replace(/^https?:\/\//, ""),
-      invoiceId: link.invoiceId || "",
-      clientId: link.clientId || "",
-      canSimulate: link.status === "active"
+    links: db().paymentLinks.map(link => {
+      const expiryOffset = offsetFromLabel(link.expiry);
+      const expired = link.status === "active" && expiryOffset != null && expiryOffset < 0;
+      const status = expired ? "expired" : link.status;
+      return {
+        id: link.id,
+        amount: major(link.amountMinor),
+        desc: link.description,
+        status: titleStatus(status),
+        created: formatDate(link.createdOffset),
+        uses: link.uses,
+        expiry: link.expiry,
+        payUrl: link.payUrl,
+        url: link.payUrl.replace(/^https?:\/\//, ""),
+        invoiceId: link.invoiceId || "",
+        clientId: link.clientId || "",
+        canSimulate: status === "active",
+        canDeactivate: status === "active" || status === "failed" || status === "rejected"
+      };
+    }),
+    checkoutPages: db().checkoutPages.map(page => ({
+      id: page.id,
+      slug: page.slug,
+      title: page.productName,
+      desc: page.description,
+      amount: major(page.amountMinor),
+      amountText: formatMoney(page.amountMinor, currency, { trimWhole: true }),
+      published: page.published,
+      views: page.views,
+      paid: page.paidCount,
+      accent: page.accent,
+      logoDataUrl: page.logoDataUrl || "",
+      path: "/pay/" + page.slug
+    })),
+    plans: db().subscriptionPlans.map(plan => {
+      const people = db().subscribers.filter(row => row.planId === plan.id && row.status === "active");
+      const monthly = plan.interval === "Year"
+        ? Math.round(plan.amountMinor / 12)
+        : plan.interval === "Quarter"
+          ? Math.round(plan.amountMinor / 3)
+          : plan.interval === "Week"
+            ? Math.round(plan.amountMinor * 52 / 12)
+            : plan.amountMinor;
+      return {
+        id: plan.id,
+        name: plan.name,
+        amount: major(plan.amountMinor),
+        interval: plan.interval,
+        desc: plan.description,
+        customerName: plan.customerName,
+        status: titleStatus(plan.status),
+        slug: plan.slug,
+        signupUrl: plan.signupUrl,
+        url: plan.signupUrl.replace(/^https?:\/\//, ""),
+        subs: people.length,
+        mrr: major(monthly * people.length)
+      };
+    }),
+    subscribers: db().subscribers.map(row => ({
+      id: row.id,
+      plan: row.planId,
+      name: row.name,
+      email: row.email,
+      status: titleStatus(row.status),
+      since: formatDate(row.createdOffset),
+      next: formatDate(row.nextChargeOffset),
+      canAct: row.status === "active"
+    })),
+    upcomingCharges: db().upcomingCharges
+      .filter(row => row.status === "upcoming")
+      .map(row => {
+        const plan = db().subscriptionPlans.find(item => item.id === row.planId);
+        const person = db().subscribers.find(item => item.id === row.subscriberId);
+        return {
+          id: row.id,
+          planId: row.planId,
+          subscriberId: row.subscriberId,
+          name: person?.name || "",
+          planName: plan?.name || "",
+          amount: major(row.amountMinor),
+          amountText: formatMoney(row.amountMinor, currency, { trimWhole: true }),
+          when: formatDate(row.dayOffset)
+        };
+      }),
+    shopify: {
+      connected: db().shopify.connected,
+      shopDomain: db().shopify.shopDomain,
+      disconnected: !db().shopify.connected,
+      orderCount: db().transactions.filter(txn => txn.source === "shopify").length,
+      sampleReady: db().shopify.connected && !db().transactions.some(txn => txn.counterparty === "Shopify sample order #1042")
+    },
+    smartCheckout: {
+      on: db().smartCheckout.on,
+      walletDetect: db().smartCheckout.walletDetect,
+      retryOnDecline: db().smartCheckout.retryOnDecline,
+      analytics: SAMPLE_CHECKOUT_ANALYTICS
+    },
+    sampleBanks: SAMPLE_BANKS,
+    banks: db().bankAccounts.map(account => ({
+      id: account.id,
+      bank: account.bank,
+      name: account.bank + ", " + account.label,
+      label: account.label,
+      initials: account.bank.split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(),
+      sample: !!account.sample,
+      note: account.sample
+        ? "Sample data. Live bank feeds arrive in a later phase."
+        : formatMoney(account.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset)
     })),
     linkClients: seed.clients.map(client => ({ id: client.id, name: client.name })),
     linkInvoices: getOutstandingInvoices().map(invoice => ({
@@ -486,7 +583,7 @@ function sourceStats() {
 }
 
 function bankView() {
-  const account = seed.bankAccounts[0];
+  const account = db().bankAccounts[0];
   const net = db().transactions
     .filter(txn => txn.source === "bank" && txn.status === "settled")
     .reduce((sum, txn) => sum + signedAmount(txn), 0);
@@ -498,7 +595,16 @@ function bankView() {
     activity: formatMoney(net, currency as CurrencyCode),
     note: account
       ? formatMoney(opening, currency as CurrencyCode, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset)
-      : "No bank account is stored."
+      : "No bank account is stored.",
+    extra: db().bankAccounts.slice(1).map(row => ({
+      id: row.id,
+      name: row.bank + ", " + row.label,
+      initials: row.bank.split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(),
+      sample: !!row.sample,
+      note: row.sample
+        ? "Sample data. Live bank feeds arrive in a later phase."
+        : formatMoney(row.openingBalanceMinor, currency as CurrencyCode, { trimWhole: true }) + " opening as of " + formatDate(row.asOfOffset)
+    }))
   };
 }
 
@@ -545,7 +651,15 @@ export function dashboardSnapshot() {
     clients: data.clients,
     exportHistory: data.exportHistory,
     syncLog: data.syncLog,
-    zoho: data.zoho
+    zoho: data.zoho,
+    checkoutPages: data.checkoutPages,
+    plans: data.plans,
+    subscribers: data.subscribers,
+    upcomingCharges: data.upcomingCharges,
+    shopify: data.shopify,
+    smartCheckout: data.smartCheckout,
+    sampleBanks: data.sampleBanks,
+    banks: data.banks
   };
 }
 

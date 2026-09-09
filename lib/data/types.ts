@@ -106,6 +106,7 @@ export interface BankAccount {
   currency: CurrencyCode;
   openingBalanceMinor: number;
   asOfOffset: number;
+  sample?: boolean;
 }
 
 export interface GatewayAccount {
@@ -132,7 +133,79 @@ export interface ActivityLog {
   what: string;
 }
 
-export type PaymentLinkStatus = "active" | "pending" | "paid" | "failed" | "rejected";
+export type PaymentLinkStatus =
+  | "active"
+  | "pending"
+  | "paid"
+  | "failed"
+  | "rejected"
+  | "deactivated"
+  | "expired";
+
+export type PlanInterval = "Week" | "Month" | "Quarter" | "Year";
+export type PlanStatus = "active" | "paused" | "canceled";
+export type SubscriberStatus = "active" | "paused" | "canceled";
+export type ChargeStatus = "upcoming" | "paid" | "canceled";
+
+export interface CheckoutPage {
+  id: string;
+  slug: string;
+  productName: string;
+  description: string;
+  amountMinor: number;
+  currency: CurrencyCode;
+  logoDataUrl: string | null;
+  accent: string;
+  published: boolean;
+  views: number;
+  paidCount: number;
+  createdOffset: number;
+  txnIds: string[];
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  amountMinor: number;
+  interval: PlanInterval;
+  description: string;
+  customerName: string;
+  status: PlanStatus;
+  createdOffset: number;
+  slug: string;
+  signupUrl: string;
+}
+
+export interface Subscriber {
+  id: string;
+  planId: string;
+  name: string;
+  email: string;
+  status: SubscriberStatus;
+  createdOffset: number;
+  nextChargeOffset: number;
+}
+
+export interface UpcomingCharge {
+  id: string;
+  planId: string;
+  subscriberId: string;
+  amountMinor: number;
+  dayOffset: number;
+  status: ChargeStatus;
+  txnId: string | null;
+}
+
+export interface ShopifyConnection {
+  connected: boolean;
+  shopDomain: string;
+}
+
+export interface SmartCheckoutConfig {
+  on: boolean;
+  walletDetect: boolean;
+  retryOnDecline: boolean;
+}
 
 export interface PaymentLink {
   id: string;
@@ -171,6 +244,12 @@ export interface Seed {
   matchProposals: MatchProposal[];
   paymentLinks: PaymentLink[];
   exportHistory: ExportRecord[];
+  checkoutPages: CheckoutPage[];
+  subscriptionPlans: SubscriptionPlan[];
+  subscribers: Subscriber[];
+  upcomingCharges: UpcomingCharge[];
+  shopify: ShopifyConnection;
+  smartCheckout: SmartCheckoutConfig;
   bankAccounts: BankAccount[];
   gatewayAccounts: GatewayAccount[];
   teamMembers: TeamMember[];

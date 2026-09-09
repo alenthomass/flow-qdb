@@ -22,21 +22,42 @@ var FlowStore = (() => {
   var browser_exports = {};
   __export(browser_exports, {
     EXTRACT_DELAY_MS: () => EXTRACT_DELAY_MS,
+    SAMPLE_BANKS: () => SAMPLE_BANKS,
     SAMPLE_BILL: () => SAMPLE_BILL,
     SAMPLE_BILLS: () => SAMPLE_BILLS,
+    SAMPLE_CHECKOUT_ANALYTICS: () => SAMPLE_CHECKOUT_ANALYTICS,
+    SAMPLE_SHOPIFY_ORDER: () => SAMPLE_SHOPIFY_ORDER,
     SETTLEMENT_DELAY_MS: () => SETTLEMENT_DELAY_MS,
+    addSubscriber: () => addSubscriber,
     appendTransaction: () => appendTransaction,
+    cancelSubscriber: () => cancelSubscriber,
+    cancelSubscriptionPlan: () => cancelSubscriptionPlan,
+    checkoutPageBySlug: () => checkoutPageBySlug,
     confirmMatch: () => confirmMatch,
+    connectSampleBank: () => connectSampleBank,
+    connectShopify: () => connectShopify,
     createPaymentLink: () => createPaymentLink,
+    createSubscriptionPlan: () => createSubscriptionPlan,
     dashboardSnapshot: () => dashboardSnapshot,
     dashboardState: () => dashboardState,
+    deactivatePaymentLink: () => deactivatePaymentLink,
     exportTallyXml: () => exportTallyXml,
     extractBill: () => extractBill,
     extractDelayMs: () => extractDelayMs,
     extractedBillForm: () => extractedBillForm,
+    hydrateFromStorage: () => hydrateFromStorage,
+    ingestShopifyOrder: () => ingestShopifyOrder,
     offsetFromLabel: () => offsetFromLabel,
+    pauseSubscriber: () => pauseSubscriber,
+    payPublishedCheckout: () => payPublishedCheckout,
+    persistStore: () => persistStore,
+    publishCheckoutPage: () => publishCheckoutPage,
     resetGateway: () => resetGateway,
     resetStore: () => resetStore,
+    runSimulatedBilling: () => runSimulatedBilling,
+    setSmartCheckout: () => setSmartCheckout,
+    settleBilling: () => settleBilling,
+    settleCheckoutPayment: () => settleCheckoutPayment,
     settlePayment: () => settlePayment,
     simulatePayment: () => simulatePayment,
     simulateZohoSync: () => simulateZohoSync
@@ -164,6 +185,12 @@ var FlowStore = (() => {
     clients,
     paymentLinks: [],
     exportHistory: [],
+    checkoutPages: [],
+    subscriptionPlans: [],
+    subscribers: [],
+    upcomingCharges: [],
+    shopify: { connected: false, shopDomain: "" },
+    smartCheckout: { on: false, walletDetect: true, retryOnDecline: true },
     matchProposals: [
       { id: "mp_01", transactionId: "txn_13", invoiceId: "inv_0142", confidence: 0.94, reason: "Exact amount and reference match, one day apart.", status: "open" },
       { id: "mp_02", transactionId: "txn_02", invoiceId: "inv_0145", confidence: 0.88, reason: "Refund of a paid invoice for the same client and amount.", status: "open" },
@@ -186,19 +213,72 @@ var FlowStore = (() => {
   };
 
   // lib/data/store.ts
+  var STORAGE_KEY = "flow-live-v1";
   function cloneSeed() {
     return structuredClone(seed);
   }
+  function emptyExtras() {
+    return {
+      checkoutPages: [],
+      subscriptionPlans: [],
+      subscribers: [],
+      upcomingCharges: [],
+      shopify: { connected: false, shopDomain: "" },
+      smartCheckout: { on: false, walletDetect: true, retryOnDecline: true }
+    };
+  }
+  function withDefaults(row) {
+    const base = cloneSeed();
+    return {
+      ...base,
+      ...row,
+      checkoutPages: row.checkoutPages || [],
+      subscriptionPlans: row.subscriptionPlans || [],
+      subscribers: row.subscribers || [],
+      upcomingCharges: row.upcomingCharges || [],
+      shopify: row.shopify || emptyExtras().shopify,
+      smartCheckout: row.smartCheckout || emptyExtras().smartCheckout,
+      bankAccounts: row.bankAccounts || base.bankAccounts
+    };
+  }
   var live = cloneSeed();
+  function persist() {
+    if (typeof localStorage === "undefined") return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(live));
+    } catch {
+    }
+  }
+  function hydrateFromStorage() {
+    if (typeof localStorage === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      live = withDefaults(JSON.parse(raw));
+      return live;
+    } catch {
+      return null;
+    }
+  }
+  function persistStore() {
+    persist();
+  }
   function getStore() {
     return live;
   }
   function resetStore() {
     live = cloneSeed();
+    if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {
+      }
+    }
     return live;
   }
   function appendTransaction(txn) {
     live.transactions = [txn, ...live.transactions];
+    persist();
     return txn;
   }
   function replaceTransaction(id, patch) {
@@ -208,10 +288,12 @@ var FlowStore = (() => {
       next = Object.assign({}, txn, patch, { id: txn.id });
       return next;
     });
+    persist();
     return next;
   }
   function appendMatchProposal(proposal) {
     live.matchProposals = [proposal, ...live.matchProposals];
+    persist();
     return proposal;
   }
   function replaceMatchProposal(id, patch) {
@@ -221,14 +303,17 @@ var FlowStore = (() => {
       next = Object.assign({}, proposal, patch, { id: proposal.id });
       return next;
     });
+    persist();
     return next;
   }
   function appendActivity(entry) {
     live.activityLog = [entry, ...live.activityLog];
+    persist();
     return entry;
   }
   function appendPaymentLink(link) {
     live.paymentLinks = [link, ...live.paymentLinks];
+    persist();
     return link;
   }
   function replacePaymentLink(id, patch) {
@@ -238,11 +323,88 @@ var FlowStore = (() => {
       next = Object.assign({}, link, patch, { id: link.id });
       return next;
     });
+    persist();
     return next;
   }
   function appendExportRecord(row) {
     live.exportHistory = [row, ...live.exportHistory];
+    persist();
     return row;
+  }
+  function appendCheckoutPage(page) {
+    live.checkoutPages = [page, ...live.checkoutPages];
+    persist();
+    return page;
+  }
+  function replaceCheckoutPage(id, patch) {
+    let next;
+    live.checkoutPages = live.checkoutPages.map((page) => {
+      if (page.id !== id) return page;
+      next = Object.assign({}, page, patch, { id: page.id });
+      return next;
+    });
+    persist();
+    return next;
+  }
+  function appendSubscriptionPlan(plan) {
+    live.subscriptionPlans = [plan, ...live.subscriptionPlans];
+    persist();
+    return plan;
+  }
+  function replaceSubscriptionPlan(id, patch) {
+    let next;
+    live.subscriptionPlans = live.subscriptionPlans.map((plan) => {
+      if (plan.id !== id) return plan;
+      next = Object.assign({}, plan, patch, { id: plan.id });
+      return next;
+    });
+    persist();
+    return next;
+  }
+  function appendSubscriber(row) {
+    live.subscribers = [row, ...live.subscribers];
+    persist();
+    return row;
+  }
+  function replaceSubscriber(id, patch) {
+    let next;
+    live.subscribers = live.subscribers.map((row) => {
+      if (row.id !== id) return row;
+      next = Object.assign({}, row, patch, { id: row.id });
+      return next;
+    });
+    persist();
+    return next;
+  }
+  function appendUpcomingCharge(row) {
+    live.upcomingCharges = [row, ...live.upcomingCharges];
+    persist();
+    return row;
+  }
+  function replaceUpcomingCharge(id, patch) {
+    let next;
+    live.upcomingCharges = live.upcomingCharges.map((row) => {
+      if (row.id !== id) return row;
+      next = Object.assign({}, row, patch, { id: row.id });
+      return next;
+    });
+    persist();
+    return next;
+  }
+  function replaceShopify(patch) {
+    live.shopify = Object.assign({}, live.shopify, patch);
+    persist();
+    return live.shopify;
+  }
+  function replaceSmartCheckout(patch) {
+    live.smartCheckout = Object.assign({}, live.smartCheckout, patch);
+    persist();
+    return live.smartCheckout;
+  }
+  function appendBankAccount(account) {
+    live.bankAccounts = [...live.bankAccounts, account];
+    persist();
+    return account;
   }
 
   // lib/format.ts
@@ -403,6 +565,26 @@ var FlowStore = (() => {
       }
     };
   }
+
+  // lib/data/sample-checkout.ts
+  var SAMPLE_CHECKOUT_ANALYTICS = {
+    note: "Sample analytics. Checkout drop-off is not stored for this merchant.",
+    steps: [
+      { label: "Opened checkout", percent: 100 },
+      { label: "Entered details", percent: 64 },
+      { label: "Paid", percent: 41 }
+    ]
+  };
+  var SAMPLE_SHOPIFY_ORDER = {
+    counterparty: "Shopify sample order #1042",
+    amountMinor: 18500,
+    tag: "Sales",
+    branchId: "br_01"
+  };
+  var SAMPLE_BANKS = [
+    { id: "bank_qnb", bank: "Qatar National Bank", label: "QNB current account (sample)" },
+    { id: "bank_dukhan", bank: "Dukhan Bank", label: "Dukhan current account (sample)" }
+  ];
 
   // lib/data/selectors.ts
   function db() {
@@ -950,19 +1132,104 @@ var FlowStore = (() => {
       ageing: ageingView(),
       txns,
       invoices,
-      links: db2().paymentLinks.map((link) => ({
-        id: link.id,
-        amount: major(link.amountMinor),
-        desc: link.description,
-        status: titleStatus(link.status),
-        created: formatDate(link.createdOffset),
-        uses: link.uses,
-        expiry: link.expiry,
-        payUrl: link.payUrl,
-        url: link.payUrl.replace(/^https?:\/\//, ""),
-        invoiceId: link.invoiceId || "",
-        clientId: link.clientId || "",
-        canSimulate: link.status === "active"
+      links: db2().paymentLinks.map((link) => {
+        const expiryOffset = offsetFromLabel(link.expiry);
+        const expired = link.status === "active" && expiryOffset != null && expiryOffset < 0;
+        const status = expired ? "expired" : link.status;
+        return {
+          id: link.id,
+          amount: major(link.amountMinor),
+          desc: link.description,
+          status: titleStatus(status),
+          created: formatDate(link.createdOffset),
+          uses: link.uses,
+          expiry: link.expiry,
+          payUrl: link.payUrl,
+          url: link.payUrl.replace(/^https?:\/\//, ""),
+          invoiceId: link.invoiceId || "",
+          clientId: link.clientId || "",
+          canSimulate: status === "active",
+          canDeactivate: status === "active" || status === "failed" || status === "rejected"
+        };
+      }),
+      checkoutPages: db2().checkoutPages.map((page) => ({
+        id: page.id,
+        slug: page.slug,
+        title: page.productName,
+        desc: page.description,
+        amount: major(page.amountMinor),
+        amountText: formatMoney(page.amountMinor, currency, { trimWhole: true }),
+        published: page.published,
+        views: page.views,
+        paid: page.paidCount,
+        accent: page.accent,
+        logoDataUrl: page.logoDataUrl || "",
+        path: "/pay/" + page.slug
+      })),
+      plans: db2().subscriptionPlans.map((plan) => {
+        const people = db2().subscribers.filter((row) => row.planId === plan.id && row.status === "active");
+        const monthly = plan.interval === "Year" ? Math.round(plan.amountMinor / 12) : plan.interval === "Quarter" ? Math.round(plan.amountMinor / 3) : plan.interval === "Week" ? Math.round(plan.amountMinor * 52 / 12) : plan.amountMinor;
+        return {
+          id: plan.id,
+          name: plan.name,
+          amount: major(plan.amountMinor),
+          interval: plan.interval,
+          desc: plan.description,
+          customerName: plan.customerName,
+          status: titleStatus(plan.status),
+          slug: plan.slug,
+          signupUrl: plan.signupUrl,
+          url: plan.signupUrl.replace(/^https?:\/\//, ""),
+          subs: people.length,
+          mrr: major(monthly * people.length)
+        };
+      }),
+      subscribers: db2().subscribers.map((row) => ({
+        id: row.id,
+        plan: row.planId,
+        name: row.name,
+        email: row.email,
+        status: titleStatus(row.status),
+        since: formatDate(row.createdOffset),
+        next: formatDate(row.nextChargeOffset),
+        canAct: row.status === "active"
+      })),
+      upcomingCharges: db2().upcomingCharges.filter((row) => row.status === "upcoming").map((row) => {
+        const plan = db2().subscriptionPlans.find((item) => item.id === row.planId);
+        const person = db2().subscribers.find((item) => item.id === row.subscriberId);
+        return {
+          id: row.id,
+          planId: row.planId,
+          subscriberId: row.subscriberId,
+          name: person?.name || "",
+          planName: plan?.name || "",
+          amount: major(row.amountMinor),
+          amountText: formatMoney(row.amountMinor, currency, { trimWhole: true }),
+          when: formatDate(row.dayOffset)
+        };
+      }),
+      shopify: {
+        connected: db2().shopify.connected,
+        shopDomain: db2().shopify.shopDomain,
+        disconnected: !db2().shopify.connected,
+        orderCount: db2().transactions.filter((txn) => txn.source === "shopify").length,
+        sampleReady: db2().shopify.connected && !db2().transactions.some((txn) => txn.counterparty === "Shopify sample order #1042")
+      },
+      smartCheckout: {
+        on: db2().smartCheckout.on,
+        walletDetect: db2().smartCheckout.walletDetect,
+        retryOnDecline: db2().smartCheckout.retryOnDecline,
+        analytics: SAMPLE_CHECKOUT_ANALYTICS
+      },
+      sampleBanks: SAMPLE_BANKS,
+      banks: db2().bankAccounts.map((account) => ({
+        id: account.id,
+        bank: account.bank,
+        name: account.bank + ", " + account.label,
+        label: account.label,
+        initials: account.bank.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+        sample: !!account.sample,
+        note: account.sample ? "Sample data. Live bank feeds arrive in a later phase." : formatMoney(account.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset)
       })),
       linkClients: seed.clients.map((client) => ({ id: client.id, name: client.name })),
       linkInvoices: getOutstandingInvoices().map((invoice) => ({
@@ -1071,7 +1338,7 @@ var FlowStore = (() => {
     };
   }
   function bankView() {
-    const account = seed.bankAccounts[0];
+    const account = db2().bankAccounts[0];
     const net = db2().transactions.filter((txn) => txn.source === "bank" && txn.status === "settled").reduce((sum, txn) => sum + signedAmount(txn), 0);
     const name = account ? account.bank + ", " + account.label : "";
     const opening = account ? account.openingBalanceMinor : 0;
@@ -1079,7 +1346,14 @@ var FlowStore = (() => {
       name,
       initials: (account?.bank ?? "").split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
       activity: formatMoney(net, currency),
-      note: account ? formatMoney(opening, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset) : "No bank account is stored."
+      note: account ? formatMoney(opening, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset) : "No bank account is stored.",
+      extra: db2().bankAccounts.slice(1).map((row) => ({
+        id: row.id,
+        name: row.bank + ", " + row.label,
+        initials: row.bank.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+        sample: !!row.sample,
+        note: row.sample ? "Sample data. Live bank feeds arrive in a later phase." : formatMoney(row.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(row.asOfOffset)
+      }))
     };
   }
   function scanSample() {
@@ -1123,7 +1397,15 @@ var FlowStore = (() => {
       clients: data.clients,
       exportHistory: data.exportHistory,
       syncLog: data.syncLog,
-      zoho: data.zoho
+      zoho: data.zoho,
+      checkoutPages: data.checkoutPages,
+      plans: data.plans,
+      subscribers: data.subscribers,
+      upcomingCharges: data.upcomingCharges,
+      shopify: data.shopify,
+      smartCheckout: data.smartCheckout,
+      sampleBanks: data.sampleBanks,
+      banks: data.banks
     };
   }
   function emailFromName(name) {
@@ -1384,6 +1666,301 @@ var FlowStore = (() => {
   function confirmMatch(proposalId) {
     replaceMatchProposal(proposalId, { status: "confirmed" });
   }
+  function deactivatePaymentLink(linkId) {
+    const link = getStore().paymentLinks.find((row) => row.id === linkId);
+    if (!link) throw new Error("Payment link not found: " + linkId);
+    if (link.status === "paid" || link.status === "pending") return link;
+    return replacePaymentLink(linkId, { status: "deactivated" });
+  }
+  function slugify(text) {
+    return String(text || "page").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "page";
+  }
+  function uniqueSlug(base, existing) {
+    const root = slugify(base);
+    if (!existing.includes(root)) return root;
+    let n = 2;
+    while (existing.includes(root + "-" + n)) n += 1;
+    return root + "-" + n;
+  }
+  function intervalOffset(interval) {
+    if (interval === "Week") return 7;
+    if (interval === "Quarter") return 90;
+    if (interval === "Year") return 365;
+    return 30;
+  }
+  function postInbound(opts) {
+    appendTransaction({
+      id: opts.id,
+      dayOffset: 0,
+      counterparty: opts.counterparty,
+      source: opts.source,
+      direction: "in",
+      type: "sale",
+      tag: "Sales",
+      status: "pending",
+      amountMinor: opts.amountMinor,
+      branchId: opts.branchId || "br_01",
+      invoiceId: opts.invoiceId
+    });
+    appendActivity({
+      id: "act_" + opts.id,
+      kind: "payments",
+      dayOffset: 0,
+      actor: "System",
+      what: "Payment received, QR " + (opts.amountMinor / 100).toLocaleString("en-US") + ", " + opts.counterparty
+    });
+    if (opts.source !== "shopify") {
+      appendMatchProposal({
+        id: "mp_" + opts.id,
+        transactionId: opts.id,
+        invoiceId: opts.invoiceId,
+        confidence: opts.invoiceId ? 0.93 : 0.52,
+        reason: opts.reason,
+        status: "open"
+      });
+    }
+  }
+  function publishCheckoutPage(input) {
+    if (!input.productName || !String(input.productName).trim()) {
+      throw new Error("Checkout page needs a product name");
+    }
+    if (!input.amountMinor || input.amountMinor <= 0) {
+      throw new Error("Checkout page needs a price");
+    }
+    const store = getStore();
+    const existing = input.id ? store.checkoutPages.find((page2) => page2.id === input.id) : void 0;
+    const others = store.checkoutPages.filter((page2) => page2.id !== existing?.id).map((page2) => page2.slug);
+    const slug = uniqueSlug(input.slug || input.productName, others);
+    const page = {
+      id: existing?.id || "pp_" + Date.now().toString(36),
+      slug,
+      productName: String(input.productName).trim(),
+      description: input.description || "",
+      amountMinor: input.amountMinor,
+      currency: store.merchant.currency,
+      logoDataUrl: input.logoDataUrl ?? existing?.logoDataUrl ?? null,
+      accent: input.accent || existing?.accent || "#17171C",
+      published: true,
+      views: existing?.views ?? 0,
+      paidCount: existing?.paidCount ?? 0,
+      createdOffset: existing?.createdOffset ?? 0,
+      txnIds: existing?.txnIds ?? []
+    };
+    if (existing) replaceCheckoutPage(existing.id, page);
+    else appendCheckoutPage(page);
+    return getStore().checkoutPages.find((row) => row.id === page.id) || page;
+  }
+  function checkoutPageBySlug(slug) {
+    return getStore().checkoutPages.find((page) => page.slug === slug && page.published);
+  }
+  async function payPublishedCheckout(slug) {
+    const page = checkoutPageBySlug(slug);
+    if (!page) throw new Error("Checkout page not found: " + slug);
+    replaceCheckoutPage(page.id, { views: page.views + 1 });
+    const record = await getGateway().createPaymentLink({
+      amountMinor: page.amountMinor,
+      currency: page.currency,
+      description: page.productName,
+      customer: ownerContact()
+    });
+    const payload = await getGateway().simulatePayment(record.id, "success");
+    const result = await getGateway().handleWebhook(payload);
+    if (result.statusId !== 2) {
+      return { pending: false, txnId: null, delayMs: 0, pageId: page.id };
+    }
+    const txnId = "txn_chk_" + record.id.replace(/-/g, "").slice(0, 10);
+    postInbound({
+      id: txnId,
+      counterparty: page.productName,
+      source: "skipcash",
+      amountMinor: result.amountMinor,
+      invoiceId: null,
+      reason: "Hosted checkout payment for " + page.productName + "."
+    });
+    const latest = getStore().checkoutPages.find((row) => row.id === page.id);
+    replaceCheckoutPage(page.id, {
+      paidCount: (latest?.paidCount ?? page.paidCount) + 1,
+      txnIds: (latest?.txnIds ?? page.txnIds).concat([txnId])
+    });
+    return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS, pageId: page.id };
+  }
+  function settleCheckoutPayment(txnId) {
+    replaceTransaction(txnId, { status: "settled" });
+  }
+  async function createSubscriptionPlan(input) {
+    if (!input.name || !String(input.name).trim()) throw new Error("Plan needs a name");
+    if (!input.amountMinor || input.amountMinor <= 0) throw new Error("Plan needs an amount");
+    const store = getStore();
+    const slug = uniqueSlug(input.name, store.subscriptionPlans.map((plan2) => plan2.slug));
+    const record = await getGateway().createPaymentLink({
+      amountMinor: input.amountMinor,
+      currency: store.merchant.currency,
+      description: input.name,
+      customer: ownerContact()
+    });
+    const plan = {
+      id: "plan_" + Date.now().toString(36),
+      name: String(input.name).trim(),
+      amountMinor: input.amountMinor,
+      interval: input.interval || "Month",
+      description: input.description || "",
+      customerName: input.customerName || "",
+      status: "active",
+      createdOffset: 0,
+      slug,
+      signupUrl: record.payUrl
+    };
+    appendSubscriptionPlan(plan);
+    if (input.customerName && String(input.customerName).trim()) {
+      addSubscriber(plan.id, String(input.customerName).trim());
+    }
+    return plan;
+  }
+  function addSubscriber(planId, name, email) {
+    const plan = getStore().subscriptionPlans.find((row) => row.id === planId);
+    if (!plan) throw new Error("Plan not found: " + planId);
+    if (plan.status === "canceled") throw new Error("Plan is canceled");
+    const subscriber = {
+      id: "sub_" + Date.now().toString(36),
+      planId,
+      name: name || "Subscriber",
+      email: email || "",
+      status: "active",
+      createdOffset: 0,
+      nextChargeOffset: intervalOffset(plan.interval)
+    };
+    appendSubscriber(subscriber);
+    appendUpcomingCharge({
+      id: "chg_" + subscriber.id,
+      planId,
+      subscriberId: subscriber.id,
+      amountMinor: plan.amountMinor,
+      dayOffset: subscriber.nextChargeOffset,
+      status: "upcoming",
+      txnId: null
+    });
+    return subscriber;
+  }
+  function pauseSubscriber(subscriberId) {
+    const row = getStore().subscribers.find((item) => item.id === subscriberId);
+    if (!row) throw new Error("Subscriber not found: " + subscriberId);
+    getStore().upcomingCharges.filter((charge) => charge.subscriberId === subscriberId && charge.status === "upcoming").forEach((charge) => replaceUpcomingCharge(charge.id, { status: "canceled" }));
+    return replaceSubscriber(subscriberId, { status: "paused" });
+  }
+  function cancelSubscriber(subscriberId) {
+    const row = getStore().subscribers.find((item) => item.id === subscriberId);
+    if (!row) throw new Error("Subscriber not found: " + subscriberId);
+    getStore().upcomingCharges.filter((charge) => charge.subscriberId === subscriberId && charge.status === "upcoming").forEach((charge) => replaceUpcomingCharge(charge.id, { status: "canceled" }));
+    return replaceSubscriber(subscriberId, { status: "canceled" });
+  }
+  function cancelSubscriptionPlan(planId) {
+    const plan = getStore().subscriptionPlans.find((row) => row.id === planId);
+    if (!plan) throw new Error("Plan not found: " + planId);
+    getStore().subscribers.filter((row) => row.planId === planId && row.status === "active").forEach((row) => cancelSubscriber(row.id));
+    return replaceSubscriptionPlan(planId, { status: "canceled" });
+  }
+  async function runSimulatedBilling(chargeId) {
+    const charge = getStore().upcomingCharges.find((row) => row.id === chargeId);
+    if (!charge || charge.status !== "upcoming") throw new Error("Upcoming charge not found: " + chargeId);
+    const subscriber = getStore().subscribers.find((row) => row.id === charge.subscriberId);
+    const plan = getStore().subscriptionPlans.find((row) => row.id === charge.planId);
+    if (!subscriber || subscriber.status !== "active") throw new Error("Subscriber is not active");
+    if (!plan || plan.status !== "active") throw new Error("Plan is not active");
+    const record = await getGateway().createPaymentLink({
+      amountMinor: charge.amountMinor,
+      currency: getStore().merchant.currency,
+      description: plan.name,
+      customer: {
+        firstName: subscriber.name.split(" ")[0] || subscriber.name,
+        lastName: subscriber.name.split(" ").slice(1).join(" ") || subscriber.name,
+        email: subscriber.email || ownerContact().email
+      }
+    });
+    const payload = await getGateway().simulatePayment(record.id, "success");
+    const result = await getGateway().handleWebhook(payload);
+    if (result.statusId !== 2) {
+      replaceUpcomingCharge(chargeId, { status: "canceled" });
+      return { pending: false, txnId: null, delayMs: 0 };
+    }
+    const txnId = "txn_sub_" + record.id.replace(/-/g, "").slice(0, 10);
+    postInbound({
+      id: txnId,
+      counterparty: subscriber.name,
+      source: "skipcash",
+      amountMinor: result.amountMinor,
+      invoiceId: null,
+      reason: "Simulated billing for " + plan.name + "."
+    });
+    replaceUpcomingCharge(chargeId, { status: "paid", txnId, dayOffset: 0 });
+    const nextOffset = intervalOffset(plan.interval);
+    replaceSubscriber(subscriber.id, { nextChargeOffset: nextOffset });
+    appendUpcomingCharge({
+      id: "chg_" + subscriber.id + "_" + Date.now().toString(36),
+      planId: plan.id,
+      subscriberId: subscriber.id,
+      amountMinor: plan.amountMinor,
+      dayOffset: nextOffset,
+      status: "upcoming",
+      txnId: null
+    });
+    return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS };
+  }
+  function settleBilling(txnId) {
+    replaceTransaction(txnId, { status: "settled" });
+  }
+  function setSmartCheckout(on, extras) {
+    return replaceSmartCheckout(Object.assign({ on }, extras || {}));
+  }
+  function connectShopify(shopDomain) {
+    const domain = String(shopDomain || "").trim();
+    if (!domain) throw new Error("Store URL is required");
+    return replaceShopify({ connected: true, shopDomain: domain });
+  }
+  function ingestShopifyOrder() {
+    if (!getStore().shopify.connected) throw new Error("Shopify is not connected");
+    const sample = SAMPLE_SHOPIFY_ORDER;
+    if (getStore().transactions.some((txn) => txn.counterparty === sample.counterparty)) {
+      throw new Error("Sample Shopify order is already on the ledger");
+    }
+    const txnId = "txn_shop_" + Date.now().toString(36);
+    appendTransaction({
+      id: txnId,
+      dayOffset: 0,
+      counterparty: sample.counterparty,
+      source: "shopify",
+      direction: "in",
+      type: "sale",
+      tag: sample.tag,
+      status: "settled",
+      amountMinor: sample.amountMinor,
+      branchId: sample.branchId,
+      invoiceId: null
+    });
+    appendActivity({
+      id: "act_" + txnId,
+      kind: "payments",
+      dayOffset: 0,
+      actor: "System",
+      what: "Payment received, QR " + (sample.amountMinor / 100).toLocaleString("en-US") + ", " + sample.counterparty
+    });
+    return getStore().transactions.find((txn) => txn.id === txnId);
+  }
+  function connectSampleBank(bankId) {
+    const sample = SAMPLE_BANKS.find((row) => row.id === bankId);
+    if (!sample) throw new Error("Sample bank not found: " + bankId);
+    if (getStore().bankAccounts.some((row) => row.id === sample.id)) {
+      return getStore().bankAccounts.find((row) => row.id === sample.id);
+    }
+    return appendBankAccount({
+      id: sample.id,
+      bank: sample.bank,
+      label: sample.label,
+      currency: getStore().merchant.currency,
+      openingBalanceMinor: 0,
+      asOfOffset: 0,
+      sample: true
+    });
+  }
 
   // lib/data/tally-export.ts
   function xmlEscape(value) {
@@ -1560,6 +2137,12 @@ var FlowStore = (() => {
       simulated: true,
       errors: 0
     }), rows.length + " items pushed to Zoho Books (simulated)");
+  }
+
+  // lib/data/browser.ts
+  if (typeof window !== "undefined") {
+    hydrateFromStorage();
+    window.FLOW_DATA = dashboardState();
   }
   return __toCommonJS(browser_exports);
 })();

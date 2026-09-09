@@ -6,7 +6,26 @@ import { chartScale } from "../lib/chart.ts";
 import { dateFor, seed } from "../lib/data/seed.ts";
 import { SAMPLE_BILL, SAMPLE_BILLS, EXTRACT_DELAY_MS, EXTRACT_DELAY_MIN_MS, EXTRACT_DELAY_MAX_MS, extractBill, extractDelayMs, extractedBillForm } from "../lib/data/sample-bill.ts";
 import { appendTransaction, getStore, resetStore } from "../lib/data/store.ts";
-import { confirmMatch, createPaymentLink, settlePayment, simulatePayment } from "../lib/data/spine.ts";
+import {
+  addSubscriber,
+  cancelSubscriber,
+  confirmMatch,
+  connectSampleBank,
+  connectShopify,
+  createPaymentLink,
+  createSubscriptionPlan,
+  deactivatePaymentLink,
+  ingestShopifyOrder,
+  payPublishedCheckout,
+  publishCheckoutPage,
+  runSimulatedBilling,
+  setSmartCheckout,
+  settleBilling,
+  settleCheckoutPayment,
+  settlePayment,
+  simulatePayment
+} from "../lib/data/spine.ts";
+import { SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS, SAMPLE_SHOPIFY_ORDER } from "../lib/data/sample-checkout.ts";
 import { buildTallyExport, exportTallyXml, simulateZohoSync, transactionsInTallyRange } from "../lib/data/tally-export.ts";
 import { resetGateway } from "../lib/gateway/index.ts";
 import {
@@ -60,6 +79,10 @@ const FlowStore = {
   appendTransaction, resetStore, dashboardState, dashboardSnapshot, SAMPLE_BILL, SAMPLE_BILLS,
   EXTRACT_DELAY_MS, extractBill, extractDelayMs, extractedBillForm, offsetFromLabel,
   createPaymentLink, simulatePayment, settlePayment, confirmMatch,
+  publishCheckoutPage, payPublishedCheckout, settleCheckoutPayment,
+  createSubscriptionPlan, addSubscriber, runSimulatedBilling, settleBilling,
+  cancelSubscriber, deactivatePaymentLink, connectShopify, ingestShopifyOrder,
+  connectSampleBank, setSmartCheckout, SAMPLE_CHECKOUT_ANALYTICS,
   exportTallyXml, simulateZohoSync
 };
 let pendingExtract = null;
@@ -652,6 +675,128 @@ check("Zoho sync success is visible",
 resetStore();
 resetGateway();
 
+check("Hosted checkout publishes a shareable /pay/ slug",
+  existsSync(new URL("../public/pay.html", import.meta.url)) &&
+    /\/pay\/:slug/.test(readFileSync(new URL("../next.config.js", import.meta.url), "utf8")) &&
+    /\/pay\//.test(html),
+  "pay.html + rewrite + UI URL");
+const page = publishCheckoutPage({
+  productName: "Eid hamper",
+  description: "Pickup from the Doha store",
+  amountMinor: 25000,
+  accent: "#17171C"
+});
+check("Published checkout stores product name, QAR price and slug",
+  page.slug === "eid-hamper" && page.amountMinor === 25000 && page.published && page.currency === "QAR",
+  page.slug + " " + money(page.amountMinor));
+const moneyInBeforePay = getMoneyIn("month");
+const netBeforePay = getNet("month");
+const checkoutPay = await payPublishedCheckout(page.slug);
+check("Hosted checkout pay appends a pending SkipCash row",
+  checkoutPay.pending && live().transactions.some(txn => txn.id === checkoutPay.txnId && txn.source === "skipcash" && txn.status === "pending" && txn.amountMinor === 25000),
+  checkoutPay.txnId || "missing");
+check("Hosted checkout pending is excluded from Money In",
+  getMoneyIn("month") === moneyInBeforePay,
+  money(getMoneyIn("month")));
+settleCheckoutPayment(checkoutPay.txnId);
+check("Hosted checkout settle lifts Money In by the page price",
+  getMoneyIn("month") === moneyInBeforePay + 25000 && getNet("month") === netBeforePay + 25000,
+  "Money In " + money(getMoneyIn("month")));
+check("Home Net equals Reports after hosted checkout",
+  getNet("month") === getProfitAndLoss("month").netProfit,
+  money(getNet("month")));
+check("matched + open after hosted checkout",
+  getMatchRate().matched + getOpenMatches().length === getMatchRate().total,
+  getMatchRate().matched + " + " + getOpenMatches().length + " = " + getMatchRate().total);
+resetStore();
+resetGateway();
+
+const linkForOff = await createPaymentLink({ amountMinor: 10000, description: "Deactivate me", expiry: formatDate(7) });
+deactivatePaymentLink(linkForOff.id);
+const offView = dashboardState().links.find(row => row.id === linkForOff.id);
+check("Payment link deactivate updates status",
+  offView && offView.status === "Deactivated" && offView.canSimulate === false && offView.canDeactivate === false,
+  offView ? offView.status : "missing");
+check("Payment links expose expiry, uses and copy URL",
+  offView && offView.expiry === formatDate(7) && offView.uses === 0 && !!offView.payUrl && /copyPayUrl/.test(rootSource),
+  offView ? offView.expiry + " · uses " + offView.uses : "missing");
+resetStore();
+resetGateway();
+
+const plan = await createSubscriptionPlan({
+  name: "Monthly Care",
+  amountMinor: 40000,
+  interval: "Month",
+  description: "Weekly restock",
+  customerName: "Layla Hassan"
+});
+const upcoming = live().upcomingCharges.filter(row => row.status === "upcoming");
+check("Subscription plan creates a customer and upcoming charge",
+  plan.name === "Monthly Care" && live().subscribers.some(row => row.name === "Layla Hassan" && row.planId === plan.id) && upcoming.length === 1 && upcoming[0].amountMinor === 40000,
+  upcoming.length + " upcoming · " + money(plan.amountMinor));
+const moneyInBeforeBill = getMoneyIn("month");
+const billed = await runSimulatedBilling(upcoming[0].id);
+check("Simulated billing appends a pending ledger row",
+  billed.pending && live().transactions.some(txn => txn.id === billed.txnId && txn.source === "skipcash" && txn.amountMinor === 40000),
+  billed.txnId || "missing");
+settleBilling(billed.txnId);
+check("Simulated billing settle lifts Money In",
+  getMoneyIn("month") === moneyInBeforeBill + 40000 && getNet("month") === getProfitAndLoss("month").netProfit,
+  money(getMoneyIn("month")));
+cancelSubscriber(live().subscribers[0].id);
+check("Cancel stops further upcoming charges",
+  live().upcomingCharges.filter(row => row.status === "upcoming").length === 0 &&
+    live().subscribers[0].status === "canceled",
+  live().upcomingCharges.filter(row => row.status === "upcoming").length + " upcoming");
+resetStore();
+resetGateway();
+
+check("Smart Checkout lives on Get Paid overview",
+  /smart\.overview/.test(html) && /Automatic Checkout/.test(html) && !/smartCard/.test(rootSource),
+  "overview toggle card");
+setSmartCheckout(true);
+check("Smart Checkout on shows labelled sample analytics",
+  dashboardState().smartCheckout.on &&
+    dashboardState().smartCheckout.analytics.note === SAMPLE_CHECKOUT_ANALYTICS.note &&
+    dashboardState().smartCheckout.analytics.steps.length === 3,
+  SAMPLE_CHECKOUT_ANALYTICS.note);
+resetStore();
+
+check("Shopify starts disconnected",
+  dashboardState().shopify.connected === false && dashboardState().shopify.disconnected === true,
+  "disconnected");
+connectShopify("albidda.myshopify.com");
+const shopifyCount0 = live().transactions.filter(txn => txn.source === "shopify").length;
+const moneyInBeforeShop = getMoneyIn("month");
+ingestShopifyOrder();
+check("Connected Shopify tags the new sample order",
+  live().transactions.some(txn => txn.counterparty === SAMPLE_SHOPIFY_ORDER.counterparty && txn.source === "shopify" && txn.amountMinor === SAMPLE_SHOPIFY_ORDER.amountMinor) &&
+    live().transactions.filter(txn => txn.source === "shopify").length === shopifyCount0 + 1,
+  SAMPLE_SHOPIFY_ORDER.counterparty);
+check("Shopify sample order lifts Money In",
+  getMoneyIn("month") === moneyInBeforeShop + SAMPLE_SHOPIFY_ORDER.amountMinor &&
+    getNet("month") === getProfitAndLoss("month").netProfit,
+  money(getMoneyIn("month")));
+check("matched + open after Shopify sample",
+  getMatchRate().matched + getOpenMatches().length === getMatchRate().total,
+  getMatchRate().matched + " + " + getOpenMatches().length + " = " + getMatchRate().total);
+check("Seed Shopify rows were not rewritten",
+  seed.transactions.filter(txn => txn.source === "shopify").every(txn => live().transactions.some(row => row.id === txn.id && row.amountMinor === txn.amountMinor)),
+  seed.transactions.filter(txn => txn.source === "shopify").length + " seed shopify rows");
+resetStore();
+
+const cash0 = getCashOnHand();
+connectSampleBank(SAMPLE_BANKS[0].id);
+check("Sample bank connect is labelled and does not change cash",
+  live().bankAccounts.some(row => row.id === SAMPLE_BANKS[0].id && row.sample === true && row.openingBalanceMinor === 0) &&
+    getCashOnHand() === cash0,
+  money(getCashOnHand()));
+check("Bank onboarding is wired in the UI",
+  /bankOn\.start/.test(html) && /Connect sample bank/.test(html),
+  "onboarding steps");
+resetStore();
+resetGateway();
+
 const doc = [
   "# Data verification",
   "",
@@ -664,7 +809,9 @@ const doc = [
   "## Not stored in the seed",
   "",
   "- Bank account number is not stored. Opening balance is stored on bank_01 (QR 85,000 as of ANCHOR_DATE minus 30 days).",
-  "- Subscription plans, payment-page totals, checkout product price, checkout drop-off and saved report packs are not in the seed, so those lists are empty.",
+  "- Subscription plans, payment-page totals, checkout product price and saved report packs are not in the seed, so those lists start empty. Checkout drop-off uses labelled sample analytics in lib/data/sample-checkout.ts.",
+  "- Shopify starts disconnected. Seed shopify transactions stay as historical rows; only new incoming after connect are tagged by the plugin.",
+  "- Extra bank connections are labelled sample and store opening QR 0 so cash on hand does not change.",
   "- Recurring invoice schedules, sync payloads and approval caps are not in the seed.",
   "- Other Flow billing tiers besides the current Starter plan are not in the seed.",
   "- Reports profit and loss, the four stat cards and the branch table use their own 30-day period. They do not follow the Home 24h / 7 days / 30 days toggle.",
