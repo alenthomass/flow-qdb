@@ -2,9 +2,18 @@
   "name": "flow-dashboard",
   "private": true,
   "scripts": {
+    "predev": "npm run data:emit",
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/check-root-logic.mjs && npm run data:emit && next build",
+    "data:emit": "node --experimental-strip-types --import ./scripts/register-typescript.mjs scripts/emit-flow-data.mjs",
+    "verify:data": "node --experimental-strip-types --import ./scripts/register-typescript.mjs scripts/verify-data.mjs",
     "start": "next start"
+  },
+  "devDependencies": {
+    "@types/node": "20.17.6",
+    "@types/react": "19.2.18",
+    "esbuild": "^0.25.9",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "next": "^15.5.2",

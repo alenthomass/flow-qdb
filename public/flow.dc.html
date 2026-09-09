@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="/support.js"></script>
+<script src="/flow-store.js"></script>
+<script src="/flow-data.js"></script>
 <template id="__bundler_thumbnail" data-bg-color="#F2F2F5">
   <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
     <rect width="1200" height="800" fill="#F2F2F5"/>
@@ -91,6 +93,9 @@
   [data-theme] *, [data-theme] *::before, [data-theme] *::after {
     transition: background-color .35s ease, background-image .35s ease, border-color .35s ease, color .3s ease, box-shadow .35s ease, fill .3s ease, stroke .3s ease;
   }
+  [data-theme] [data-match-fill] {
+    transition: width .55s cubic-bezier(.32,.72,0,1);
+  }
   [data-theme] input, [data-theme] button { transition: background-color .35s ease, border-color .35s ease, color .3s ease, box-shadow .2s ease, transform .15s ease, filter .15s ease; }
   @keyframes flowGlow { 0%,100% { opacity:.55; transform: translate3d(0,0,0) scale(1); } 50% { opacity:.85; transform: translate3d(0,-14px,0) scale(1.06); } }
   input, button, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
@@ -161,7 +166,7 @@
     <div style="{{ sty.railPlan }}">
       <div style="background:linear-gradient(170deg,var(--panel-3),var(--panel)); border:1px solid var(--line); border-radius:12px; padding:12px">
         <div style="font-size:11.5px; font-weight:700; letter-spacing:.04em; color:var(--ink-4)">FLOW PLAN</div>
-        <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:15.5px; font-weight:600; letter-spacing:-.02em; margin-top:4px">Starter · QR 39/mo</div>
+        <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:15.5px; font-weight:600; letter-spacing:-.02em; margin-top:4px">{{ plan.line }}</div>
         <div style="height:5px; background:var(--line); border-radius:3px; margin:9px 0 6px; overflow:hidden">
           <div style="height:100%; width:{{ usage.pct }}; background:linear-gradient(90deg,var(--accent),var(--accent-2)); border-radius:3px"></div>
         </div>
@@ -532,13 +537,13 @@
                 </div>
                 <div style="position:absolute; left:0; top:0; bottom:0; width:100%; overflow:hidden; pointer-events:none">
                   <sc-for list="{{ chart.gridVals }}" as="g" hint-placeholder-count="3">
-                    <span style="position:absolute; left:0; top:{{ g.top }}; transform:translateY(-125%); font-size:9.5px; font-weight:600; color:rgba(255,255,255,.30); letter-spacing:.03em">{{ g.label }}</span>
+                    <span style="position:absolute; left:16px; top:{{ g.top }}; transform:translateY(-125%); font-size:9.5px; font-weight:600; color:rgba(255,255,255,.30); letter-spacing:.03em">{{ g.label }}</span>
                   </sc-for>
                 </div>
               </div>
               <div style="position:relative; display:flex; justify-content:space-between; margin-top:10px; padding:0 26px">
                 <sc-for list="{{ chart.labels }}" as="l" hint-placeholder-count="7">
-                  <span style="font-size:11px; color:rgba(255,255,255,.5); font-weight:600">{{ l.t }}</span>
+                  <span style="font-size:11px; color:rgba(255,255,255,.5); font-weight:600; {{ l.axisStyle }}">{{ l.t }}</span>
                 </sc-for>
               </div>
             </div>
@@ -566,7 +571,9 @@
                     <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="m4 10.2 4.2 4.2L16.5 5.6" stroke="var(--on-block)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                   </span>
                   <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:15.5px; font-weight:600; letter-spacing:-.02em">Matching Status</div>
-                  <div style="margin-left:auto; font-size:12.5px; font-weight:600; color:var(--ink-4)">{{ match.open }} open</div>
+                  <sc-if value="{{ match.hasOpen }}">
+                    <div style="margin-left:auto; font-size:12.5px; font-weight:600; color:var(--ink-4)">{{ match.openLabel }}</div>
+                  </sc-if>
                 </div>
                 <div style="margin-top:20px">
                   <div style="display:flex; align-items:flex-end; gap:12px">
@@ -575,19 +582,21 @@
                       <div style="font-size:38px; font-weight:700; letter-spacing:-.04em; line-height:1; margin-top:8px">{{ match.pctText }}</div>
                     </div>
                     <div style="margin-left:auto; text-align:right">
-                      <div style="font-size:11px; font-weight:650; color:var(--ink-5); letter-spacing:.05em">THIS MONTH</div>
+                      <div style="font-size:11px; font-weight:650; color:var(--ink-5); letter-spacing:.05em">{{ matchLabel }}</div>
                       <div style="font-size:13px; font-weight:650; color:var(--ink-2); margin-top:6px">{{ match.matched }} of {{ match.totalItems }}</div>
                     </div>
                   </div>
                   <div style="height:10px; background:var(--chip); border-radius:6px; margin-top:18px; overflow:hidden">
-                    <div style="height:100%; width:{{ match.pctText }}; background:linear-gradient(90deg,var(--ink-5) 0%,var(--ink-2) 55%,var(--ink) 100%); border-radius:6px"></div>
+                    <div data-match-fill style="height:100%; width:{{ match.pctText }}; background:linear-gradient(90deg,var(--ink-5) 0%,var(--ink-2) 55%,var(--ink) 100%); border-radius:6px; transition:width .55s cubic-bezier(.32,.72,0,1)"></div>
                   </div>
                   <div style="display:flex; align-items:center; gap:10px; margin-top:16px">
-                    <span style="font-size:12px; color:var(--ink-4)">{{ match.open }} still need a look</span>
-                    <button onClick="{{ h.goMatching }}" style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 8px 18px -10px rgba(0,0,0,.5); transition:transform .15s ease, box-shadow .15s ease, filter .15s ease; padding:9px 15px; border-radius:9px">
-                      Review
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5 8 6l-4 3.5" stroke="var(--on-block)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </button>
+                    <span style="font-size:12px; color:var(--ink-4)">{{ match.look }}</span>
+                    <sc-if value="{{ match.hasOpen }}">
+                      <button onClick="{{ h.goMatching }}" style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 8px 18px -10px rgba(0,0,0,.5); transition:transform .15s ease, box-shadow .15s ease, filter .15s ease; padding:9px 15px; border-radius:9px">
+                        Review
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5 8 6l-4 3.5" stroke="var(--on-block)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                      </button>
+                    </sc-if>
                   </div>
                 </div>
               </div>
@@ -617,7 +626,7 @@
               </div>
             </div>
 
-            <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px">
+            <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px; display:flex; flex-direction:column; height:100%">
               <div style="display:flex; align-items:center; gap:9px">
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Needs Your Attention</div>
                 <sc-if value="{{ att.any }}">
@@ -644,7 +653,7 @@
                 </div>
               </sc-if>
               <sc-if value="{{ att.none }}">
-                <div style="text-align:center; padding:34px 10px">
+                <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:34px 10px">
                   <div style="width:44px; height:44px; margin:0 auto; border-radius:14px; background:var(--accent-soft); border:1px solid var(--accent-line); display:flex; align-items:center; justify-content:center">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="m5 10.5 3.4 3.4L15 6.8" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                   </div>
@@ -672,9 +681,9 @@
                   </div>
                 </div>
                 <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:20px">
-                  <div style="background:var(--panel-2); border:1px solid var(--chip); border-radius:13px; padding:14px"><div style="font-size:11.5px; color:var(--ink-4); font-weight:600">This month</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:5px">QR 38,410</div></div>
-                  <div style="background:var(--panel-2); border:1px solid var(--chip); border-radius:13px; padding:14px"><div style="font-size:11.5px; color:var(--ink-4); font-weight:600">Settling</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:5px">QR 6,300</div></div>
-                  <div style="background:var(--panel-2); border:1px solid var(--chip); border-radius:13px; padding:14px"><div style="font-size:11.5px; color:var(--ink-4); font-weight:600">Success rate</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:5px">96.2%</div></div>
+                  <div style="background:var(--panel-2); border:1px solid var(--chip); border-radius:13px; padding:14px"><div style="font-size:11.5px; color:var(--ink-4); font-weight:600">This month</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:5px">{{ gateways.skipcash.month }}</div></div>
+                  <div style="background:var(--panel-2); border:1px solid var(--chip); border-radius:13px; padding:14px"><div style="font-size:11.5px; color:var(--ink-4); font-weight:600">Settling</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:5px">{{ gateways.skipcash.settling }}</div></div>
+                  <div style="background:var(--panel-2); border:1px solid var(--chip); border-radius:13px; padding:14px"><div style="font-size:11.5px; color:var(--ink-4); font-weight:600">Settled share</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:5px">{{ gateways.skipcash.success }}</div></div>
                 </div>
                 <div style="margin-top:22px; padding-top:20px; border-top:1px solid var(--divider)">
                   <div style="font-family:'Clash Display','Urbanist',sans-serif; font-size:15px; font-weight:600; letter-spacing:-.02em">How your payment pages look</div>
@@ -760,9 +769,9 @@
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Payment methods, best first</div>
                 <div style="font-size:12.5px; color:var(--ink-4); margin-top:5px">We show each customer the method they're most likely to use.</div>
                 <div style="display:flex; flex-direction:column; gap:9px; margin-top:16px">
-                  <div style="display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:12px; padding:13px 14px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:12px; color:var(--ink-5)">01</span><span style="font-size:13.5px; font-weight:600; flex:1">Apple Pay</span><span style="font-size:11.5px; color:var(--ink-2); font-weight:650">62% of visitors</span></div>
-                  <div style="display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:12px; padding:13px 14px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:12px; color:var(--ink-5)">02</span><span style="font-size:13.5px; font-weight:600; flex:1">Debit / credit card</span><span style="font-size:11.5px; color:var(--ink-4); font-weight:600">31%</span></div>
-                  <div style="display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:12px; padding:13px 14px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:12px; color:var(--ink-5)">03</span><span style="font-size:13.5px; font-weight:600; flex:1">Google Pay</span><span style="font-size:11.5px; color:var(--ink-4); font-weight:600">7%</span></div>
+                  <div style="display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:12px; padding:13px 14px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:12px; color:var(--ink-5)">01</span><span style="font-size:13.5px; font-weight:600; flex:1">Apple Pay</span></div>
+                  <div style="display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:12px; padding:13px 14px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:12px; color:var(--ink-5)">02</span><span style="font-size:13.5px; font-weight:600; flex:1">Debit / credit card</span></div>
+                  <div style="display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:12px; padding:13px 14px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:12px; color:var(--ink-5)">03</span><span style="font-size:13.5px; font-weight:600; flex:1">Google Pay</span></div>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:10px; margin-top:18px; padding-top:16px; border-top:1px solid var(--divider)">
                   <div style="display:flex; align-items:center; gap:12px">
@@ -778,11 +787,11 @@
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px">
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Where people drop off</div>
                 <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px">
-                  <div><div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600"><span>Opened checkout</span><span>1,240</span></div><div style="height:9px; background:var(--divider); border-radius:5px; margin-top:6px"><div style="height:100%; width:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); border-radius:5px"></div></div></div>
-                  <div><div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600"><span>Entered details</span><span>884</span></div><div style="height:9px; background:var(--divider); border-radius:5px; margin-top:6px"><div style="height:100%; width:71%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); border-radius:5px"></div></div></div>
-                  <div><div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600"><span>Paid</span><span>803</span></div><div style="height:9px; background:var(--divider); border-radius:5px; margin-top:6px"><div style="height:100%; width:65%; background:linear-gradient(90deg,var(--pos),var(--pos-2)); border-radius:5px"></div></div></div>
+                  <div><div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600"><span>Opened checkout</span></div><div style="height:9px; background:var(--divider); border-radius:5px; margin-top:6px"></div></div>
+                  <div><div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600"><span>Entered details</span></div><div style="height:9px; background:var(--divider); border-radius:5px; margin-top:6px"></div></div>
+                  <div><div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600"><span>Paid</span></div><div style="height:9px; background:var(--divider); border-radius:5px; margin-top:6px"></div></div>
                 </div>
-                <div style="margin-top:18px; background:linear-gradient(165deg,var(--panel-3),var(--panel)); border:1px solid var(--line); border-radius:12px; padding:13px; font-size:12.5px; color:var(--ink-3); line-height:1.5">81 people entered details but didn't finish. Turning on retry-after-decline usually recovers about a third of these.</div>
+                <div style="margin-top:18px; background:linear-gradient(165deg,var(--panel-3),var(--panel)); border:1px solid var(--line); border-radius:12px; padding:13px; font-size:12.5px; color:var(--ink-3); line-height:1.5">Checkout drop-off is not stored for this merchant.</div>
               </div>
             </div>
           </sc-if>
@@ -928,7 +937,7 @@
                     </div>
                     <div style="display:flex; align-items:center; gap:13px">
                       <div style="width:52px; height:52px; flex:0 0 52px; border-radius:13px; border:1px dashed var(--dash); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:650; color:var(--ink-5); cursor:pointer; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)" style-hover="border-color:var(--ink-5); color:var(--ink-3)">Logo</div>
-                      <div style="font-family:'Clash Display','Urbanist',sans-serif; font-size:19px; font-weight:600; letter-spacing:-.025em">Desert Bloom</div>
+                      <div style="font-family:'Clash Display','Urbanist',sans-serif; font-size:19px; font-weight:600; letter-spacing:-.025em">{{ me.business }}</div>
                     </div>
 
                     <input value="{{ pp.title }}" onChange="{{ pp.setTitle }}" placeholder="Enter page title here" style="width:100%; margin-top:26px; padding:10px 12px; margin-left:-12px; border:1px solid transparent; border-radius:10px; outline:none; background:transparent; font-family:'Clash Display','Urbanist',sans-serif; font-size:32px; font-weight:600; letter-spacing:-.035em; color:var(--ink); transition:background .16s ease, border-color .16s ease" style-hover="background:var(--panel-2); border-color:var(--line)" style-focus="background:var(--panel-2); border-color:var(--ink-6)">
@@ -1014,7 +1023,7 @@
                     </div>
 
                     <sc-if value="{{ pp.termsOn }}">
-                      <div style="font-size:12px; color:var(--ink-5); line-height:1.65; margin-top:14px">By paying you agree to share these details with Desert Bloom, in line with applicable law.</div>
+                      <div style="font-size:12px; color:var(--ink-5); line-height:1.65; margin-top:14px">By paying you agree to share these details with {{ me.business }}, in line with applicable law.</div>
                     </sc-if>
 
                     <div style="margin-top:34px; padding-top:22px; border-top:1px solid var(--divider)">
@@ -1235,7 +1244,7 @@
                   <span style="text-align:center"><span style="{{ l.chip }}">{{ l.status }}</span></span>
                   <span style="font-size:12.5px; color:var(--ink-3); text-align:center">{{ l.created }}</span>
                   <span style="font-size:12.5px; color:var(--ink-3); text-align:center">{{ l.uses }}</span>
-                  <button onClick="{{ h.copy }}" style="font-size:12px; font-weight:600; color:var(--accent); text-align:center">Copy</button>
+                  <button onClick="{{ l.copy }}" style="font-size:12px; font-weight:600; color:var(--accent); text-align:center">Copy</button>
                 </div>
               </sc-for>
             </div>
@@ -1292,13 +1301,12 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start">
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px">
                 <div style="display:flex; align-items:center; gap:12px">
-                  <div style="width:42px; height:42px; border-radius:12px; background:var(--ink-block); color:var(--on-block); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700">DB</div>
-                  <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em">Doha Bank, Business</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:12.5px; color:var(--ink-4); margin-top:2px">•••• •••• 4471</div></div>
+                  <div style="width:42px; height:42px; border-radius:12px; background:var(--ink-block); color:var(--on-block); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700">{{ bank.initials }}</div>
+                  <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em">{{ bank.name }}</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:12.5px; color:var(--ink-4); margin-top:2px">{{ bank.note }}</div></div>
                   <span style="margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected</span>
                 </div>
                 <div style="display:flex; gap:22px; margin-top:18px; padding-top:16px; border-top:1px solid var(--divider)">
-                  <div><div style="font-size:11.5px; color:var(--ink-4); font-weight:600">Balance</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:3px">QR 84,220.00</div></div>
-                  <div><div style="font-size:11.5px; color:var(--ink-4); font-weight:600">Last sync</div><div style="font-size:14px; font-weight:600; margin-top:6px">Today, 06:00</div></div>
+                  <div><div style="font-size:11.5px; color:var(--ink-4); font-weight:600">Bank activity</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:3px">{{ bank.activity }}</div></div>
                 </div>
                 <div style="margin-top:16px; background:linear-gradient(165deg,var(--panel-3),var(--panel)); border:1px solid var(--line); border-radius:12px; padding:12px; font-size:12.5px; color:var(--ink-3); line-height:1.5">Sample data. Live bank feeds arrive in a later phase.</div>
               </div>
@@ -1476,10 +1484,9 @@
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px">
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">What we pull out</div>
                 <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px">
-                  <div style="display:flex; justify-content:space-between; padding:11px 13px; background:var(--panel-2); border:1px solid var(--chip); border-radius:11px"><span style="font-size:12.5px; color:var(--ink-3)">Vendor</span><span style="font-size:13px; font-weight:600">Kahramaa</span></div>
-                  <div style="display:flex; justify-content:space-between; padding:11px 13px; background:var(--panel-2); border:1px solid var(--chip); border-radius:11px"><span style="font-size:12.5px; color:var(--ink-3)">Amount</span><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:13px; font-weight:600">QR 1,180.00</span></div>
-                  <div style="display:flex; justify-content:space-between; padding:11px 13px; background:var(--panel-2); border:1px solid var(--chip); border-radius:11px"><span style="font-size:12.5px; color:var(--ink-3)">Date</span><span style="font-size:13px; font-weight:600">2 Aug 2026</span></div>
-                  <div style="display:flex; justify-content:space-between; padding:11px 13px; background:var(--panel-2); border:1px solid var(--chip); border-radius:11px"><span style="font-size:12.5px; color:var(--ink-3)">Line items</span><span style="font-size:13px; font-weight:600">3 found</span></div>
+                  <div style="display:flex; justify-content:space-between; padding:11px 13px; background:var(--panel-2); border:1px solid var(--chip); border-radius:11px"><span style="font-size:12.5px; color:var(--ink-3)">Vendor</span><span style="font-size:13px; font-weight:600">{{ scan.vendor }}</span></div>
+                  <div style="display:flex; justify-content:space-between; padding:11px 13px; background:var(--panel-2); border:1px solid var(--chip); border-radius:11px"><span style="font-size:12.5px; color:var(--ink-3)">Amount</span><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:13px; font-weight:600">{{ scan.amount }}</span></div>
+                  <div style="display:flex; justify-content:space-between; padding:11px 13px; background:var(--panel-2); border:1px solid var(--chip); border-radius:11px"><span style="font-size:12.5px; color:var(--ink-3)">Date</span><span style="font-size:13px; font-weight:600">{{ scan.date }}</span></div>
                 </div>
                 <div style="margin-top:16px; font-size:12px; color:var(--ink-4); line-height:1.5">Blurry photo? We'll flag it for manual entry instead of guessing.</div>
               </div>
@@ -1490,11 +1497,11 @@
             <div style="display:grid; grid-template-columns:1fr 1.4fr; gap:22px; align-items:start">
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px">
                 <div style="display:flex; align-items:center; gap:12px">
-                  <div style="width:42px; height:42px; border-radius:12px; background:var(--ink-block); color:var(--on-block); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700">DB</div>
-                  <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Doha Bank, Business</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:12px; color:var(--ink-4); margin-top:2px">•••• 4471</div></div>
+                  <div style="width:42px; height:42px; border-radius:12px; background:var(--ink-block); color:var(--on-block); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700">{{ bank.initials }}</div>
+                  <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">{{ bank.name }}</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:12px; color:var(--ink-4); margin-top:2px">{{ bank.note }}</div></div>
                 </div>
-                <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:26px; font-weight:600; margin-top:18px">QR 84,220.00</div>
-                <div style="font-size:12.5px; color:var(--ink-4); margin-top:4px">Last sync today, 06:00</div>
+                <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:26px; font-weight:600; margin-top:18px">{{ bank.activity }}</div>
+                <div style="font-size:12.5px; color:var(--ink-4); margin-top:4px">Settled bank rows only</div>
                 <div style="margin-top:16px; display:inline-flex; font-size:11px; font-weight:650; color:var(--ink-3); background:linear-gradient(165deg,var(--panel-3),var(--panel)); border:1px solid var(--line); padding:5px 10px; border-radius:7px">Sample data, not a live feed</div>
               </div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); overflow:hidden">
@@ -1561,7 +1568,9 @@
                     </div>
                   </div>
                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+                    <sc-if value="{{ showVat }}">
                     <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Tax %</div><input value="{{ nv.tax }}" onChange="{{ nv.setTax }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif; background:var(--panel)" style-focus="border-color:var(--ink-6)"></label>
+                    </sc-if>
                     <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Due date<span style="color:var(--neg); margin-left:3px">*</span></div><input type="date" value="{{ nv.due }}" onChange="{{ nv.setDue }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel); color:var(--ink)" style-focus="border-color:var(--ink-6)"></label>
                   </div>
                   <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Notes</div><textarea value="{{ nv.notes }}" onChange="{{ nv.setNotes }}" placeholder="Thanks for your business." rows="3" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; resize:vertical; background:var(--panel)" style-focus="border-color:var(--ink-6)"></textarea></label>
@@ -1581,11 +1590,13 @@
                     <sc-for list="{{ nv.preview }}" as="pv" hint-placeholder-count="2">
                       <div style="display:flex; justify-content:space-between; gap:12px; font-size:12.5px"><span style="color:var(--ink-3); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ pv.label }}</span><span style="font-family:'Urbanist','Cairo',sans-serif; flex:0 0 auto">{{ pv.amt }}</span></div>
                     </sc-for>
+                    <sc-if value="{{ showVat }}">
                     <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:var(--ink-3)">Tax</span><span style="font-family:'Urbanist','Cairo',sans-serif">{{ nv.taxAmt }}</span></div>
+                    </sc-if>
                   </div>
                   <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:14px; border-top:1px solid var(--divider)"><span style="font-size:13px; font-weight:650">Total due</span><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600">{{ nv.total }}</span></div>
                   <div style="margin-top:16px; background:var(--ink-block); color:var(--on-block); text-align:center; padding:12px; border-radius:11px; font-size:13px; font-weight:650">Pay this invoice</div>
-                  <div style="text-align:center; font-size:10.5px; color:var(--ink-5); margin-top:9px">Peppol-ready e-invoice · Tax ID 0100-2394-88</div>
+                  <div style="text-align:center; font-size:10.5px; color:var(--ink-5); margin-top:9px">Peppol-ready e-invoice · {{ profile.taxRegistrationNumber }}</div>
                 </div>
               </div>
             </div>
@@ -1650,30 +1661,19 @@
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px">
                   <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Every</div><input defaultValue="Month" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
-                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Ends</div><input defaultValue="After 12 sends" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
+                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Ends</div><input placeholder="After how many sends" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
                 </div>
                 <div style="margin-top:18px; padding-top:16px; border-top:1px solid var(--divider)">
                   <div style="font-size:12px; font-weight:650; color:var(--ink-4)">NEXT THREE SENDS</div>
                   <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px">
-                    <div style="display:flex; justify-content:space-between; font-size:12.5px; padding:10px 12px; background:var(--panel-2); border:1px solid var(--chip); border-radius:10px"><span>1 Sep 2026</span><span style="font-family:'Urbanist','Cairo',sans-serif">QR 3,500.00</span></div>
-                    <div style="display:flex; justify-content:space-between; font-size:12.5px; padding:10px 12px; background:var(--panel-2); border:1px solid var(--chip); border-radius:10px"><span>1 Oct 2026</span><span style="font-family:'Urbanist','Cairo',sans-serif">QR 3,500.00</span></div>
-                    <div style="display:flex; justify-content:space-between; font-size:12.5px; padding:10px 12px; background:var(--panel-2); border:1px solid var(--chip); border-radius:10px"><span>1 Nov 2026</span><span style="font-family:'Urbanist','Cairo',sans-serif">QR 3,500.00</span></div>
+                    <div style="font-size:12.5px; color:var(--ink-4); padding:10px 12px; background:var(--panel-2); border:1px solid var(--chip); border-radius:10px">No recurring invoices are stored.</div>
                   </div>
                 </div>
               </div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px">
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Running now</div>
                 <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px">
-                  <div style="border:1px solid var(--chip); border-radius:12px; padding:14px">
-                    <div style="display:flex; align-items:center; gap:10px"><span style="font-size:13px; font-weight:650; flex:1">Qatar Retail Group, retainer</span><span style="font-size:12.5px; font-weight:600; color:var(--ink-2)">Active</span></div>
-                    <div style="font-size:12px; color:var(--ink-4); margin-top:6px">Monthly · next 1 Sep · 8 of 12 sent</div>
-                    <div style="display:flex; gap:8px; margin-top:11px"><button onClick="{{ h.note }}" data-note="Plan paused" style="font-size:12px; font-weight:600; padding:7px 12px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light)">Pause</button><button onClick="{{ h.note }}" data-note="Plan cancelled" style="font-size:12px; font-weight:600; padding:7px 12px; border-radius:8px; border:1px solid var(--line); color:var(--neg)">Cancel</button></div>
-                  </div>
-                  <div style="border:1px solid var(--chip); border-radius:12px; padding:14px">
-                    <div style="display:flex; align-items:center; gap:10px"><span style="font-size:13px; font-weight:650; flex:1">Doha Events, venue fee</span><span style="font-size:12.5px; font-weight:600; color:var(--ink-4)">Paused</span></div>
-                    <div style="font-size:12px; color:var(--ink-4); margin-top:6px">Quarterly · paused 12 Jul</div>
-                    <div style="display:flex; gap:8px; margin-top:11px"><button onClick="{{ h.note }}" data-note="Plan resumed" style="font-size:12px; font-weight:600; padding:7px 12px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light)">Resume</button></div>
-                  </div>
+                  <div style="font-size:12.5px; color:var(--ink-4)">Nothing is running on a schedule.</div>
                 </div>
               </div>
             </div>
@@ -1751,7 +1751,7 @@
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px">
                 <div style="display:flex; align-items:center; gap:12px">
                   <div style="width:42px; height:42px; border-radius:12px; background:var(--neg-soft); color:var(--neg); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700">ZB</div>
-                  <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em">Zoho Books</div><div style="font-size:12.5px; color:var(--ink-4)">books.zoho.com · Desert Bloom WLL</div></div>
+                  <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em">Zoho Books</div><div style="font-size:12.5px; color:var(--ink-4)">books.zoho.com · {{ me.business }}</div></div>
                   <span style="margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid var(--divider)">
@@ -1762,6 +1762,9 @@
                   <button onClick="{{ h.syncNow }}" style-hover="filter:brightness(1.12); transform:translateY(-1px)" style="font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 16px; border-radius:9px">Sync now</button>
                   <button onClick="{{ h.note }}" data-note="Disconnect is sample-only in this sandbox" style="font-size:13px; font-weight:600; padding:10px 16px; border-radius:10px; border:1px solid var(--line); background:var(--btn-light); color:var(--neg)">Disconnect</button>
                 </div>
+                <sc-if value="{{ zoho.hasLast }}">
+                  <div style="margin-top:14px; font-size:12.5px; color:var(--ink-3)">{{ zoho.line }}</div>
+                </sc-if>
               </div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); overflow:hidden">
                 <div style="padding:16px 20px; border-bottom:1px solid var(--divider); font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Sync log</div>
@@ -1785,15 +1788,24 @@
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Export for Tally</div>
                 <div style="font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px">Download an XML file and import it into Tally. Two-way live sync needs a desktop connector, that comes later.</div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px">
-                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">From</div><input defaultValue="1 Aug 2026" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
-                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">To</div><input defaultValue="9 Aug 2026" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
+                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">From</div><input value="{{ periodFrom }}" onChange="{{ F.periodFrom }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
+                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">To</div><input value="{{ periodTo }}" onChange="{{ F.periodTo }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
                 </div>
                 <button onClick="{{ h.tallyExport }}" style="margin-top:16px; font-size:13px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:11px 18px; border-radius:9px">Export XML</button>
               </div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); overflow:hidden">
                 <div style="padding:16px 20px; border-bottom:1px solid var(--divider); font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Export history</div>
-                <div style="display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid var(--divider-2)"><div style="flex:1"><div style="font-size:12.5px; font-weight:600">July 2026</div><div style="font-size:11.5px; color:var(--ink-4); margin-top:2px">1 Aug, 09:12 · 312 entries</div></div><button onClick="{{ h.note }}" data-note="Download queued" style="font-size:12px; font-weight:600; color:var(--accent)">Download</button></div>
-                <div style="display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid var(--divider-2)"><div style="flex:1"><div style="font-size:12.5px; font-weight:600">June 2026</div><div style="font-size:11.5px; color:var(--ink-4); margin-top:2px">1 Jul, 08:40 · 288 entries</div></div><button onClick="{{ h.note }}" data-note="Download queued" style="font-size:12px; font-weight:600; color:var(--accent)">Download</button></div>
+                <sc-if value="{{ exports.none }}">
+                  <div style="padding:16px 20px; font-size:12.5px; color:var(--ink-4)">No export history is stored.</div>
+                </sc-if>
+                <sc-if value="{{ exports.any }}">
+                  <sc-for list="{{ exports.rows }}" as="ex" hint-placeholder-count="3">
+                    <button onClick="{{ ex.open }}" style="width:100%; display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid var(--divider-2); text-align:left; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)" style-hover="background:var(--panel-2)">
+                      <div style="flex:1"><div style="font-size:12.5px; font-weight:600">{{ ex.target }}</div><div style="font-size:11.5px; color:var(--ink-4); margin-top:2px">{{ ex.when }} · {{ ex.itemsT }} items</div></div>
+                      <span style="{{ ex.chip }}">{{ ex.status }}</span>
+                    </button>
+                  </sc-for>
+                </sc-if>
               </div>
             </div>
             <button onClick="{{ actGo.sync }}" style="display:inline-flex; align-items:center; gap:7px; margin-top:16px; padding:2px 0; background:transparent; border:none; font-size:12.5px; font-weight:600; color:var(--ink-4); transition:color .16s ease" style-hover="color:var(--ink)">
@@ -1807,8 +1819,8 @@
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px">
                 <div style="display:flex; align-items:center; gap:10px"><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Tax &amp; e-invoicing</div><span style="font-size:12.5px; font-weight:600; color:var(--pos)">E-invoicing ready</span></div>
                 <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px">
-                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Tax registration number</div><input defaultValue="0100-2394-88" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif"></label>
-                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Default tax rate</div><input defaultValue="0%" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
+                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Tax registration number</div><input value="{{ profile.taxRegistrationNumber }}" placeholder="Not registered" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif"></label>
+                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Default tax rate</div><input value="{{ rates.vat }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
                 </div>
               </div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px">
@@ -1864,10 +1876,10 @@
           <sc-if value="{{ ct.banks }}">
             <div style="display:flex; flex-direction:column; gap:12px">
             <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:18px 20px">
-              <div style="width:40px; height:40px; flex:0 0 40px; border-radius:11px; background:var(--ink-block); color:var(--on-block); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11.5px">DB</div>
+              <div style="width:40px; height:40px; flex:0 0 40px; border-radius:11px; background:var(--ink-block); color:var(--on-block); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11.5px">{{ bank.initials }}</div>
               <div style="flex:1 1 200px; min-width:0">
-                <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em">Doha Bank, Business</div>
-                <div style="font-size:12.5px; color:var(--ink-4); margin-top:2px">•••• 4471 · synced today 06:00</div>
+                <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em">{{ bank.name }}</div>
+                <div style="font-size:12.5px; color:var(--ink-4); margin-top:2px">{{ bank.note }}</div>
               </div>
               <span style="flex:0 0 auto; font-size:12px; color:var(--ink-4)">Sample data. Live bank feeds arrive in a later phase.</span>
               <button onClick="{{ connMan.bank }}" style="flex:0 0 auto; font-size:12px; font-weight:650; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)" style-hover="filter:brightness(.97)">Manage</button>
@@ -1920,7 +1932,7 @@
               </sc-for>
             </div>
             <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:26px; margin-top:18px">
-              <div style="font-size:16.5px; font-weight:700; letter-spacing:-.02em">Profit &amp; loss, this month</div>
+              <div style="font-size:16.5px; font-weight:700; letter-spacing:-.02em">Profit &amp; loss, {{ pnl.periodLabel }}</div>
               <div style="display:flex; flex-direction:column; margin-top:16px">
                 <sc-for list="{{ pnl.rows }}" as="r" hint-placeholder-count="6">
                   <div style="display:flex; align-items:center; gap:14px; padding:13px 0; border-bottom:1px solid var(--divider-2)">
@@ -1943,7 +1955,7 @@
           <sc-if value="{{ rt.cash }}">
             <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-bottom:18px">
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px"><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">CASH ON HAND</div><div style="font-size:22px; font-weight:700; letter-spacing:-.025em; margin-top:6px">{{ runway.cash }}</div></div>
-              <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px"><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">AVG NET BURN / MO</div><div style="font-size:22px; font-weight:700; letter-spacing:-.025em; margin-top:6px">{{ runway.burn }}</div></div>
+              <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px"><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">{{ runway.burnLabel }}</div><div style="font-size:22px; font-weight:700; letter-spacing:-.025em; margin-top:6px">{{ runway.burn }}</div></div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px"><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">RUNWAY</div><div style="font-size:22px; font-weight:700; letter-spacing:-.025em; margin-top:6px; color:var(--pos)">{{ runway.months }}</div><div style="font-size:12px; color:var(--ink-4); margin-top:6px">{{ runway.until }}</div></div>
             </div>
             <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:26px">
@@ -1981,6 +1993,14 @@
                       <span style="font-size:11.5px; color:var(--ink-4); width:44px; text-align:right">{{ t.pct }}</span>
                     </button>
                   </sc-for>
+                  <sc-if value="{{ spend.hasRefunds }}">
+                    <div style="text-align:left; display:flex; align-items:center; gap:14px">
+                      <span style="font-size:13px; font-weight:600; width:96px; flex:0 0 96px">Refunds</span>
+                      <span style="flex:1; font-size:12px; color:var(--ink-4)">Not counted as spend</span>
+                      <span style="font-size:13px; font-weight:700; width:110px; text-align:right">{{ spend.refunds }}</span>
+                      <span style="font-size:11.5px; color:var(--ink-4); width:44px; text-align:right"></span>
+                    </div>
+                  </sc-if>
                 </div>
               </div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:24px">
@@ -2030,9 +2050,9 @@
             <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; align-items:start">
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:26px">
                 <div style="font-size:16.5px; font-weight:700; letter-spacing:-.02em">Accountant pack</div>
-                <div style="font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px">One download with everything your accountant asks for, Peppol-structured and ready to file.</div>
+                <div style="font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px">One download with everything your accountant asks for, structured and ready to file.</div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px">
-                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Period</div><input defaultValue="July 2026" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13.5px; background:var(--panel)"></label>
+                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Period</div><input value="{{ pack.period }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13.5px; background:var(--panel)"></label>
                   <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Format</div><input defaultValue="ZIP (PDF + CSV + XML)" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13.5px; background:var(--panel)"></label>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:10px; margin-top:18px">
@@ -2049,7 +2069,17 @@
               <div style="display:flex; flex-direction:column; gap:18px">
                 <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:24px">
                   <div style="font-size:16.5px; font-weight:700; letter-spacing:-.02em">Saved reports</div>
+                  <div style="font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px">Packs you download are saved here for 12 months.</div>
                   <div style="display:flex; flex-direction:column; gap:2px; margin-top:12px">
+                    <sc-if value="{{ empt.reports }}">
+                      <div style="display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--divider-2)">
+                        <div style="flex:1">
+                          <div style="height:12px; width:46%; max-width:168px; border-radius:4px; background:var(--chip)"></div>
+                          <div style="height:10px; width:34%; max-width:118px; border-radius:4px; background:var(--chip); margin-top:8px; opacity:.65"></div>
+                        </div>
+                        <span style="height:10px; width:32px; flex:0 0 32px; border-radius:4px; background:var(--chip)"></span>
+                      </div>
+                    </sc-if>
                     <sc-for list="{{ reports }}" as="r" hint-placeholder-count="3">
                       <button onClick="{{ r.open }}" style="width:100%; display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--divider-2); text-align:left">
                         <div style="flex:1"><div style="font-size:13px; font-weight:650">{{ r.name }}</div><div style="font-size:11.5px; color:var(--ink-4); margin-top:2px">{{ r.range }} · built {{ r.built }}</div></div>
@@ -2060,7 +2090,7 @@
                 </div>
                 <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:24px">
                   <div style="font-size:16.5px; font-weight:700; letter-spacing:-.02em">Send it monthly</div>
-                  <div style="font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px">We can email the pack to Rami Haddad on the 1st of every month.</div>
+                  <div style="font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px">We can email the pack to {{ pack.accountant }} on the 1st of every month.</div>
                   <button onClick="{{ h.copy }}" style="margin-top:14px; font-size:12.5px; font-weight:600; padding:9px 15px; border-radius:8px; border:1px solid var(--line); background:linear-gradient(170deg,var(--panel-3),var(--panel)); transition:background .15s ease, border-color .15s ease" style-hover="background:var(--panel-3); border-color:var(--ink-6)">Turn on monthly send</button>
                 </div>
               </div>
@@ -2072,7 +2102,7 @@
               <div style="display:flex; align-items:center; padding:18px 22px; border-bottom:1px solid var(--divider)">
                 <div style="font-size:16.5px; font-weight:700; letter-spacing:-.02em">Branch performance</div>
                 <div style="flex:1"></div>
-                <span style="font-size:12px; color:var(--ink-4)">Year to date</span>
+                <span style="font-size:12px; color:var(--ink-4)">{{ reportsLabel }}</span>
               </div>
               <div style="display:grid; grid-template-columns:1.3fr 1fr 1fr .8fr; gap:24px; padding:11px 22px; border-bottom:1px solid var(--divider); font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-5)">
                 <span>BRANCH</span><span style="text-align:right">REVENUE</span><span style="text-align:right">SHARE</span><span style="text-align:right">PEOPLE</span>
@@ -2399,12 +2429,12 @@
             <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:24px; max-width:720px">
               <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Business Profile</div>
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px">
-                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Business name</div><input defaultValue="Desert Bloom WLL" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
-                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Legal entity</div><input defaultValue="Limited Liability (WLL)" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
-                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Tax registration number</div><input defaultValue="0100-2394-88" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif"></label>
-                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Industry</div><input defaultValue="Retail &amp; e-commerce" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
-                <label style="grid-column:span 2"><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Address</div><input defaultValue="Building 12, Al Sadd, Doha, Qatar" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
-                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Currency</div><input defaultValue="QR, Qatari Riyal" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel)"></label>
+                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Business name</div><input value="{{ profile.businessName }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
+                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Legal entity</div><input value="{{ profile.legalEntity }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
+                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Tax registration number</div><input value="{{ profile.taxRegistrationNumber }}" placeholder="Not registered" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif"></label>
+                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Industry</div><input value="{{ profile.industry }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
+                <label style="grid-column:span 2"><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Address</div><input value="{{ profile.address }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
+                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Currency</div><input value="{{ profile.currency }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel)"></label>
               </div>
               <button onClick="{{ h.note }}" data-note="Changes saved" style="margin-top:20px; font-size:13px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:11px 20px; border-radius:9px">Save changes</button>
             </div>
@@ -2481,20 +2511,18 @@
           <sc-if value="{{ st.billing }}">
             <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px">
               <div style="background:var(--surface); border:1.5px solid var(--accent); border-radius:11px; padding:20px">
-                <div style="display:flex; align-items:center; gap:8px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Starter</span><span style="font-size:10.5px; font-weight:650; color:var(--accent); background:var(--accent-soft); padding:3px 8px; border-radius:6px">CURRENT</span></div>
-                <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:24px; font-weight:600; margin-top:10px">QR 39<span style="font-size:12px; color:var(--ink-4)">/mo</span></div>
-                <div style="font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5">5,000 transactions, 1 gateway, 3 users</div>
+                <div style="display:flex; align-items:center; gap:8px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">{{ plan.tier }}</span><span style="font-size:10.5px; font-weight:650; color:var(--accent); background:var(--accent-soft); padding:3px 8px; border-radius:6px">CURRENT</span></div>
+                <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:24px; font-weight:600; margin-top:10px">{{ plan.price }}<span style="font-size:12px; color:var(--ink-4)">/mo</span></div>
+                <div style="font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5">{{ plan.limitLabel }}</div>
               </div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px">
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Free</div>
-                <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:24px; font-weight:600; margin-top:10px">QR 0<span style="font-size:12px; color:var(--ink-4)">/mo</span></div>
-                <div style="font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5">200 transactions, 1 user</div>
+                <div style="font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5">Not on this account</div>
                 <button onClick="{{ h.note }}" data-note="Downgrade is sample-only in this sandbox" style="margin-top:14px; width:100%; font-size:12.5px; font-weight:600; padding:9px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light)">Downgrade</button>
               </div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px">
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Growth</div>
-                <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:24px; font-weight:600; margin-top:10px">QR 99<span style="font-size:12px; color:var(--ink-4)">/mo</span></div>
-                <div style="font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5">Unlimited transactions, payroll, 10 users</div>
+                <div style="font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5">Not on this account</div>
                 <button onClick="{{ h.note }}" data-note="Upgrade is sample-only in this sandbox" style="margin-top:14px; width:100%; font-size:12.5px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:9px; border-radius:9px">Upgrade</button>
               </div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px">
@@ -2523,7 +2551,7 @@
                   <span style="margin-left:auto; {{ det.o.chip }}">{{ det.o.status }}</span>
                 </div>
                 <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:24px; padding-top:20px; border-top:1px solid var(--divider)">
-                  <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">DATE</div><div style="font-size:13.5px; font-weight:600; margin-top:5px">{{ det.o.d }} 2026</div></div>
+                  <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">DATE</div><div style="font-size:13.5px; font-weight:600; margin-top:5px">{{ det.o.d }}</div></div>
                   <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">SOURCE</div><div style="font-size:13.5px; font-weight:600; margin-top:5px">{{ det.o.src }}</div></div>
                   <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">TAG</div><div style="font-size:13.5px; font-weight:600; margin-top:5px">{{ det.o.tag }}</div></div>
                   <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">MATCHED</div><div style="font-size:13.5px; font-weight:600; margin-top:5px; color:var(--ink-3)">Waiting for review</div></div>
@@ -2533,8 +2561,8 @@
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">What happened to this payment</div>
                 <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px">
                   <div style="display:flex; gap:12px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:11.5px; color:var(--ink-4); width:96px; flex:0 0 96px">09:41</span><span style="font-size:12.5px">Payment authorised by SkipCash</span></div>
-                  <div style="display:flex; gap:12px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:11.5px; color:var(--ink-4); width:96px; flex:0 0 96px">09:42</span><span style="font-size:12.5px">Matched to invoice automatically (94% confidence)</span></div>
-                  <div style="display:flex; gap:12px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:11.5px; color:var(--ink-4); width:96px; flex:0 0 96px">10:02</span><span style="font-size:12.5px">Confirmed by Noora Al-Ansari</span></div>
+                  <div style="display:flex; gap:12px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:11.5px; color:var(--ink-4); width:96px; flex:0 0 96px">09:42</span><span style="font-size:12.5px">Matched to invoice automatically</span></div>
+                  <div style="display:flex; gap:12px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:11.5px; color:var(--ink-4); width:96px; flex:0 0 96px">10:02</span><span style="font-size:12.5px">Confirmed by {{ ownerName }}</span></div>
                   <div style="display:flex; gap:12px"><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:11.5px; color:var(--ink-4); width:96px; flex:0 0 96px">06:00 +1</span><span style="font-size:12.5px">Pushed to Zoho Books</span></div>
                 </div>
               </div>
@@ -2548,7 +2576,9 @@
                   <div style="font-size:15px; font-weight:700; margin-top:3px">{{ det.o.client }}</div>
                   <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--divider); display:flex; flex-direction:column; gap:9px">
                     <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:var(--ink-3)">Subtotal</span><span style="font-family:'Urbanist','Cairo',sans-serif">{{ det.o.amt }}</span></div>
+                    <sc-if value="{{ showVat }}">
                     <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:var(--ink-3)">Tax</span><span style="font-family:'Urbanist','Cairo',sans-serif">{{ det.o.vat }}</span></div>
+                    </sc-if>
                   </div>
                   <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:14px; border-top:1px solid var(--divider)"><span style="font-size:13px; font-weight:650">Total</span><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:22px; font-weight:600">{{ det.o.total }}</span></div>
                   <div style="display:flex; gap:9px; margin-top:20px">
@@ -2580,8 +2610,19 @@
                 <div style="display:flex; align-items:flex-start"><div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:32px; font-weight:600">{{ det.o.amt }}</div><div style="font-size:14px; font-weight:600; margin-top:6px">{{ det.o.desc }}</div></div><span style="margin-left:auto; {{ det.o.chip }}">{{ det.o.status }}</span></div>
                 <div style="display:flex; align-items:center; gap:12px; margin-top:22px; padding:14px; background:var(--panel-2); border:1px solid var(--chip); border-radius:12px">
                   <span style="font-family:'Urbanist','Cairo',sans-serif; font-size:13px; flex:1">{{ det.o.url }}</span>
-                  <button onClick="{{ h.copy }}" style-hover="filter:brightness(1.12); transform:translateY(-1px)" style="font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:8px 14px; border-radius:8px">Copy</button>
+                  <button onClick="{{ det.o.copy }}" style-hover="filter:brightness(1.12); transform:translateY(-1px)" style="font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:8px 14px; border-radius:8px">Copy</button>
                 </div>
+                <sc-if value="{{ det.o.showSimulate }}">
+                  <div style="margin-top:18px; padding-top:16px; border-top:1px solid var(--divider)">
+                    <div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">SIMULATE PAYMENT</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px">
+                      <button onClick="{{ det.o.simSuccess }}" style="font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:8px 14px; border-radius:8px">Success</button>
+                      <button onClick="{{ det.o.simDecline }}" style="font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light)">Decline</button>
+                      <button onClick="{{ det.o.simTimeout }}" style="font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light)">Timeout</button>
+                      <button onClick="{{ det.o.simPartial }}" style="font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light)">Partial</button>
+                    </div>
+                  </div>
+                </sc-if>
                 <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:22px; padding-top:18px; border-top:1px solid var(--divider)">
                   <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">CREATED</div><div style="font-size:13.5px; font-weight:600; margin-top:5px">{{ det.o.created }}</div></div>
                   <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">EXPIRES</div><div style="font-size:13.5px; font-weight:600; margin-top:5px">{{ det.o.expiry }}</div></div>
@@ -2639,9 +2680,7 @@
                 <div style="margin-top:22px; padding-top:18px; border-top:1px solid var(--divider)">
                   <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:15.5px; font-weight:600; letter-spacing:-.02em">Billing history</div>
                   <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px">
-                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:var(--ink-3)">1 Aug 2026</span><span style="font-family:'Urbanist','Cairo',sans-serif">QR 350.00 · Paid</span></div>
-                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:var(--ink-3)">1 Jul 2026</span><span style="font-family:'Urbanist','Cairo',sans-serif">QR 350.00 · Paid</span></div>
-                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:var(--ink-3)">1 Jun 2026</span><span style="font-family:'Urbanist','Cairo',sans-serif; color:var(--neg)">QR 350.00 · Declined, retried</span></div>
+                    <div style="font-size:12.5px; color:var(--ink-4)">No charge history is stored.</div>
                   </div>
                 </div>
                 <div style="display:flex; gap:9px; margin-top:20px">
@@ -2732,9 +2771,7 @@
                 <div style="margin-top:22px; padding-top:18px; border-top:1px solid var(--divider)">
                   <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:15.5px; font-weight:600; letter-spacing:-.02em">Line by line</div>
                   <div style="display:flex; flex-direction:column; gap:9px; margin-top:12px">
-                    <div style="display:flex; gap:12px; font-size:12.5px; align-items:center"><span style="color:var(--ink-2); font-weight:650; width:60px">OK</span><span style="flex:1">INV-0142 → Zoho invoice 8841</span></div>
-                    <div style="display:flex; gap:12px; font-size:12.5px; align-items:center"><span style="color:var(--ink-2); font-weight:650; width:60px">OK</span><span style="flex:1">QR 4,820 payment → Zoho receipt 2210</span></div>
-                    <div style="display:flex; gap:12px; font-size:12.5px; align-items:center"><span style="color:var(--neg); font-weight:650; width:60px">ERROR</span><span style="flex:1">QR 890 expense, tag “Supplies” not found in Zoho</span><button onClick="{{ h.syncNow }}" style="font-size:12px; font-weight:600; color:var(--accent)">Retry</button></div>
+                    <div style="font-size:12.5px; color:var(--ink-4)">No sync payload is stored.</div>
                   </div>
                 </div>
               </div>
@@ -2744,7 +2781,7 @@
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:26px">
                 <div style="display:flex; align-items:center; gap:12px">
                   <div style="width:44px; height:44px; border-radius:13px; background:var(--accent-soft); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700">SC</div>
-                  <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:23px; font-weight:600; letter-spacing:-.03em">SkipCash</div><div style="font-size:12.5px; color:var(--ink-4)">Connection healthy · 12 events in the last hour</div></div>
+                  <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:23px; font-weight:600; letter-spacing:-.03em">SkipCash</div><div style="font-size:12.5px; color:var(--ink-4)">Connection healthy</div></div>
                   <div style="margin-left:auto; display:flex; align-items:center; gap:3px; padding:3px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px">
                     <button onClick="{{ env.goTest }}" style="{{ env.testStyle }}">Sandbox</button>
                     <button onClick="{{ env.goLive }}" style="{{ env.liveStyle }}">Live</button>
@@ -2755,9 +2792,8 @@
                   <div style="border:1px solid var(--chip); border-radius:12px; padding:14px"><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">WEBHOOK URL</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:12px; margin-top:6px">api.flow.qa/hooks/skipcash</div></div>
                 </div>
                 <div style="display:flex; gap:26px; margin-top:22px; padding-top:18px; border-top:1px solid var(--divider)">
-                  <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">VOLUME (30D)</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:4px">QR 38,410</div></div>
-                  <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">SUCCESS RATE</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:4px">96.2%</div></div>
-                  <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">FAILED WEBHOOKS</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:4px">0</div></div>
+                  <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">VOLUME (30D)</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:4px">{{ gateways.skipcash.month }}</div></div>
+                  <div><div style="font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)">SETTLED SHARE</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:4px">{{ gateways.skipcash.success }}</div></div>
                 </div>
                 <div style="display:flex; gap:9px; margin-top:20px">
                   <button onClick="{{ h.testTxn }}" style-hover="filter:brightness(1.12); transform:translateY(-1px)" style="font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 16px; border-radius:9px">Send test payment</button>
@@ -2817,7 +2853,7 @@
                 </div>
                 <div style="margin-top:20px; padding-top:18px; border-top:1px solid var(--divider)">
                   <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:15.5px; font-weight:600; letter-spacing:-.02em">Recent activity</div>
-                  <div style="font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.7">Last seen {{ det.o.last }}<br>Changed a tag on QR 3,600, 8 Aug<br>Exported July ledger, 1 Aug</div>
+                  <div style="font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.7">Last seen {{ det.o.last }}</div>
                 </div>
                 <button onClick="{{ h.copy }}" style="margin-top:20px; font-size:12.5px; font-weight:600; padding:10px 16px; border-radius:9px; border:1px solid var(--line); color:var(--neg)">Deactivate access</button>
               </div>
@@ -3115,27 +3151,68 @@
             <div style="display:flex; flex-direction:column; gap:14px">
               <label style="display:block"><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Amount (QR)</div><input value="{{ f.linkAmount }}" onChange="{{ F.linkAmount }}" placeholder="0.00" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif"></label>
               <label style="display:block"><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Description</div><input value="{{ f.linkDesc }}" onChange="{{ F.linkDesc }}" placeholder="What is this for?" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
+              <label style="display:block"><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Client (optional)</div>
+                <select value="{{ f.linkClient }}" onChange="{{ F.linkClient }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel)">
+                  <option value="">None</option>
+                  <sc-for list="{{ linkClients }}" as="lc">
+                    <option value="{{ lc.id }}">{{ lc.name }}</option>
+                  </sc-for>
+                </select>
+              </label>
+              <label style="display:block"><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Invoice (optional)</div>
+                <select value="{{ f.linkInvoice }}" onChange="{{ F.linkInvoice }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel)">
+                  <option value="">None</option>
+                  <sc-for list="{{ linkInvoices }}" as="li">
+                    <option value="{{ li.id }}">{{ li.label }}</option>
+                  </sc-for>
+                </select>
+              </label>
               <label style="display:block"><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Expires (optional)</div><input value="{{ f.linkExpiry }}" onChange="{{ F.linkExpiry }}" placeholder="e.g. 30 Aug 2026" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
             </div>
           </sc-if>
           <sc-if value="{{ modal.scan }}">
             <div>
               <div style="border:1.5px dashed var(--dash); border-radius:14px; padding:30px; text-align:center; background:var(--panel-2)">
-                <div style="width:44px; height:44px; margin:0 auto; border-radius:15px; background:var(--accent-soft); display:flex; align-items:center; justify-content:center">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 7V4.5A1.5 1.5 0 0 1 4.5 3H7M13 3h2.5A1.5 1.5 0 0 1 17 4.5V7M17 13v2.5a1.5 1.5 0 0 1-1.5 1.5H13M7 17H4.5A1.5 1.5 0 0 1 3 15.5V13M6 10h8" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"></path></svg>
-                </div>
-                <div style="font-size:13px; font-weight:600; margin-top:12px">Drop a bill photo or PDF here</div>
-                <div style="font-size:12px; color:var(--ink-4); margin-top:4px">or use your camera</div>
-                <button onClick="{{ h.simulateScan }}" style="margin-top:14px; font-size:12.5px; font-weight:600; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:9px 16px; border-radius:9px">Use a sample bill</button>
+                <sc-if value="{{ scan.busy }}">
+                  <div style="width:44px; height:44px; margin:0 auto; border-radius:15px; background:var(--accent-soft); display:flex; align-items:center; justify-content:center">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 7V4.5A1.5 1.5 0 0 1 4.5 3H7M13 3h2.5A1.5 1.5 0 0 1 17 4.5V7M17 13v2.5a1.5 1.5 0 0 1-1.5 1.5H13M7 17H4.5A1.5 1.5 0 0 1 3 15.5V13M6 10h8" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"></path></svg>
+                  </div>
+                  <div style="font-size:13px; font-weight:600; margin-top:12px">Reading the bill…</div>
+                  <div style="font-size:12px; color:var(--ink-4); margin-top:4px">Extracting vendor, date, total, tax and line items</div>
+                </sc-if>
+                <sc-if value="{{ scan.notBusy }}">
+                  <div style="width:44px; height:44px; margin:0 auto; border-radius:15px; background:var(--accent-soft); display:flex; align-items:center; justify-content:center">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 7V4.5A1.5 1.5 0 0 1 4.5 3H7M13 3h2.5A1.5 1.5 0 0 1 17 4.5V7M17 13v2.5a1.5 1.5 0 0 1-1.5 1.5H13M7 17H4.5A1.5 1.5 0 0 1 3 15.5V13M6 10h8" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"></path></svg>
+                  </div>
+                  <div style="font-size:13px; font-weight:600; margin-top:12px">Drop a bill photo or PDF here</div>
+                  <div style="font-size:12px; color:var(--ink-4); margin-top:4px">or use your camera</div>
+                  <input id="flow-bill-file" type="file" accept="image/*,application/pdf" onChange="{{ scan.onFile }}" style="display:none">
+                  <button onClick="{{ scan.pickFile }}" style="margin-top:14px; font-size:12.5px; font-weight:600; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:9px 16px; border-radius:9px">Choose image or PDF</button>
+                  <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:12px">
+                    <sc-for list="{{ scan.samples }}" as="sm">
+                      <button onClick="{{ sm.use }}" style="font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light)">{{ sm.cta }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
               </div>
               <sc-if value="{{ scan.done }}">
                 <div style="margin-top:16px; border:1px solid var(--line); border-radius:14px; padding:16px">
                   <div style="font-size:12px; font-weight:700; color:var(--ink-3); letter-spacing:.03em">FIELDS WE READ, EDIT ANYTHING</div>
                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px">
-                    <label><div style="font-size:11.5px; color:var(--ink-3); margin-bottom:5px">Vendor</div><input value="{{ f.scanVendor }}" onChange="{{ F.scanVendor }}" style="width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13px"></label>
-                    <label><div style="font-size:11.5px; color:var(--ink-3); margin-bottom:5px">Amount</div><input value="{{ f.scanAmount }}" onChange="{{ F.scanAmount }}" style="width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13px; font-family:'Urbanist','Cairo',sans-serif"></label>
-                    <label><div style="font-size:11.5px; color:var(--ink-3); margin-bottom:5px">Date</div><input value="{{ f.scanDate }}" onChange="{{ F.scanDate }}" style="width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13px"></label>
-                    <label><div style="font-size:11.5px; color:var(--ink-3); margin-bottom:5px">Tag</div><input value="{{ f.scanTag }}" onChange="{{ F.scanTag }}" style="width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13px"></label>
+                    <label><div style="font-size:11.5px; color:var(--ink-3); margin-bottom:5px">Vendor · {{ scan.conf.vendor }}</div><input value="{{ f.scanVendor }}" onChange="{{ F.scanVendor }}" style="width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13px"></label>
+                    <label><div style="font-size:11.5px; color:var(--ink-3); margin-bottom:5px">Total · {{ scan.conf.total }}</div><input value="{{ f.scanAmount }}" onChange="{{ F.scanAmount }}" style="width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13px; font-family:'Urbanist','Cairo',sans-serif"></label>
+                    <label><div style="font-size:11.5px; color:var(--ink-3); margin-bottom:5px">Date · {{ scan.conf.date }}</div><input value="{{ f.scanDate }}" onChange="{{ F.scanDate }}" style="width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13px"></label>
+                    <label><div style="font-size:11.5px; color:var(--ink-3); margin-bottom:5px">Tax · {{ scan.conf.tax }}</div><input value="{{ f.scanTax }}" onChange="{{ F.scanTax }}" style="width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13px; font-family:'Urbanist','Cairo',sans-serif"></label>
+                    <label><div style="font-size:11.5px; color:var(--ink-3); margin-bottom:5px">Tag · {{ scan.conf.tag }}</div><input value="{{ f.scanTag }}" onChange="{{ F.scanTag }}" style="width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13px"></label>
+                  </div>
+                  <div style="margin-top:14px; font-size:11.5px; color:var(--ink-3); margin-bottom:5px">Line items · {{ scan.conf.lines }}</div>
+                  <div style="display:flex; flex-direction:column; gap:8px">
+                    <sc-for list="{{ scan.lines }}" as="ln">
+                      <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:8px">
+                        <input value="{{ ln.description }}" onChange="{{ ln.setDesc }}" style="width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13px">
+                        <input value="{{ ln.amount }}" onChange="{{ ln.setAmount }}" style="width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:13px; font-family:'Urbanist','Cairo',sans-serif">
+                      </div>
+                    </sc-for>
                   </div>
                 </div>
               </sc-if>
@@ -3163,7 +3240,7 @@
                 <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Amount (QR)</div><input value="{{ f.invAmount }}" onChange="{{ F.invAmount }}" placeholder="0.00" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif"></label>
                 <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Due date</div><input value="{{ f.invDue }}" onChange="{{ F.invDue }}" placeholder="e.g. 30 Aug 2026" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
               </div>
-              <div style="background:linear-gradient(170deg,var(--panel-3),var(--panel)); border:1px solid var(--line); border-radius:12px; padding:13px; font-size:12.5px; color:var(--ink-3); line-height:1.5">A payment link is created automatically and attached to this invoice. VAT is applied at 0% until you add a rate in Settings.</div>
+              <div style="background:linear-gradient(170deg,var(--panel-3),var(--panel)); border:1px solid var(--line); border-radius:12px; padding:13px; font-size:12.5px; color:var(--ink-3); line-height:1.5">A payment link is created automatically and attached to this invoice.</div>
             </div>
           </sc-if>
           <sc-if value="{{ modal.plan }}">
@@ -3216,7 +3293,7 @@
           <sc-if value="{{ modal.help }}">
             <div style="font-size:13px; color:var(--ink-2); line-height:1.65">
               <p style="margin:0 0 12px">This is a Phase 1 sandbox build for Qatar. Everything settles directly to your own gateway account, Flow never holds your money.</p>
-              <p style="margin:0">Connected: SkipCash (sandbox), Doha Bank (sample data), Zoho Books, Shopify. Anything marked “Coming soon” is a later phase.</p>
+              <p style="margin:0">Connected: SkipCash, Ahli Bank, Zoho Books, Shopify. Anything marked “Coming soon” is a later phase.</p>
             </div>
           </sc-if>
         </div>
@@ -3234,34 +3311,22 @@
   </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dashboard&quot;,&quot;payments&quot;,&quot;transactions&quot;,&quot;invoicing&quot;,&quot;accounting&quot;,&quot;connections&quot;,&quot;reports&quot;,&quot;payroll&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;dashboard&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;emptyState&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;ownerName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Noora&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;businessName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Desert Bloom WLL&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dashboard&quot;,&quot;payments&quot;,&quot;transactions&quot;,&quot;invoicing&quot;,&quot;accounting&quot;,&quot;connections&quot;,&quot;reports&quot;,&quot;payroll&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;dashboard&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;emptyState&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;ownerName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Noora Al Ansari&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;businessName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Al Bidda Trading W.L.L.&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
 class Component extends DCLogic {
   state = {
     theme: (() => { try { return localStorage.getItem('flow-theme') || null; } catch (e) { return null; } })() || this.props.theme || 'light',
     page: this.props.startPage || 'dashboard',
     hoverIdx: null,
-    rates: { vat: '0', wht: '5', royalty: '5' },
-    acctName: 'Noora Al-Ansari',
-    acctEmail: 'noora@flow.qa',
+    rates: { vat: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).ratesVat || '0', wht: String((((typeof window !== 'undefined' && window.FLOW_DATA) || {}).figures || {}).deductionRate != null ? Math.round((((typeof window !== 'undefined' && window.FLOW_DATA) || {}).figures || {}).deductionRate * 100) : 0), royalty: '0' },
+    acctName: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).acctName || '',
+    acctEmail: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).acctEmail || '',
     acctPw: '',
     acctPwShow: false,
     notifPrefs: { payments: 'both', overdue: 'email', sync: 'app' },
     smartOpen: false,
     env: 'test',
     ppView: 'list',
-    ppPages: [
-      { id: 'p1', title: 'Eid Gift Hampers 2026', status: 'Published', views: 412, paid: 38, amount: 24700, updated: '2 days ago',
-        desc: 'Pre-order a hamper for pickup from our Doha store between 12 and 18 March.',
-        email: 'orders@desertbloom.qa', phone: '+974 4412 8890', terms: true,
-        fields: [{ label: 'Amount', kind: 'price', locked: true }, { label: 'Email', kind: 'mail', locked: true }, { label: 'Phone', kind: 'phone' }] },
-      { id: 'p2', title: 'Workshop, Desert Botanicals', status: 'Published', views: 156, paid: 21, amount: 6300, updated: '1 week ago',
-        desc: 'A two-hour Saturday session on arranging with native plants. Materials included.',
-        email: 'workshops@desertbloom.qa', phone: '+974 4412 8890', terms: false,
-        fields: [{ label: 'Amount', kind: 'price', locked: true }, { label: 'Email', kind: 'mail', locked: true }, { label: 'Seats', kind: 'text' }] },
-      { id: 'p3', title: 'Bulk order deposit', status: 'Draft', views: 0, paid: 0, amount: 0, updated: '3 weeks ago',
-        desc: '', email: 'orders@desertbloom.qa', phone: '', terms: true,
-        fields: [{ label: 'Amount', kind: 'price', locked: true }, { label: 'Email', kind: 'mail', locked: true }] }
-    ],
+    ppPages: [],
     ppEditing: null,
     ps: { slug: 'eid-gift-hampers', theme: 'light', expiry: 'none', after: 'message' },
     rc: { auto: true, showCustomer: false, ref: false },
@@ -3279,119 +3344,52 @@ class Component extends DCLogic {
     vw: typeof window !== 'undefined' ? window.innerWidth : 1440,
     tab: {},
     detail: null,
-    tf: 'week',
+    tf: 'month',
+    reportsTf: 'month',
     modal: null,
     scanDone: false,
+    scanBusy: false,
+    scanLines: [],
+    scanConf: {},
     toast: '',
     search: '',
     filter: { source: 'All', status: 'All', tag: 'All', range: 'All time' },
     form: { planInterval: 'Month', memberRole: 'Staff', expTag: 'Supplies' },
     toggles: { autoSync: true, recurring: false, twofa: true, biometric: false, testMode: true, productSync: true, combined: false, walletDetect: true, retry: true },
-    tags: ['Sales', 'Supplies', 'Rent', 'Salaries', 'Utilities', 'Marketing'],
-    txns: [
-      { id: 't1', d: '9 Aug', amount: 4820, src: 'SkipCash', party: 'Al Meera Trading', tag: 'Sales', status: 'Settled' },
-      { id: 't2', d: '9 Aug', amount: -1250, src: 'Bank', party: 'Ooredoo Business', tag: 'Utilities', status: 'Settled' },
-      { id: 't3', d: '8 Aug', amount: 12400, src: 'Shopify', party: 'Online orders (14)', tag: 'Sales', status: 'Settled' },
-      { id: 't4', d: '8 Aug', amount: -3600, src: 'Bank', party: 'Gulf Warehousing', tag: 'Rent', status: 'Settled' },
-      { id: 't5', d: '7 Aug', amount: 2150, src: 'Link', party: 'Fatima Al-Kuwari', tag: 'Sales', status: 'Settled' },
-      { id: 't6', d: '7 Aug', amount: -890, src: 'Cash', party: 'Souq Waqif Supplies', tag: 'Supplies', status: 'Settled' },
-      { id: 't7', d: '6 Aug', amount: 6300, src: 'SkipCash', party: 'Qatar Retail Group', tag: 'Sales', status: 'Pending' },
-      { id: 't8', d: '6 Aug', amount: -14500, src: 'Bank', party: 'August payroll', tag: 'Salaries', status: 'Settled' },
-      { id: 't9', d: '5 Aug', amount: 980, src: 'Link', party: 'Mohammed Rashid', tag: 'Sales', status: 'Settled' },
-      { id: 't10', d: '5 Aug', amount: -2400, src: 'Bank', party: 'Meta Ads', tag: 'Marketing', status: 'Settled' },
-      { id: 't11', d: '4 Aug', amount: 3750, src: 'Shopify', party: 'Online orders (6)', tag: 'Sales', status: 'Settled' },
-      { id: 't12', d: '4 Aug', amount: -640, src: 'Cash', party: 'Karak & Co', tag: 'Supplies', status: 'Settled' },
-      { id: 't13', d: '3 Aug', amount: 8900, src: 'SkipCash', party: 'Doha Events LLC', tag: 'Sales', status: 'Settled' },
-      { id: 't14', d: '2 Aug', amount: -1180, src: 'Bank', party: 'Kahramaa', tag: 'Utilities', status: 'Settled' },
-      { id: 't15', d: '2 Aug', amount: 1540, src: 'Link', party: 'Noor Interiors', tag: 'Sales', status: 'Refunded' },
-      { id: 't16', d: '1 Aug', amount: -2200, src: 'Bank', party: 'Ahli Bank fees', tag: 'Utilities', status: 'Settled' }
-    ],
-    attention: [
-      { id: 'a1', amount: 6300, d: '6 Aug', src: 'SkipCash', note: 'Looks like invoice INV-0142 from Qatar Retail Group.', conf: '94%' },
-      { id: 'a2', amount: -890, d: '7 Aug', src: 'Cash', note: 'Untagged expense, we suggest Supplies.', conf: '81%' },
-      { id: 'a3', amount: 1540, d: '2 Aug', src: 'Link', note: 'Refund issued but no matching sale found.', conf: '62%' }
-    ],
-    links: [
-      { id: 'l1', amount: 2150, desc: 'Consultation, August', status: 'Paid', created: '5 Aug', uses: 1, expiry: '-' },
-      { id: 'l2', amount: 750, desc: 'Deposit, event booking', status: 'Active', created: '7 Aug', uses: 0, expiry: '30 Aug' },
-      { id: 'l3', amount: 4200, desc: 'Bulk order, Q3', status: 'Active', created: '8 Aug', uses: 2, expiry: '-' }
-    ],
-    plans: [
-      { id: 'p1', name: 'Monthly Care', amount: 350, interval: 'Month', subs: 24, mrr: 8400, slug: 'monthly-care', desc: 'Monthly upkeep visit and priority support' },
-      { id: 'p2', name: 'Annual Support', amount: 3600, interval: 'Year', subs: 7, mrr: 2100, slug: 'annual-support', desc: 'Twelve months of cover, billed once' }
-    ],
-    subscribers: [
-      { id: 's1', plan: 'p1', name: 'Fatima Al-Kuwari', since: 'Mar 2026', status: 'Active', next: '1 Sep' },
-      { id: 's2', plan: 'p1', name: 'Doha Events LLC', since: 'Jan 2026', status: 'Active', next: '1 Sep' },
-      { id: 's3', plan: 'p1', name: 'Noor Interiors', since: 'Jun 2026', status: 'Retrying', next: '12 Aug' },
-      { id: 's4', plan: 'p2', name: 'Qatar Retail Group', since: 'Feb 2026', status: 'Active', next: 'Feb 2027' }
-    ],
-    invoices: [
-      { id: 'i1', no: 'INV-0142', client: 'Qatar Retail Group', amount: 6300, status: 'Sent', due: '5 Aug', tag: 'Sales' },
-      { id: 'i2', no: 'INV-0143', client: 'Doha Events LLC', amount: 8900, status: 'Viewed', due: '18 Aug', tag: 'Sales' },
-      { id: 'i3', no: 'INV-0144', client: 'Al Meera Trading', amount: 4820, status: 'Sent', due: '22 Aug', tag: 'Sales' },
-      { id: 'i4', no: 'INV-0145', client: 'Noor Interiors', amount: 1540, status: 'Overdue', due: '1 Aug', tag: 'Sales' },
-      { id: 'i5', no: 'INV-0146', client: 'Fatima Al-Kuwari', amount: 2150, status: 'Draft', due: '30 Aug', tag: 'Sales' }
-    ],
-    clients: [
-      { id: 'c1', name: 'Qatar Retail Group', email: 'ap@qrg.qa', phone: '+974 4412 0091', total: 41200 },
-      { id: 'c2', name: 'Doha Events LLC', email: 'finance@dohaevents.qa', phone: '+974 3355 7712', total: 26800 },
-      { id: 'c3', name: 'Al Meera Trading', email: 'accounts@almeera.qa', phone: '+974 4498 2210', total: 18400 }
-    ],
-    team: [
-      { id: 'm1', name: 'Noora Al-Ansari', email: 'noora@flow.qa', role: 'Owner', last: 'Today, 09:14' },
-      { id: 'm2', name: 'Rami Haddad', email: 'rami@ledgerco.qa', role: 'Accountant', last: 'Yesterday' },
-      { id: 'm3', name: 'Sara Iqbal', email: 'sara@flow.qa', role: 'Staff', last: '3 days ago' }
-    ],
-    employees: [
-      { id: 'e1', name: 'Sara Iqbal', role: 'Store Manager', salary: 9000, method: 'Bank transfer' },
-      { id: 'e2', name: 'Ahmed Yousef', role: 'Warehouse Lead', salary: 6500, method: 'Bank transfer' },
-      { id: 'e3', name: 'Priya Nair', role: 'Sales Associate', salary: 5200, method: 'Cash' }
-    ],
-    syncLog: [
-      { id: 'sl1', when: '9 Aug, 06:00', target: 'Zoho Books', items: 42, status: 'Success', errors: 0 },
-      { id: 'sl2', when: '8 Aug, 06:00', target: 'Zoho Books', items: 38, status: 'Partial', errors: 2 },
-      { id: 'sl3', when: '7 Aug, 18:20', target: 'Tally export', items: 120, status: 'Success', errors: 0 },
-      { id: 'sl4', when: '7 Aug, 06:00', target: 'Zoho Books', items: 31, status: 'Success', errors: 0 }
-    ],
+    tags: ['Sales', 'Supplies', 'Rent', 'Salaries', 'Utilities', 'Marketing', 'Fees'],
+    txns: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).txns || [],
+    attention: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).attention || [],
+    links: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).links || [],
+    merchantName: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).merchantName || '',
+    ownerName: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).ownerName || '',
+    accountantName: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).accountantName || '',
+    figures: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).figures || { balance: 0, pending: 0 },
+    periods: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).periods || null,
+    matchRate: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).matchRate || { matched: 0, total: 0, percent: 0 },
+    usage: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).usage || { pct: '0%', label: '' },
+    profile: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).profile || {},
+    plan: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).plan || { tier: '', price: '' },
+    invoiceTotals: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).invoiceTotals || { outstanding: 0, outstandingCount: 0, overdue: 0, overdueCount: 0, invoiced: 0, invoicedCount: 0 },
+    ageing: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).ageing || { buckets: [], rows: [] },
+    showVat: !!((typeof window !== 'undefined' && window.FLOW_DATA) || {}).showVat,
+    plans: [],
+    subscribers: [],
+    invoices: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).invoices || [],
+    clients: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).clients || [],
+    team: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).team || [],
+    employees: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).employees || [],
+    syncLog: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).syncLog || [],
+    exportHistory: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).exportHistory || [],
+    zoho: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).zoho || { hasLast: false, line: '' },
     actType: 'all',
-    history: [
-      { id: 'h1', kind: 'payments', when: '9 Aug, 10:02', who: 'Noora Al-Ansari', what: 'Confirmed match for QR 4,820 → INV-0144' },
-      { id: 'h2', kind: 'sync', when: '9 Aug, 09:41', who: 'System', what: 'Shopify sync completed, 14 orders imported' },
-      { id: 'h3', kind: 'edits', when: '8 Aug, 17:12', who: 'Rami Haddad', what: 'Changed tag on QR 3,600 from Supplies to Rent' },
-      { id: 'h4', kind: 'sync', when: '8 Aug, 06:00', who: 'System', what: 'Zoho auto-sync, 38 items, 2 errors' },
-      { id: 'h5', kind: 'payments', when: '7 Aug, 14:33', who: 'Noora Al-Ansari', what: 'Created payment link QR 750 (Deposit, event booking)' },
-      { id: 'h6', kind: 'payments', when: '6 Aug, 11:08', who: 'System', what: 'SkipCash settlement received, QR 6,300' },
-      { id: 'h7', kind: 'access', when: '6 Aug, 09:20', who: 'Noora Al-Ansari', what: 'Invited Sara Mansour as Accountant' },
-      { id: 'h8', kind: 'access', when: '5 Aug, 16:44', who: 'Rami Haddad', what: 'Signed in from a new device, Doha' },
-      { id: 'h9', kind: 'edits', when: '5 Aug, 12:05', who: 'Noora Al-Ansari', what: 'Raised approval limit for Manager to QR 10,000' },
-      { id: 'h10', kind: 'sync', when: '4 Aug, 18:20', who: 'System', what: 'Tally export generated, 120 lines' }
-    ],
-    autoMatches: [
-      { id: 'am1', amount: 4200, party: 'Al Meera Trading', inv: 'INV-0138', conf: 99, when: '5 Aug' },
-      { id: 'am2', amount: 12500, party: 'Qatar Retail Group', inv: 'INV-0135', conf: 98, when: '4 Aug' },
-      { id: 'am3', amount: 2750, party: 'Lusail Cafe Co', inv: 'INV-0136', conf: 97, when: '4 Aug' },
-      { id: 'am4', amount: 8400, party: 'Msheireb Studios', inv: 'INV-0134', conf: 96, when: '3 Aug' },
-      { id: 'am5', amount: 1980, party: 'Noor Interiors', inv: 'INV-0133', conf: 95, when: '2 Aug' },
-      { id: 'am6', amount: 6650, party: 'Doha Events LLC', inv: 'INV-0131', conf: 93, when: '1 Aug' }
-    ],
+    history: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).history || [],
+    autoMatches: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).autoMatches || [],
     autoOpen: false,
     matchDone: 0,
-    matches: [
-      { id: 'mt1', amount: 6300, party: 'Qatar Retail Group', inv: 'INV-0142', conf: 94, why: 'Exact amount and reference match, 1 day apart.' },
-      { id: 'mt2', amount: 8900, party: 'Doha Events LLC', inv: 'INV-0143', conf: 76, why: 'Amount matches; counterparty name differs slightly.' },
-      { id: 'mt3', amount: 1540, party: 'Noor Interiors', inv: 'INV-0147?', conf: 48, why: 'Refund with no clear originating sale.' }
-    ],
-    reports: [
-      { id: 'r1', name: 'Monthly sales by tag', built: '1 Aug', range: 'Jul 2026', type: 'Summary' },
-      { id: 'r2', name: 'Cash out, suppliers', built: '28 Jul', range: 'Q2 2026', type: 'Ledger' },
-      { id: 'r3', name: 'Structured invoice list', built: '20 Jul', range: 'Jun 2026', type: 'Compliance' }
-    ],
-    branches: [
-      { id: 'b1', name: 'Doha, Main', sub: 'Head office', initials: 'DM', staff: 6, revenue: 128400 },
-      { id: 'b2', name: 'Al Wakrah', sub: 'Branch', initials: 'AW', staff: 3, revenue: 41900 }
-    ],
-    branchId: 'b1',
+    matches: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).matches || [],
+    reports: [],
+    branches: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).branches || [],
+    branchId: 'br_01',
     conns: { skipcash: true, bank: true, zoho: true, shopify: true },
     providers: [
       { n: 'Dibsy', s: 'Coming soon' }, { n: 'Tap', s: 'Coming soon' }, { n: 'Telr', s: 'Coming soon' },
@@ -3399,7 +3397,15 @@ class Component extends DCLogic {
       { n: 'QPay', s: 'Requires existing Qatari bank account.' }, { n: 'Fatora', s: 'Coming soon' },
       { n: 'Noqoody', s: 'Coming soon' }, { n: 'PayTabs', s: 'Coming soon' }
     ],
-    checkout: { name: 'Desert Bloom Candle', desc: 'Hand-poured, 220g', price: '145', accent: 'var(--accent)' },
+    checkout: { name: '', desc: '', price: '', accent: 'var(--accent)' },
+    gateways: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).gateways || { skipcash: {}, shopify: {} },
+    bank: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).bank || {},
+    scan: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).scan || {},
+    sampleBills: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).sampleBills || [],
+    linkClients: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).linkClients || [],
+    linkInvoices: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).linkInvoices || [],
+    periodFrom: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).periodFrom || '',
+    periodTo: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).periodTo || '',
     reminders: [
       { id: 'rm1', label: '3 days before due', on: true },
       { id: 'rm2', label: 'On the due date', on: true },
@@ -3426,15 +3432,16 @@ class Component extends DCLogic {
       const KEYS = {
         employee: ['empName', 'empRole', 'empSalary', 'empMethod'],
         member: ['memberName', 'memberEmail', 'memberRole'],
-        link: ['linkAmount', 'linkDesc', 'linkExpiry'],
+        link: ['linkAmount', 'linkDesc', 'linkExpiry', 'linkClient', 'linkInvoice'],
         invoice: ['invClient', 'invAmount', 'invDue'],
         plan: ['planName', 'planAmount', 'planInterval', 'planDesc', 'planDesc'],
         expense: ['expAmount', 'expParty', 'expTag'],
-        scan: ['scanVendor', 'scanAmount', 'scanDate', 'scanTag']
+        scan: ['scanVendor', 'scanAmount', 'scanDate', 'scanTag', 'scanTax', 'scanOffset']
       };
       const form = Object.assign({}, s.form);
       (KEYS[kind] || []).forEach(k => { delete form[k]; });
-      return { modal: kind, scanDone: false, editEmp: null, form };
+      if (kind === 'scan') clearTimeout(this._scanT);
+      return { modal: kind, scanDone: false, scanBusy: false, scanLines: [], scanConf: {}, editEmp: null, form };
     }));
   }
   tabOf(page, dflt) { return this.state.tab[page] || dflt; }
@@ -3457,14 +3464,94 @@ class Component extends DCLogic {
   }
 
   filtered() {
-    const { txns, search, filter } = this.state;
+    const { search, filter } = this.state;
     const q = search.trim().toLowerCase();
-    return txns.filter(t =>
+    return this.sortedTxns().filter(t =>
       (!q || t.party.toLowerCase().includes(q) || t.tag.toLowerCase().includes(q) || t.src.toLowerCase().includes(q)) &&
       (filter.source === 'All' || t.src === filter.source) &&
       (filter.status === 'All' || t.status === filter.status) &&
       (filter.tag === 'All' || t.tag === filter.tag) &&
       (filter.range === 'All time' || this.inRange(t.d, filter.range)));
+  }
+
+  sortedTxns() {
+    return (this.state.txns || []).slice().sort((a, b) => (b.offset || 0) - (a.offset || 0) || String(a.id).localeCompare(String(b.id)));
+  }
+
+  applyStore(extra) {
+    const snap = typeof FlowStore !== 'undefined' && FlowStore.dashboardSnapshot ? FlowStore.dashboardSnapshot() : {};
+    this.setState(Object.assign({}, extra || {}, snap));
+  }
+
+  startExtract(ref) {
+    clearTimeout(this._scanT);
+    if (typeof FlowStore === 'undefined' || !FlowStore.extractBill) {
+      const scan = this.state.scan || {};
+      this.setState(st => ({
+        scanBusy: false,
+        scanDone: true,
+        form: Object.assign({}, st.form, {
+          scanVendor: scan.vendor || '',
+          scanAmount: scan.amount || '',
+          scanDate: scan.date || '',
+          scanTag: 'Utilities',
+          scanOffset: scan.dayOffset
+        })
+      }));
+      return;
+    }
+    this.setState({ scanBusy: true, scanDone: false, scanLines: [], scanConf: {} });
+    const delay = FlowStore.extractDelayMs ? FlowStore.extractDelayMs() : (FlowStore.EXTRACT_DELAY_MS || 1800);
+    const self = this;
+    this._scanT = setTimeout(function() { self.applyExtracted(ref); }, delay);
+  }
+
+  applyExtracted(ref) {
+    if (typeof FlowStore === 'undefined' || !FlowStore.extractBill) return;
+    const bill = FlowStore.extractBill(ref);
+    const mapped = FlowStore.extractedBillForm ? FlowStore.extractedBillForm(bill) : { form: {}, lines: [], conf: {} };
+    this.setState(st => ({
+      scanBusy: false,
+      scanDone: true,
+      scanLines: mapped.lines || [],
+      scanConf: mapped.conf || {},
+      form: Object.assign({}, st.form, mapped.form || {})
+    }));
+  }
+
+  downloadNamedFile(name, body, mime) {
+    if (typeof document === 'undefined' || typeof Blob === 'undefined') return;
+    const blob = new Blob([body], { type: mime || 'application/xml' });
+    const href = (typeof URL !== 'undefined' && URL.createObjectURL) ? URL.createObjectURL(blob) : '';
+    if (!href) return;
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    if (typeof URL !== 'undefined' && URL.revokeObjectURL) URL.revokeObjectURL(href);
+  }
+
+  runTallyExport() {
+    if (typeof FlowStore === 'undefined' || !FlowStore.exportTallyXml) {
+      this.toast('Tally XML export queued');
+      return;
+    }
+    const file = FlowStore.exportTallyXml(this.state.periodFrom, this.state.periodTo);
+    this.applyStore();
+    this.downloadNamedFile(file.filename, file.xml, 'application/xml');
+    this.toast('Downloaded ' + file.filename);
+  }
+
+  runZohoSync() {
+    if (typeof FlowStore === 'undefined' || !FlowStore.simulateZohoSync) {
+      this.toast('Syncing with Zoho Books…');
+      return;
+    }
+    FlowStore.simulateZohoSync();
+    this.applyStore();
+    this.toast('Zoho Books sync simulated');
   }
 
   inRange(label, range) {
@@ -3523,15 +3610,88 @@ class Component extends DCLogic {
   submitModal = () => {
     const s = this.state, f = s.form, k = s.modal;
     const num = v => Math.abs(parseFloat(String(v || '').replace(/[^0-9.]/g, '')) || 0);
+    const appendOut = (txn) => {
+      if (typeof FlowStore !== 'undefined' && FlowStore.appendTransaction) {
+        FlowStore.appendTransaction(txn);
+        this.applyStore({ modal: null });
+        return;
+      }
+      const row = {
+        id: txn.id, d: f.scanDate || f.expDate || '', offset: txn.dayOffset,
+        amount: -(txn.amountMinor / 100), type: txn.type, src: 'Bank',
+        party: txn.counterparty, tag: txn.tag, status: 'Settled',
+        branchId: txn.branchId, invoiceId: txn.invoiceId
+      };
+      this.setState(st => ({ txns: [row].concat(st.txns || []), modal: null }));
+    };
     if (k === 'link') {
-      const l = { id: 'l' + Date.now(), amount: num(f.linkAmount) || 500, desc: f.linkDesc || 'Payment', status: 'Active', created: '9 Aug', uses: 0, expiry: f.linkExpiry || '-' };
-      this.setState(st => ({ links: [l].concat(st.links), modal: null })); this.toast('Payment link created and copied');
+      const amountMinor = Math.round((num(f.linkAmount) || 500) * 100);
+      const desc = f.linkDesc || 'Payment';
+      const finish = (payUrl, copied) => {
+        this.applyStore({ modal: null });
+        this.toast(copied ? 'Payment link created and copied' : 'Payment link created');
+      };
+      if (typeof FlowStore !== 'undefined' && FlowStore.createPaymentLink) {
+        FlowStore.createPaymentLink({
+          amountMinor,
+          description: desc,
+          clientId: f.linkClient || null,
+          invoiceId: f.linkInvoice || null,
+          expiry: f.linkExpiry || '-'
+        }).then(link => {
+          const clip = typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
+          if (clip && link.payUrl) {
+            Promise.resolve(navigator.clipboard.writeText(link.payUrl)).then(() => finish(link.payUrl, true)).catch(() => finish(link.payUrl, false));
+          } else {
+            finish(link.payUrl, false);
+          }
+        }).catch(() => this.toast('Could not create payment link'));
+        return;
+      }
+      const l = { id: 'l' + Date.now(), amount: amountMinor / 100, desc, status: 'Active', created: '', uses: 0, expiry: f.linkExpiry || '-', payUrl: '' };
+      this.setState(st => ({ links: [l].concat(st.links), modal: null }));
+      this.toast('Payment link created');
     } else if (k === 'expense') {
-      const t = { id: 't' + Date.now(), d: '9 Aug', amount: -(num(f.expAmount) || 200), src: 'Cash', party: f.expParty || 'Expense', tag: f.expTag || 'Supplies', status: 'Settled' };
-      this.setState(st => ({ txns: [t].concat(st.txns), modal: null })); this.toast('Expense logged');
+      appendOut({
+        id: 'txn_exp_' + Date.now(),
+        dayOffset: 0,
+        counterparty: f.expParty || 'Expense',
+        source: 'cash',
+        direction: 'out',
+        type: 'expense',
+        tag: f.expTag || 'Supplies',
+        status: 'settled',
+        amountMinor: Math.round((num(f.expAmount) || 200) * 100),
+        branchId: 'br_01',
+        invoiceId: null
+      });
+      this.toast('Expense logged');
     } else if (k === 'scan') {
-      const t = { id: 't' + Date.now(), d: f.scanDate || '9 Aug', amount: -(num(f.scanAmount) || 1180), src: 'Bill', party: f.scanVendor || 'Vendor', tag: f.scanTag || 'Supplies', status: 'Settled' };
-      this.setState(st => ({ txns: [t].concat(st.txns), modal: null })); this.toast('Bill saved to Transactions');
+      if (s.scanBusy) return;
+      const bill = typeof FlowStore !== 'undefined' && FlowStore.extractBill
+        ? FlowStore.extractBill(f.scanVendor)
+        : (typeof FlowStore !== 'undefined' && FlowStore.SAMPLE_BILL ? FlowStore.SAMPLE_BILL : { dayOffset: 0, source: 'bank', amountMinor: 118000, counterparty: 'Vendor', tag: 'Utilities' });
+      const amountMinor = Math.round((num(f.scanAmount) || ((bill.amountMinor || 0) / 100)) * 100);
+      let offset = f.scanOffset != null && f.scanOffset !== '' ? Number(f.scanOffset) : NaN;
+      if (!Number.isFinite(offset) && typeof FlowStore !== 'undefined' && FlowStore.offsetFromLabel) {
+        const parsed = FlowStore.offsetFromLabel(String(f.scanDate || ''));
+        if (parsed != null) offset = parsed;
+      }
+      if (!Number.isFinite(offset)) offset = bill.dayOffset != null ? bill.dayOffset : 0;
+      appendOut({
+        id: 'txn_scan_' + Date.now(),
+        dayOffset: offset,
+        counterparty: f.scanVendor || bill.vendor || bill.counterparty || 'Vendor',
+        source: bill.source || 'bank',
+        direction: 'out',
+        type: 'expense',
+        tag: f.scanTag || bill.tag || 'Utilities',
+        status: 'settled',
+        amountMinor,
+        branchId: bill.branchId || 'br_01',
+        invoiceId: null
+      });
+      this.toast('Bill saved to Transactions');
     } else if (k === 'invoice') {
       const n = 147 + s.invoices.length - 5;
       const inv = { id: 'i' + Date.now(), no: 'INV-0' + n, client: f.invClient || 'New client', amount: num(f.invAmount) || 1000, status: 'Draft', due: f.invDue || '30 Aug', tag: 'Sales' };
@@ -3566,40 +3726,153 @@ class Component extends DCLogic {
     } else { this.setState({ modal: null }); }
   };
 
-  resolveAtt(id, ok) {
-    return this.memo('_att', id + ok, () => () => {
-      this.setState(s => ({ attention: s.attention.filter(a => a.id !== id) }));
-      this.toast(ok ? 'Match confirmed' : 'Sent back for review');
-    });
+  copyPayUrl(url) {
+    const text = url || '';
+    const clip = typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
+    if (clip && text) {
+      Promise.resolve(navigator.clipboard.writeText(text)).then(() => this.toast('Link copied to clipboard')).catch(() => this.toast('Link copied to clipboard'));
+      return;
+    }
+    this.toast(text ? 'Link copied to clipboard' : 'No link to copy');
   }
 
+  runSimulate(linkId, outcome) {
+    if (typeof FlowStore === 'undefined' || !FlowStore.simulatePayment) {
+      this.toast('Gateway is not available');
+      return;
+    }
+    const self = this;
+    FlowStore.simulatePayment(linkId, outcome).then(result => {
+      self.applyStore();
+      if (!result || !result.pending) {
+        self.toast(outcome === 'success' || outcome === 'partial' ? 'Payment was not recorded' : 'Payment ' + outcome);
+        return;
+      }
+      self.toast('Payment received, pending settlement');
+      const delay = result.delayMs || 1200;
+      setTimeout(() => {
+        if (FlowStore.settlePayment) FlowStore.settlePayment(linkId);
+        self.applyStore();
+        self.toast('Payment settled');
+      }, delay);
+    }).catch(() => self.toast('Could not simulate payment'));
+  }
+
+  onLinkInvoice = (e) => {
+    const id = e.target.value;
+    const inv = (this.state.linkInvoices || []).find(x => x.id === id);
+    this.setState(s => ({
+      form: Object.assign({}, s.form, {
+        linkInvoice: id,
+        linkClient: inv ? inv.clientId : s.form.linkClient,
+        linkAmount: inv ? String(inv.amount) : s.form.linkAmount
+      })
+    }));
+  };
+
+  applyReview(id, action, invNo, stay) {
+    if (action !== 'reject' && typeof FlowStore !== 'undefined' && FlowStore.confirmMatch) {
+      FlowStore.confirmMatch(id);
+      this.applyStore({
+        detail: null,
+        page: stay ? this.state.page : 'transactions',
+        tab: stay ? this.state.tab : Object.assign({}, this.state.tab, { transactions: 'matching' })
+      });
+      this.toast(invNo ? 'Linked to ' + invNo : 'Match confirmed');
+      return;
+    }
+    this.setState(s => {
+      const match = (s.matches || []).find(m => m.id === id) || (s.attention || []).find(a => a.id === id) || {};
+      const drop = (list) => (list || []).filter(x => x.id !== id);
+      const attention = drop(s.attention);
+      const matches = drop(s.matches);
+      const matchRate = this.matchRateFrom(s.matchRate, matches, attention);
+      if (action === 'reject') {
+        return { attention, matches, matchRate, detail: stay ? s.detail : null, page: stay ? s.page : 'transactions', tab: stay ? s.tab : Object.assign({}, s.tab, { transactions: 'matching' }) };
+      }
+      const invLabel = invNo || match.inv;
+      const linked = invLabel && invLabel !== 'No invoice';
+      const prevConf = typeof match.conf === 'number' ? match.conf : parseInt(match.conf, 10) || 0;
+      const confirmed = Object.assign({}, match, { id: 'c' + id, sourceId: id, inv: invLabel, when: 'Just now', conf: 100, prevConf, why: match.why || match.note });
+      return {
+        attention,
+        matches,
+        matchRate,
+        autoMatches: [confirmed].concat(s.autoMatches || []),
+        invoices: (s.invoices || []).map(i => linked && (i.no === invLabel || i.id === match.invoiceId) ? Object.assign({}, i, { status: 'Paid', outstanding: 0, daysLate: 0 }) : i),
+        txns: (s.txns || []).map(t => match.txnId && t.id === match.txnId && t.status === 'Pending' ? Object.assign({}, t, { status: 'Settled' }) : t),
+        figures: Object.assign({}, s.figures, { pending: match.pending ? Math.max(0, (s.figures.pending || 0) - Math.abs(match.amount || 0)) : (s.figures && s.figures.pending) }),
+        matchDone: (s.matchDone || 0) + 1,
+        detail: stay ? null : null,
+        page: stay ? s.page : 'transactions',
+        tab: stay ? s.tab : Object.assign({}, s.tab, { transactions: 'matching' })
+      };
+    });
+    this.toast(action === 'reject' ? 'Sent back for review' : (invNo ? 'Linked to ' + invNo : 'Match confirmed'));
+  }
+  matchRateFrom(rate, matches, attention) {
+    const total = rate && rate.total != null ? rate.total : 0;
+    const seen = {};
+    let open = 0;
+    (attention || []).concat(matches || []).forEach(row => {
+      if (!row || !row.id || seen[row.id]) return;
+      seen[row.id] = true;
+      open += 1;
+    });
+    const matched = Math.max(0, total - open);
+    return { matched, total, percent: total ? Math.round((matched / total) * 100) : 0, open };
+  }
+  liveMatch() {
+    if (this.props.emptyState) {
+      const total = (this.state.matchRate && this.state.matchRate.total) || 0;
+      return { openItems: [], open: 0, total, matched: total, percent: total ? 100 : 0 };
+    }
+    const rate = this.matchRateFrom(this.state.matchRate, this.state.matches, this.state.attention);
+    const seen = {};
+    const openItems = [];
+    (this.state.attention || []).concat(this.state.matches || []).forEach(row => {
+      if (!row || !row.id || seen[row.id]) return;
+      seen[row.id] = true;
+      openItems.push(row);
+    });
+    return Object.assign({ openItems }, rate);
+  }
+  resolveAtt(id, ok) {
+    return this.memo('_att', id + ok, () => () => this.applyReview(id, ok ? 'confirm' : 'reject', null, true));
+  }
+
+  periodOf() {
+    const tf = this.state.tf || 'month';
+    return (this.state.periods && this.state.periods[tf]) || { moneyIn: 0, moneyOut: 0, pending: 0, net: 0, series: { labels: [], values: [] } };
+  }
+  reportsPeriod() {
+    const tf = this.state.reportsTf || 'month';
+    return (this.state.periods && this.state.periods[tf]) || { moneyIn: 0, moneyOut: 0, pending: 0, net: 0, label: 'Last 30 days', series: { labels: [], values: [] }, pnl: {}, branches: [], runway: {}, spend: { tags: [], vendors: [] }, forecast: [], range: '' };
+  }
   series() {
-    // running balance built from the real ledger, so the last point equals the hero figure
+    const boxed = this.periodOf().series;
+    if (boxed && boxed.values && boxed.values.length) {
+      const v = boxed.values.slice();
+      const net = this.periodOf().net;
+      v[v.length - 1] = net;
+      return { v, l: boxed.labels.slice() };
+    }
     const tf = this.state.tf;
     const labels = tf === 'day'
       ? ['9a', '11a', '1p', '3p', '5p', '7p', '9p', 'Now']
       : tf === 'month'
         ? ['W1', '', 'W2', '', 'W3', '', 'W4', '', 'W5', 'Now']
         : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Now'];
-    const n = labels.length;
-    const ledger = this.state.txns.slice().reverse();
-    const net = ledger.reduce((a, t) => a + t.amount, 0);
-    if (!ledger.length) return { v: new Array(n).fill(0), l: labels };
-    const cum = []; let run = 0;
-    ledger.forEach(t => { run += t.amount; cum.push(run); });
-    const v = [];
-    for (let i = 0; i < n; i++) {
-      const at = Math.round(((i + 1) / n) * cum.length) - 1;
-      v.push(cum[Math.max(0, Math.min(cum.length - 1, at))]);
-    }
-    v[n - 1] = net;
-    return { v, l: labels };
+    return { v: new Array(labels.length).fill(0), l: labels };
   }
 
   chart() {
     const { v, l } = this.series();
-    const W = 720, H = 190, PAD = 22, max = (Math.max.apply(null, v) || 1) * 1.18;
-    const pts = v.map((y, i) => [(i / (v.length - 1)) * W, H - PAD - (y / max) * (H - PAD - 20)]);
+    const W = 720, H = 190, PAD = 22;
+    const series = this.periodOf().series;
+    const scale = series.scale || { min: 0, max: 1, ticks: [] };
+    const yFor = value => H - PAD - ((value - scale.min) / (scale.max - scale.min)) * (H - PAD - 20);
+    const pts = v.map((y, i) => [(i / (v.length - 1)) * W, yFor(y)]);
     const n = pts.length, dx = [], slope = [], m = [];
     for (let i = 0; i < n - 1; i++) { dx.push(pts[i + 1][0] - pts[i][0]); slope.push((pts[i + 1][1] - pts[i][1]) / (pts[i + 1][0] - pts[i][0])); }
     m.push(slope[0]);
@@ -3621,15 +3894,15 @@ class Component extends DCLogic {
     const endY = pts[n - 1][1].toFixed(1);
     d += ' L' + (W + 4) + ' ' + endY;
     const area = d + ' L' + (W + 4) + ' ' + H + ' L0 ' + H + ' Z';
-    const money = num => 'QR ' + Math.round(num).toLocaleString('en-US');
     const hi = this.state.hoverIdx;
     const idx = hi === null || hi === undefined ? v.length - 1 : Math.max(0, Math.min(v.length - 1, hi));
     const p = pts[idx];
-    const gridVals = [0, 1, 2].map(i => {
-      const yy = H - PAD - ((i + 1) / 3.4) * (H - PAD - 14);
-      return { y: yy.toFixed(1), top: ((yy / H) * 100).toFixed(2) + '%', label: money(((i + 1) / 3.4) * max) };
+    const valueText = (series.valueTexts || [])[idx] || '';
+    const gridVals = scale.ticks.map(tick => {
+      const yy = yFor(tick.value);
+      return { y: yy.toFixed(1), top: ((yy / H) * 100).toFixed(2) + '%', label: tick.label, zero: tick.value === 0 };
     });
-    const grids = gridVals.map(g => '<path d="M0 ' + g.y + 'H' + W + '" stroke="rgba(255,255,255,.08)" stroke-width="1" stroke-dasharray="2 7" fill="none"/>').join('');
+    const grids = gridVals.filter(g => !g.zero).map(g => '<path d="M0 ' + g.y + 'H' + W + '" stroke="rgba(255,255,255,.08)" stroke-width="1" stroke-dasharray="2 7" fill="none"/>').join('');
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 190" preserveAspectRatio="none">' +
       '<defs>' +
         '<linearGradient id="flowg" x1="0" y1="0" x2="0" y2="1">' +
@@ -3649,16 +3922,16 @@ class Component extends DCLogic {
       '<line x1="' + p[0].toFixed(1) + '" y1="0" x2="' + p[0].toFixed(1) + '" y2="190" stroke="rgba(255,255,255,.22)" stroke-width="1" stroke-dasharray="3 5"/>' +
       '</svg>';
     return {
-      line: d, area, labels: l.map(t => ({ t })),
+      line: d, area, labels: l.map(t => ({ t, axisStyle: this.state.tf === 'month' ? 'flex:1; min-width:0; white-space:nowrap' : '' })),
       gridVals,
-      marker: { x: p[0].toFixed(1), y: p[1].toFixed(1), value: money(v[idx]) },
+      marker: { x: p[0].toFixed(1), y: p[1].toFixed(1), value: valueText },
       dot: { left: ((p[0] / W) * 100).toFixed(2) + '%', top: ((p[1] / H) * 100).toFixed(2) + '%' },
       tip: {
         left: 'clamp(6px, calc(' + ((p[0] / W) * 100).toFixed(2) + '% - 52px), calc(100% - 122px))',
         top: p[1] < 56
           ? 'calc(' + ((p[1] / H) * 100).toFixed(2) + '% + 16px)'
           : 'calc(' + ((p[1] / H) * 100).toFixed(2) + '% - 42px)',
-        value: money(v[idx])
+        value: valueText
       },
       src: 'data:image/svg+xml,' + encodeURIComponent(svg)
     };
@@ -3707,6 +3980,26 @@ class Component extends DCLogic {
     };
     window.addEventListener('keydown', this._onKey);
     document.addEventListener('pointerdown', this._onPointer, true);
+    this.syncMatchFill(true);
+  }
+  componentDidUpdate() {
+    this.syncMatchFill();
+  }
+  syncMatchFill(immediate) {
+    const next = (this.liveMatch().percent || 0) + '%';
+    const prev = this._matchFillW;
+    this._matchFillW = next;
+    const el = typeof document === 'undefined' ? null : document.querySelector('[data-match-fill]');
+    if (!el) return;
+    if (immediate || !prev || prev === next) {
+      el.style.width = next;
+      return;
+    }
+    el.style.transition = 'none';
+    el.style.width = prev;
+    void el.offsetWidth;
+    el.style.transition = 'width .55s cubic-bezier(.32,.72,0,1)';
+    el.style.width = next;
   }
   componentWillUnmount() {
     window.removeEventListener('resize', this._onResize);
@@ -3751,24 +4044,22 @@ class Component extends DCLogic {
     }[this.state.page];
   }
 
-  confirmMatch(id, inv) {
-    this.setState(s => ({
-      matches: s.matches.filter(m => m.id !== id),
-      matchDone: s.matchDone + 1,
-      autoMatches: [Object.assign({}, s.matches.find(m => m.id === id), { id: 'c' + id, inv: inv || (s.matches.find(m => m.id === id) || {}).inv, when: 'Just now', conf: 100 })].concat(s.autoMatches),
-      detail: null, page: 'transactions', tab: Object.assign({}, s.tab, { transactions: 'matching' })
-    }));
-    this.toast(inv ? 'Linked to ' + inv : 'Match confirmed');
-  }
-  rejectMatch(id) {
-    this.setState(s => ({
-      matches: s.matches.filter(m => m.id !== id),
-      detail: null, page: 'transactions', tab: Object.assign({}, s.tab, { transactions: 'matching' })
-    }));
-    this.toast('Sent back for review');
-  }
+  confirmMatch(id, inv) { this.applyReview(id, 'confirm', inv || null, false); }
+  rejectMatch(id) { this.applyReview(id, 'reject', null, false); }
   undoMatch(id) {
-    this.setState(s => ({ autoMatches: s.autoMatches.filter(m => m.id !== id), detail: null }));
+    this.setState(s => {
+      const done = (s.autoMatches || []).find(m => m.id === id);
+      if (!done || !done.sourceId) return { autoMatches: (s.autoMatches || []).filter(m => m.id !== id), detail: null };
+      const restored = Object.assign({}, done, { id: done.sourceId, conf: done.prevConf || 0 });
+      const open = (s.matches || []).some(m => m.id === restored.id);
+      return {
+        autoMatches: s.autoMatches.filter(m => m.id !== id),
+        matches: open ? s.matches : [restored].concat(s.matches || []),
+        attention: (s.attention || []).some(a => a.id === restored.id) ? s.attention : [{ id: restored.id, amount: done.amount, d: done.d || done.when, src: done.src, note: done.note || ('Suggested match: ' + (done.inv || 'No invoice') + ', ' + (done.why || '')), conf: (done.prevConf || 0) + '%', inv: done.inv, invoiceId: done.invoiceId, txnId: done.txnId, pending: done.pending, why: done.why, party: done.party }].concat(s.attention || []),
+        matchRate: this.matchRateFrom(s.matchRate, open ? s.matches : [restored].concat(s.matches || []), (s.attention || []).some(a => a.id === restored.id) ? s.attention : [{ id: restored.id }].concat(s.attention || [])),
+        detail: null
+      };
+    });
     this.toast('Match undone');
   }
 
@@ -3904,6 +4195,8 @@ class Component extends DCLogic {
   chip(status) {
     const map = {
       Paid: ['var(--pos)', 'var(--pos-soft)'], Settled: ['var(--pos)', 'var(--pos-soft)'], Success: ['var(--pos)', 'var(--pos-soft)'],
+      Simulated: ['var(--ink-3)', 'var(--chip)'],
+      'Awaiting Settlement': ['var(--ink-3)', 'var(--chip)'],
       Overdue: ['var(--neg)', 'var(--neg-soft)'], Refunded: ['var(--neg)', 'var(--neg-soft)'], Error: ['var(--neg)', 'var(--neg-soft)'],
       Active: ['var(--ink-2)', 'var(--chip)'], Connected: ['var(--ink-2)', 'var(--chip)'],
       Pending: ['var(--ink-3)', 'var(--chip)'], Viewed: ['var(--ink-3)', 'var(--chip)'], Retrying: ['var(--ink-3)', 'var(--chip)'], Partial: ['var(--ink-3)', 'var(--chip)'], Sandbox: ['var(--ink-3)', 'var(--chip)'],
@@ -3917,7 +4210,10 @@ class Component extends DCLogic {
     const T = p => this.tabOf(p, this.dflt(p));
     const flags = (p, keys) => { const cur = T(p), o = {}; keys.forEach(k => o[k] = cur === k); return o; };
 
-    const links = s.links.map(l => Object.assign({}, l, { amt: this.fmt(l.amount), chip: this.chip(l.status), open: this.open('link', l.id), uses: String(l.uses) }));
+    const links = s.links.map(l => Object.assign({}, l, {
+      amt: this.fmt(l.amount), chip: this.chip(l.status), open: this.open('link', l.id), uses: String(l.uses),
+      copy: this.memo('_lcp', l.id, () => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.copyPayUrl(l.payUrl); })
+    }));
     const mrrAll = s.plans.reduce((a, p) => a + p.mrr, 0);
     const subsAll = s.plans.reduce((a, p) => a + p.subs, 0);
     const plans = s.plans.map(p => Object.assign({}, p, {
@@ -3952,7 +4248,13 @@ class Component extends DCLogic {
     }));
     const branches = s.branches.map(b => Object.assign({}, b, { rev: this.fmt0(b.revenue), staffT: String(b.staff), open: this.open('branch', b.id) }));
     const reports = s.reports.map(r => Object.assign({}, r, { open: this.open('report', r.id) }));
-    const syncLog = s.syncLog.map(l => Object.assign({}, l, { chip: this.chip(l.status), open: this.open('synclog', l.id), itemsT: String(l.items), errT: String(l.errors) }));
+    const exportHistory = s.exportHistory || [];
+    const exports = {
+      any: exportHistory.length > 0,
+      none: exportHistory.length === 0,
+      rows: exportHistory.map(l => Object.assign({}, l, { chip: this.chip(l.status), open: this.open('synclog', l.id), itemsT: String(l.items), errT: String(l.errors) }))
+    };
+    const syncLog = (s.syncLog || []).map(l => Object.assign({}, l, { chip: this.chip(l.status), open: this.open('synclog', l.id), itemsT: String(l.items), errT: String(l.errors) }));
     const matches = s.matches.map(m => Object.assign({}, m, { amt: this.fmt(m.amount), confT: m.conf + '%', open: this.open('match', m.id), high: m.conf >= 85, low: m.conf < 85 }));
 
     const rows = this.filtered().map(t => Object.assign({}, this.row(t), { chip: this.chip(t.status) }));
@@ -3963,9 +4265,16 @@ class Component extends DCLogic {
       return { tag: tg, inT: this.fmt0(inn), outT: this.fmt0(Math.abs(out)), count: String(list.length), go: this.setFilter('tag', tg), bar: Math.min(100, Math.round((Math.max(inn, Math.abs(out)) / 20000) * 100)) + '%' };
     });
 
-    const cf = [['Mon', 8.2, 3.1], ['Tue', 12.4, 4.8], ['Wed', 6.9, 2.2], ['Thu', 15.1, 6.4], ['Fri', 11.3, 3.9], ['Sat', 18.6, 5.1], ['Sun', 9.4, 2.7]];
-    const cfMax = 20;
-    const cash = cf.map(([day, i, o]) => ({ day, inH: (i / cfMax * 130).toFixed(0) + 'px', outH: (o / cfMax * 130).toFixed(0) + 'px', inT: 'QR ' + (i * 1000).toLocaleString('en-US') }));
+    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const weekBuckets = weekDays.map((day, i) => {
+      const offset = i - 6;
+      const list = s.txns.filter(t => t.offset === offset);
+      const inn = list.filter(t => t.amount > 0).reduce((a, t) => a + t.amount, 0);
+      const out = Math.abs(list.filter(t => t.amount < 0).reduce((a, t) => a + t.amount, 0));
+      return { day, inn, out };
+    });
+    const cfMax = Math.max(1, ...weekBuckets.map(b => Math.max(b.inn, b.out)));
+    const cash = weekBuckets.map(b => ({ day: b.day, inH: (b.inn / cfMax * 130).toFixed(0) + 'px', outH: (b.out / cfMax * 130).toFixed(0) + 'px', inT: 'QR ' + Math.round(b.inn).toLocaleString('en-US') }));
 
     const det = {};
     if (d) {
@@ -3976,7 +4285,20 @@ class Component extends DCLogic {
       const find = (arr, id) => arr.find(x => x.id === id) || {};
       if (det.txn) { const t = find(s.txns, d.id); det.o = Object.assign({}, t, { amt: this.fmt(t.amount), chip: this.chip(t.status), isIn: t.amount > 0 }); }
       if (det.invoice) { const i = find(s.invoices, d.id); det.o = Object.assign({}, i, { amt: this.fmt(i.amount), chip: this.chip(i.status), vat: this.fmt(0), total: this.fmt(i.amount) }); }
-      if (det.link) { const l = find(s.links, d.id); det.o = Object.assign({}, l, { amt: this.fmt(l.amount), chip: this.chip(l.status), url: 'pay.flow.qa/l/' + l.id, usesT: String(l.uses) }); }
+      if (det.link) {
+        const l = find(s.links, d.id);
+        det.o = Object.assign({}, l, {
+          amt: this.fmt(l.amount), chip: this.chip(l.status),
+          url: l.url || (l.payUrl ? String(l.payUrl).replace(/^https?:\/\//, '') : 'pay.flow.qa/l/' + l.id),
+          usesT: String(l.uses),
+          copy: this.memo('_ldcp', l.id, () => () => this.copyPayUrl(l.payUrl)),
+          showSimulate: s.env === 'test' && !!l.canSimulate,
+          simSuccess: this.memo('_sims', l.id, () => () => this.runSimulate(l.id, 'success')),
+          simDecline: this.memo('_simd', l.id, () => () => this.runSimulate(l.id, 'decline')),
+          simTimeout: this.memo('_simt', l.id, () => () => this.runSimulate(l.id, 'timeout')),
+          simPartial: this.memo('_simp', l.id, () => () => this.runSimulate(l.id, 'partial'))
+        });
+      }
       if (det.plan) { const p = find(s.plans, d.id); const plSubs = s.subscribers.filter(x => x.plan === p.id);
         det.o = Object.assign({}, p, {
           amt: this.fmt0(p.amount), mrrT: this.fmt0(p.mrr), subsT: String(p.subs),
@@ -4012,7 +4334,7 @@ class Component extends DCLogic {
         });
       }
       if (det.client) { const c = find(s.clients, d.id); det.o = Object.assign({}, c, { totalT: this.fmt0(c.total) }); det.invoices = invoices.filter(i => i.client === c.name); }
-      if (det.synclog) { const l = find(s.syncLog, d.id); det.o = Object.assign({}, l, { chip: this.chip(l.status), itemsT: String(l.items), errT: String(l.errors) }); }
+      if (det.synclog) { const l = find(s.syncLog, d.id) || find(s.exportHistory || [], d.id); det.o = Object.assign({}, l, { chip: this.chip(l.status), itemsT: String(l.items), errT: String(l.errors) }); }
       if (det.report) det.o = find(s.reports, d.id);
       if (det.member) { const m = find(s.team, d.id); det.o = Object.assign({}, m, { initials: (m.name || '').split(' ').map(x => x[0]).join('') }); }
       if (det.branch) {
@@ -4028,98 +4350,95 @@ class Component extends DCLogic {
             nameStyle: 'font-size:13px; letter-spacing:-.01em; font-weight:' + (x.id === b.id ? '650' : '500') + '; color:' + (x.id === b.id ? 'var(--ink)' : 'var(--ink-3)'),
             barStyle: 'height:100%; border-radius:5px; width:' + Math.round(x.revenue / maxRev * 100) + '%; background:' + (x.id === b.id ? 'var(--btn-dark)' : 'var(--ink-6)')
           })),
-          recent: s.txns.slice(0, 5).map(t => Object.assign({}, this.row(t), {
+          recent: this.sortedTxns().slice(0, 5).map(t => Object.assign({}, this.row(t), {
             amtStyle: "text-align:right; font-family:'Urbanist','Cairo',sans-serif; font-size:13.5px; font-weight:600; color:" + (t.amount > 0 ? 'var(--pos)' : 'var(--ink-2)')
           }))
         });
       }
-      if (det.employee) { const e = find(s.employees, d.id); det.o = Object.assign({}, e, { sal: this.fmt0(e.salary), net: this.fmt0(e.salary - Math.round(e.salary * (Math.max(0, parseFloat((s.rates || {}).wht) || 0) / 100))), ded: this.fmt0(Math.round(e.salary * (Math.max(0, parseFloat((s.rates || {}).wht) || 0) / 100))) }); }
+      if (det.employee) { const e = find(s.employees, d.id); const rate = s.figures && s.figures.deductionRate != null ? s.figures.deductionRate : 0; const ded = Math.round(e.salary * rate); det.o = Object.assign({}, e, { sal: this.fmt0(e.salary), net: this.fmt0(e.salary - ded), ded: this.fmt0(ded) }); }
       det.o = det.o || {};
     }
 
     const SW = on => this.swTrack(on), KN = on => this.swKnob(on);
     const tg = k => ({ on: s.toggles[k], off: !s.toggles[k], go: this.toggle(k), Track: SW(!!s.toggles[k]), Knob: KN(!!s.toggles[k]) });
 
-    const payrollTotal = s.employees.reduce((a, e) => a + e.salary, 0);
+    const payrollTotal = s.figures && s.figures.payrollGross != null ? s.figures.payrollGross : s.employees.reduce((a, e) => a + e.salary, 0);
 
-    const inn = s.txns.filter(t => t.amount > 0).reduce((a, t) => a + t.amount, 0);
-    const outAll = Math.abs(s.txns.filter(t => t.amount < 0).reduce((a, t) => a + t.amount, 0));
-    const cogs = Math.abs(s.txns.filter(t => t.amount < 0 && ['Supplies', 'Rent'].indexOf(t.tag) > -1).reduce((a, t) => a + t.amount, 0));
-    const payrollOut = Math.abs(s.txns.filter(t => t.amount < 0 && t.tag === 'Salaries').reduce((a, t) => a + t.amount, 0));
-    const overhead = outAll - cogs - payrollOut;
-    const netProfit = inn - outAll;
+    const reportPeriod = this.reportsPeriod();
+    const pnlSrc = reportPeriod.pnl || {};
+    const pnlText = pnlSrc.formatted || {};
+    const inn = pnlSrc.revenue != null ? pnlSrc.revenue : 0;
+    const refunds = pnlSrc.refunds != null ? pnlSrc.refunds : 0;
+    const outAll = reportPeriod.moneyOut != null ? reportPeriod.moneyOut : 0;
+    const cogs = pnlSrc.costOfSales != null ? pnlSrc.costOfSales : 0;
+    const payrollOut = pnlSrc.salaries != null ? pnlSrc.salaries : 0;
+    const overhead = pnlSrc.overheads != null ? pnlSrc.overheads : 0;
+    const netProfit = pnlSrc.netProfit != null ? pnlSrc.netProfit : (inn - cogs - payrollOut - overhead);
+    const periodLabel = reportPeriod.label || "Last 30 days";
     const barW = n => Math.min(100, Math.round((n / Math.max(inn, 1)) * 100)) + '%';
     const pnl = {
-      net: this.fmt0(netProfit),
+      periodLabel: periodLabel.toLowerCase(),
+      net: pnlText.netProfit,
       netColor: netProfit >= 0 ? 'var(--pos)' : 'var(--neg)',
-      margin: Math.round((netProfit / Math.max(inn, 1)) * 100) + '%',
+      margin: (pnlSrc.margin != null ? pnlSrc.margin : Math.round((netProfit / Math.max(inn, 1)) * 100)) + '%',
       cards: [
-        { label: 'REVENUE', val: this.fmt0(inn), color: 'var(--ink)', note: 'All money in this month' },
-        { label: 'COST OF SALES', val: this.fmt0(cogs), color: 'var(--ink)', note: 'Supplies and rent' },
-        { label: 'OVERHEADS', val: this.fmt0(overhead), color: 'var(--ink)', note: 'Utilities, marketing, fees' },
-        { label: 'NET PROFIT', val: this.fmt0(netProfit), color: netProfit >= 0 ? 'var(--pos)' : 'var(--neg)', note: Math.round((netProfit / Math.max(inn, 1)) * 100) + '% margin' }
+        { label: 'REVENUE', val: pnlText.revenue, color: 'var(--ink)', note: periodLabel },
+        { label: 'COST OF SALES', val: pnlText.costOfSalesCard, color: 'var(--ink)', note: 'Supplies and rent' },
+        { label: 'OVERHEADS', val: pnlText.overheadsCard, color: 'var(--ink)', note: 'Utilities, marketing, fees' },
+        { label: 'NET PROFIT', val: pnlText.netProfit, color: netProfit >= 0 ? 'var(--pos)' : 'var(--neg)', note: (pnlSrc.margin != null ? pnlSrc.margin : 0) + '% margin' }
       ],
       rows: [
-        { label: 'Revenue', val: this.fmt0(inn), bar: barW(inn), color: 'var(--pos)', weight: '650' },
-        { label: 'Cost of sales', val: '-' + this.fmt0(cogs), bar: barW(cogs), color: 'var(--ink-2)', weight: '500' },
-        { label: 'Salaries', val: '-' + this.fmt0(payrollOut), bar: barW(payrollOut), color: 'var(--ink-2)', weight: '500' },
-        { label: 'Overheads', val: '-' + this.fmt0(overhead), bar: barW(overhead), color: 'var(--ink-2)', weight: '500' }
+        { label: 'Revenue', val: pnlText.revenue, bar: barW(inn), color: 'var(--pos)', weight: '650' },
+        { label: 'Refunds', val: pnlText.refunds, bar: barW(refunds), color: 'var(--ink-2)', weight: '500' },
+        { label: 'Cost of sales', val: pnlText.costOfSales, bar: barW(cogs), color: 'var(--ink-2)', weight: '500' },
+        { label: 'Salaries', val: pnlText.salaries, bar: barW(payrollOut), color: 'var(--ink-2)', weight: '500' },
+        { label: 'Overheads', val: pnlText.overheads, bar: barW(overhead), color: 'var(--ink-2)', weight: '500' }
       ]
     };
 
-    const cashOnHand = 84220, burn = Math.round(outAll * 0.62);
-    const runway = { cash: this.fmt0(cashOnHand), burn: this.fmt0(burn), months: Math.floor(cashOnHand / Math.max(burn, 1)) + ' months', until: 'Comfortable into Q1 2027' };
+    const cashOnHand = reportPeriod.net != null ? reportPeriod.net : 0, burn = Math.round(outAll * 0.62);
+    const runwayMonths = Math.floor(cashOnHand / Math.max(burn, 1));
+    const runwaySrc = reportPeriod.runway || {};
+    const runway = {
+      cash: runwaySrc.cashText || this.fmt0(cashOnHand),
+      burn: runwaySrc.burnText || this.fmt0(burn),
+      burnLabel: runwaySrc.burnLabel || 'AVG NET BURN / MO',
+      months: runwaySrc.months || (runwayMonths + (runwayMonths === 1 ? ' month' : ' months')),
+      until: runwaySrc.until || 'From this period\'s money out'
+    };
 
-    const FC = [['Mon', 8.2, 3.1, 1], ['Tue', 12.4, 4.8, 1], ['Wed', 6.9, 2.2, 1], ['Thu', 15.1, 6.4, 1], ['Fri', 11.3, 3.9, 1], ['Sat', 18.6, 5.1, 0], ['Sun', 9.4, 2.7, 0], ['Next wk', 13.5, 4.4, 0]];
-    const forecast = FC.map(([day, i, o, actual]) => ({
-      day, inH: (i / 20 * 140).toFixed(0) + 'px', outH: (o / 20 * 140).toFixed(0) + 'px',
-      inBg: actual ? 'var(--pos)' : 'transparent', outBg: actual ? 'var(--ink-6)' : 'transparent',
-      border: actual ? 'none' : '1.5px dashed var(--ink-6)'
-    }));
+    const forecast = (reportPeriod.forecast && reportPeriod.forecast.length) ? reportPeriod.forecast : [];
 
-    const totalOut = Math.max(outAll, 1);
+    const spendSrc = reportPeriod.spend || {};
     const spend = {
-      tags: s.tags.map(tg => {
-        const o = Math.abs(s.txns.filter(t => t.tag === tg && t.amount < 0).reduce((a, t) => a + t.amount, 0));
-        return { tag: tg, out: this.fmt0(o), pct: Math.round((o / totalOut) * 100) + '%', bar: Math.round((o / totalOut) * 100) + '%', color: o / totalOut > 0.3 ? 'var(--neg)' : 'var(--ink-2)', go: this.setFilter('tag', tg) };
-      }).filter(x => parseInt(x.pct) > 0 || x.out !== 'QR 0').filter(x => x.bar !== '0%').sort((a, b) => parseInt(b.pct) - parseInt(a.pct)),
-      vendors: s.txns.filter(t => t.amount < 0).sort((a, b) => a.amount - b.amount).slice(0, 5).map(t => ({
-        name: t.party, tag: t.tag, abbr: t.party.slice(0, 2).toUpperCase(), count: t.src, total: this.fmt0(Math.abs(t.amount))
-      })),
-      insight: 'Salaries are your largest outflow at ' + Math.round((payrollOut / totalOut) * 100) + '% of spend. Rent and supplies together add another ' + Math.round((cogs / totalOut) * 100) + '%.'
+      tags: (spendSrc.tags || []).map(tg => Object.assign({}, tg, { go: this.setFilter('tag', tg.tag) })),
+      vendors: spendSrc.vendors || [],
+      refunds: spendSrc.refundsText || this.fmt0(0),
+      hasRefunds: !!spendSrc.hasRefunds,
+      insight: spendSrc.insight || ''
     };
 
-    const AGE = { Overdue: 22, Sent: 8, Viewed: 4, Draft: 0 };
-    const openInv = s.invoices.filter(i => i.status !== 'Paid');
-    const bucket = (lo, hi) => openInv.filter(i => (AGE[i.status] || 0) >= lo && (AGE[i.status] || 0) < hi);
-    const mk = (label, list, color) => ({ label, val: this.fmt0(list.reduce((a, i) => a + i.amount, 0)), count: list.length + (list.length === 1 ? ' invoice' : ' invoices'), color });
+    const ageingSrc = s.ageing || { buckets: [], rows: [] };
     const ageing = {
-      buckets: [
-        mk('NOT DUE YET', bucket(0, 1), 'var(--ink)'),
-        mk('1–14 DAYS', bucket(1, 15), 'var(--ink)'),
-        mk('15–30 DAYS', bucket(15, 31), 'var(--ink-2)'),
-        mk('OVER 30 DAYS', bucket(31, 999), 'var(--neg)')
-      ],
-      rows: openInv.map(i => {
-        const days = AGE[i.status] || 0;
-        return Object.assign({}, i, {
-          amt: this.fmt(i.amount), chip: this.chip(i.status), open: this.open('invoice', i.id),
-          age: days ? days + ' days late' : 'On time',
-          ageColor: days > 14 ? 'var(--neg)' : days ? 'var(--ink-2)' : 'var(--ink-4)'
-        });
-      })
+      buckets: ageingSrc.buckets || [],
+      rows: (ageingSrc.rows || []).map(i => Object.assign({}, i, {
+        amt: i.amt || this.fmt(i.amount),
+        chip: this.chip(i.status),
+        open: this.open('invoice', i.id)
+      }))
     };
 
-    const pack = { items: [
+    const pack = { period: reportPeriod.range || periodLabel, accountant: s.accountantName || '', items: [
       { label: 'Profit & loss summary', meta: 'PDF' },
       { label: 'Full transaction ledger', meta: 'CSV · ' + s.txns.length + ' lines' },
       { label: 'Invoices issued', meta: 'PDF + XML · ' + s.invoices.length },
-      { label: 'Tax summary', meta: 'Peppol-ready' },
-      { label: 'Bank reconciliation', meta: '87% matched' }
+      { label: 'Tax summary', meta: 'PDF' },
+      { label: 'Bank reconciliation', meta: this.liveMatch().percent + '% matched' }
     ] };
 
-    const revTotal = s.branches.reduce((a, b) => a + b.revenue, 0);
-    const branchPerf = s.branches.map(b => Object.assign({}, b, {
+    const branchRows = (reportPeriod.branches && reportPeriod.branches.length) ? reportPeriod.branches : s.branches;
+    const revTotal = branchRows.reduce((a, b) => a + b.revenue, 0);
+    const branchPerf = branchRows.map(b => Object.assign({}, b, {
       rev: this.fmt0(b.revenue), staffT: String(b.staff), open: this.open('branch', b.id),
       share: Math.round((b.revenue / revTotal) * 100) + '%'
     }));
@@ -4165,11 +4484,8 @@ class Component extends DCLogic {
       })
     }));
 
-    const limits = s.team.map(m => ({ name: m.name, role: m.role, cap: m.role === 'Owner' ? 'No limit' : m.role === 'Accountant' ? 'QR 10,000' : 'QR 2,000' }));
-    const pendingList = (s.approvals || [
-      { id: 'ap1', amt: 12400, what: 'Supplier payment, Gulf Warehousing', who: 'Sara Iqbal', when: 'Today, 08:40' },
-      { id: 'ap2', amt: 6800, what: 'Refund, Noor Interiors', who: 'Rami Haddad', when: 'Yesterday' }
-    ]);
+    const limits = s.team.map(m => ({ name: m.name, role: m.role, cap: 'Not set' }));
+    const pendingList = s.approvals || [];
     const pending = {
       count: String(pendingList.length), none: pendingList.length === 0,
       items: pendingList.map(p => ({
@@ -4189,7 +4505,7 @@ class Component extends DCLogic {
       mt: flags('team', ['members', 'permissions', 'approvals', 'audit']),
       yt: flags('payroll', ['employees', 'payslips', 'tax']),
       st: flags('settings', ['profile', 'account', 'security', 'billing', 'tags']),
-      links, plans, invoices, clients, team, employees, branches, reports, syncLog, matches, rows, tagTotals, cash, det,
+      links, linkClients: s.linkClients || [], linkInvoices: s.linkInvoices || [], plans, invoices, clients, team, employees, branches, reports, syncLog, exports, zoho: s.zoho || { hasLast: false, line: '' }, matches, rows, tagTotals, cash, det,
       pnl, runway, forecast, spend, ageing, pack, branchPerf, perms, limits, pending,
       providers: s.providers.map(p => Object.assign({}, p, { initial: p.n.slice(0, 2), note: p.s !== 'Coming soon', go: () => this.toast(p.n + ' is not available in Phase 1') })),
       history: s.history.filter(x => s.actType === 'all' || x.kind === s.actType).map(x => {
@@ -4227,7 +4543,7 @@ class Component extends DCLogic {
         this.filterMenu('source', ['All', 'SkipCash', 'Bank', 'Shopify', 'Link', 'Cash', 'Bill'], 'Source'),
         this.filterMenu('status', ['All', 'Settled', 'Pending', 'Refunded'], 'Status'),
         this.filterMenu('range', ['All time', 'Last 7 days', 'Last 30 days', 'This month'], 'Period'),
-        this.filterMenu('tag', ['All', 'Sales', 'Supplies', 'Rent', 'Salaries', 'Utilities', 'Marketing'], 'Tag')
+        this.filterMenu('tag', ['All', 'Sales', 'Supplies', 'Rent', 'Salaries', 'Utilities', 'Marketing', 'Fees'], 'Tag')
       ],
       fopts: { range: this.filterOpts('range', ['All time', 'Last 7 days', 'Last 30 days', 'This month']), source: this.filterOpts('source', ['All', 'SkipCash', 'Bank', 'Shopify', 'Link', 'Cash', 'Bill']), status: this.filterOpts('status', ['All', 'Settled', 'Pending', 'Refunded']), tag: this.filterOpts('tag', ['All'].concat(s.tags)) },
       empt: {
@@ -4237,9 +4553,10 @@ class Component extends DCLogic {
         plans: s.plans.length === 0,
         team: s.team.length === 0,
         employees: s.employees.length === 0,
-        txnsAll: s.txns.length === 0
+        txnsAll: s.txns.length === 0,
+        reports: s.reports.length === 0
       },
-      counts: { rows: String(rows.length), total: String(s.txns.length), invoices: String(s.invoices.length), matches: String(s.matches.length) },
+      counts: { rows: String(rows.length), total: String(s.txns.length), invoices: String(s.invoices.length), matches: String(this.liveMatch().open) },
       tagList: s.tags.map(t => ({ label: t, count: String(s.txns.filter(x => x.tag === t).length), del: this.memo('_dt', t, () => () => { this.setState(st => ({ tags: st.tags.filter(x => x !== t) })); this.toast('Tag removed'); }) })),
       subsSum,
       linkSum: (() => {
@@ -4251,25 +4568,25 @@ class Component extends DCLogic {
         };
       })(),
       invSum: (() => {
-        const paid = s.invoices.filter(i => i.status === 'Paid');
-        const over = s.invoices.filter(i => i.status === 'Overdue');
-        const open = s.invoices.filter(i => i.status !== 'Paid' && i.status !== 'Draft');
+        const tot = s.invoiceTotals || {};
         return {
-          outstanding: this.fmt0(open.reduce((a, i) => a + i.amount, 0)), unpaid: String(open.length),
-          paid: this.fmt0(s.invoices.reduce((a, i) => a + i.amount, 0)), paidN: String(s.invoices.length),
-          overdue: this.fmt0(over.reduce((a, i) => a + i.amount, 0)), overdueN: String(over.length)
+          outstanding: this.fmt0(tot.outstanding || 0), unpaid: String(tot.outstandingCount || 0),
+          paid: this.fmt0(tot.invoiced || 0), paidN: String(tot.invoicedCount || 0),
+          overdue: this.fmt0(tot.overdue || 0), overdueN: String(tot.overdueCount || 0)
         };
       })(),
       co: s.checkout,
       payroll: (() => {
-        const pct = Math.max(0, Math.min(100, parseFloat((s.rates || {}).wht) || 0)) / 100;
-        const ded = Math.round(payrollTotal * pct);
-        return { total: this.fmt0(payrollTotal), net: this.fmt0(payrollTotal - ded), count: String(s.employees.length), vat: this.fmt0(ded), pctText: (pct * 100).toFixed(pct * 100 % 1 ? 1 : 0) + '%' };
+        const gross = s.figures.payrollGross != null ? s.figures.payrollGross : payrollTotal;
+        const ded = s.figures.payrollDeductions != null ? s.figures.payrollDeductions : 0;
+        const net = s.figures.payrollNet != null ? s.figures.payrollNet : gross - ded;
+        const pct = s.figures.deductionRate != null ? s.figures.deductionRate : 0;
+        return { total: this.fmt0(gross), net: this.fmt0(net), count: String(s.figures.payrollCount || s.employees.length), vat: this.fmt0(ded), pctText: (pct * 100).toFixed(pct * 100 % 1 ? 1 : 0) + '%' };
       })(),
       connStats: (() => {
         const all = ['skipcash', 'bank', 'zoho', 'tally', 'shopify'];
         const active = all.filter(k => k === 'tally' || s.conns[k]).length;
-        return { active: String(active), attention: '1', who: 'Doha Bank is on sample data', show: s.page === 'connections' && this.tabOf('connections', 'hub') !== 'hub' };
+        return { active: String(active), attention: '', who: '', show: false };
       })(),
       connMan: {
         skipcash: this.go('payments', 'gateway'),
@@ -4344,11 +4661,17 @@ class Component extends DCLogic {
     const ppFocus = s.page === 'payments' && this.tabOf('payments', this.dflt('payments')) === 'checkout' && (s.ppView === 'edit' || s.ppView === 'published');
     const tabs = { show: !!tabItems && !d && !ppFocus && this.tabOf(s.page, this.dflt(s.page)) !== 'hub' && !(mob && (s.page === 'transactions' || s.page === 'invoicing')), items: tabItems ? this.tabList(s.page, tabItems) : [] };
 
-    const inflow = s.txns.filter(t => t.amount > 0).reduce((a, t) => a + t.amount, 0);
-    const outflow = s.txns.filter(t => t.amount < 0).reduce((a, t) => a + t.amount, 0);
+    const period = this.periodOf();
+    const inflow = period.moneyIn;
+    const outflow = period.moneyOut;
     const branchRaw = s.branches.find(b => b.id === s.branchId);
     const branch = Object.assign({}, branchRaw, this.props.businessName ? { name: this.props.businessName } : {});
-    const attList = this.props.emptyState ? [] : s.attention;
+    const live = this.liveMatch();
+    const attList = live.openItems;
+    const openN = live.open;
+    const matchPct = live.percent;
+    const autoN = live.matched;
+    const totalN = live.total;
 
     const quick = [
       ['Send Payment Link', 'link',
@@ -4365,17 +4688,14 @@ class Component extends DCLogic {
         'M6.1 6.4h7.8']
     ].map(([label, kind, dp, fp]) => ({ label, d: dp + ' ' + fp, go: this.openModal(kind) }));
 
-    const autoN = s.autoMatches.length, openN = s.matches.length, totalN = autoN + openN;
-    const matchPct = totalN ? Math.round((autoN / totalN) * 100) : 100;
     const C = 2 * Math.PI * 38;
-    const unpaid = s.invoices.filter(i => i.status !== 'Paid' && i.status !== 'Draft');
-    const unpaidN = unpaid.length;
-    const outstanding = unpaid.reduce((a, i) => a + i.amount, 0);
+    const unpaidN = (s.invoiceTotals && s.invoiceTotals.outstandingCount) || 0;
+    const outstanding = (s.invoiceTotals && s.invoiceTotals.outstanding) || 0;
     const kpis = [
-      { label: 'Money In', val: this.fmt0(inflow), delta: '+18.2%', up: true, down: false, d: 'M10 15.4V6.2M6.2 10 10 6.2l3.8 3.8M10 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Z' },
-      { label: 'Money Out', val: this.fmt0(Math.abs(outflow)), delta: '-4.1%', up: false, down: true, d: 'M10 4.6v9.2M6.2 10l3.8 3.8L13.8 10M10 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Z' },
+      { label: 'Money In', val: period.moneyInText || this.fmt0(inflow), delta: '', up: false, down: false, d: 'M10 15.4V6.2M6.2 10 10 6.2l3.8 3.8M10 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Z' },
+      { label: 'Money Out', val: period.moneyOutText || this.fmt0(Math.abs(outflow)), delta: '', up: false, down: false, d: 'M10 4.6v9.2M6.2 10l3.8 3.8L13.8 10M10 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Z' },
       { label: 'Outstanding', val: this.fmt0(outstanding), delta: unpaidN + (unpaidN === 1 ? ' invoice' : ' invoices'), up: false, down: false, d: 'M6.1 2.8h7.8v14.4l-1.95-1.3-1.95 1.3-1.95-1.3L6.1 17.2ZM6.1 6.4h7.8' },
-      { label: 'Auto-matched', val: matchPct + '%', delta: s.matches.length + ' open', up: false, down: false, d: 'm6 10.2 2.9 2.9L14.4 7.6M10 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Z' }
+      { label: 'Auto-matched', val: matchPct + '%', delta: openN === 1 ? '1 open' : openN + ' open', up: false, down: false, d: 'm6 10.2 2.9 2.9L14.4 7.6M10 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Z' }
     ].map(k => Object.assign({}, k, { neutral: !k.up && !k.down }));
 
     const MODAL = { pageSettings: ['Page settings', 'Save settings'], receipts: ['Payment receipts', 'Save'], link: ['New payment link', 'Create link'], scan: ['Scan a bill', 'Save to transactions'], expense: ['Log an expense', 'Log expense'], invoice: ['Create invoice', 'Create invoice'], plan: ['New subscription plan', 'Create plan'], member: ['Invite a team member', 'Send invite'], employee: ['Add an employee', 'Add employee'], help: ['About this build', 'Got it'] };
@@ -4427,7 +4747,7 @@ class Component extends DCLogic {
         return null;
       })(),
       rates: (() => {
-        const r = s.rates || { vat: '0', wht: '5', royalty: '5' };
+        const r = s.rates || { vat: '0', wht: '0', royalty: '0' };
         const mk = k => (e) => this.setState(x => ({ rates: Object.assign({}, x.rates, { [k]: e.target.value.replace(/[^0-9.]/g, '') }) }));
         return {
           vat: r.vat, wht: r.wht, royalty: r.royalty,
@@ -4488,7 +4808,7 @@ class Component extends DCLogic {
         const IC = this.icons();
         const { D, HUBS } = this.dests();
         const META = {
-          transactions: { matching: s.matches.length + ' need a look' },
+          transactions: { matching: this.liveMatch().open + ' need a look' },
           invoicing: { all: s.invoices.filter(i => i.status !== 'Paid' && i.status !== 'Draft').length + ' unpaid' },
           team: { members: s.team.length + ' people' },
           payroll: { employees: s.employees.length + ' on payroll' },
@@ -4502,7 +4822,7 @@ class Component extends DCLogic {
           cards: list.map(([tab, title, desc, ic]) => ({
             title, desc, d: IC[ic] || IC.list,
             meta: (META[s.page] || {})[tab] || '',
-            go: this.tabH(s.page, tab)
+            go: this.go(s.page, tab)
           })),
           back: { show: !d && list.length > 0 && HUBS.indexOf(s.page) >= 0 && !onHub && !(s.page === 'payments' && this.tabOf('payments', this.dflt('payments')) === 'checkout' && s.ppView !== 'list'), text: 'Back to ' + ((this.headFor() || {}).title || '') + ' overview', go: this.tabH(s.page, 'hub') }
         };
@@ -4655,7 +4975,7 @@ class Component extends DCLogic {
           toggleGoal: () => this.setState(st => ({ pp: Object.assign({}, st.pp, { goal: st.pp.goal ? '' : '50,000' }) })),
           goal: p.goal || '',
           setGoal: e => { const v = e.target.value; this.setState(st => ({ pp: Object.assign({}, st.pp, { goal: v }) })); },
-          goalNote: 'QR 17,000 of QR ' + (p.goal || '50,000') + ' raised so far',
+          goalNote: p.goal ? ('Toward ' + p.goal) : '',
           tools: [
             ['color', 'M4.4 15.6 9.2 3.6h1.6l4.8 12M6.2 11.4h7.6'],
             ['bold', 'M6.5 4h4.6a2.9 2.9 0 0 1 0 5.8H6.5V4Zm0 5.8h5.2a3.1 3.1 0 0 1 0 6.2H6.5V9.8Z'],
@@ -4725,10 +5045,7 @@ class Component extends DCLogic {
       })(),
       nv: (() => {
         const iv = s.nv || {};
-        const items = iv.items || [
-          { desc: 'Design retainer, August', qty: '1', price: '3500' },
-          { desc: 'Print production', qty: '4', price: '330' }
-        ];
+        const items = iv.items || [{ desc: '', qty: '1', price: '' }];
         const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\\-]/g, '')); return isNaN(n) ? 0 : n; };
         const sub = items.reduce((a, x) => a + num(x.qty) * num(x.price), 0);
         const taxPct = num(iv.tax != null ? iv.tax : 0);
@@ -4737,7 +5054,7 @@ class Component extends DCLogic {
         const patch = (k, v) => this.setState(st => ({ nv: Object.assign({}, st.nv, { [k]: v }) }));
         const clientName = iv.client || '';
         const money = n => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const nextNo = 'INV-0' + (147 + s.invoices.length - 6);
+        const nextNo = 'INV-' + String((s.invoices.reduce((n, i) => Math.max(n, parseInt(String(i.no || '').replace(/\D/g, ''), 10) || 0), 148) + 1)).padStart(4, '0');
         return {
           no: nextNo,
           clientLabel: clientName || 'Select or add a client',
@@ -4773,7 +5090,7 @@ class Component extends DCLogic {
           tax: iv.tax != null ? iv.tax : '0',
           setTax: (e) => patch('tax', e.target.value),
           taxAmt: money(taxAmt),
-          due: iv.due || '2026-08-30',
+          due: iv.due || '',
           setDue: (e) => patch('due', e.target.value),
           notes: iv.notes != null ? iv.notes : '',
           setNotes: (e) => patch('notes', e.target.value),
@@ -4952,10 +5269,10 @@ class Component extends DCLogic {
         return { label, d: (n[2] || '') + ' ' + (n[3] || ''), go: () => { clearTimeout(this._flyT); this.setState({ page: key, detail: null, fly: null, moreOpen: false }); } };
       }),
       me: {
-        initials: 'NA', name: 'Noora Al-Ansari', email: 'noora@flow.qa',
-        role: 'Owner', plan: 'Starter', business: 'Desert Bloom WLL',
-        branch: (s.branches.find(b => b.id === s.branchId) || {}).name || 'Doha, Main',
-        limit: 'QR 50,000', lastLogin: 'Today, 09:14',
+        initials: (s.ownerName || s.acctName || 'NA').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase(), name: s.ownerName || s.acctName, email: s.acctEmail,
+        role: 'Owner', plan: (s.plan && s.plan.tier) || '', business: s.merchantName || '',
+        branch: (s.branches.find(b => b.id === s.branchId) || {}).name || '',
+        limit: 'No limit', lastLogin: '',
         links: [
           { label: 'Business profile', d: 'M10 11.4a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4ZM4.2 16.6c.9-2.6 3.1-3.8 5.8-3.8s4.9 1.2 5.8 3.8', go: () => this.setState({ userMenu: false, page: 'settings', tab: Object.assign({}, s.tab, { settings: 'profile' }), detail: null }) },
           { label: 'Security & devices', d: 'M10 2.8 4.6 5v4.4c0 3.4 2.2 6.3 5.4 7.8 3.2-1.5 5.4-4.4 5.4-7.8V5L10 2.8Z', go: () => this.setState({ userMenu: false, page: 'settings', tab: Object.assign({}, s.tab, { settings: 'security' }), detail: null }) },
@@ -4964,7 +5281,7 @@ class Component extends DCLogic {
       },
       mobData: (() => {
         const bal = inflow + outflow;
-        const recent = s.txns.slice(0, 6).map(t => Object.assign({}, this.row(t), { chip: this.chip(t.status) }));
+        const recent = this.sortedTxns().slice(0, 6).map(t => Object.assign({}, this.row(t), { chip: this.chip(t.status) }));
         return {
           balance: this.fmt0(bal), inflow: this.fmt0(inflow), outflow: this.fmt0(Math.abs(outflow)),
           recent,
@@ -4974,11 +5291,11 @@ class Component extends DCLogic {
             { label: 'Scan', d: 'M3 7.2V4.7A1.7 1.7 0 0 1 4.7 3h2.5M12.8 3h2.5A1.7 1.7 0 0 1 17 4.7v2.5M17 12.8v2.5a1.7 1.7 0 0 1-1.7 1.7h-2.5M7.2 17H4.7A1.7 1.7 0 0 1 3 15.3v-2.5M5.6 10h8.8', go: this.openModal('scan') },
             { label: 'Expense', d: 'M10 15.6V5.2M5.8 9.4 10 5.2l4.2 4.2M4.4 16.8h11.2', go: this.openModal('expense') }
           ],
-          needsMatch: String(s.matches.length),
+          needsMatch: String(this.liveMatch().open),
           openInv: String(s.invoices.filter(i => i.status !== 'Paid' && i.status !== 'Draft').length),
           outstanding: this.fmt0(outstanding),
-          pending: this.fmt0(6300), delta: '+12.4%',
-          allTxns: s.txns.slice(0, 16).map(t => this.row(t)),
+          pending: period.pendingText || this.fmt0(period.pending), delta: '',
+          allTxns: this.sortedTxns().slice(0, 16).map(t => this.row(t)),
           invoices: s.invoices.slice(0, 12).map(i => ({ no: i.no, client: i.client, status: i.status, amt: this.fmt0(i.amount), open: this.open('invoice', i.id) })),
           goTxns: this.go('transactions', 'all'), goMatch: this.go('transactions', 'matching'), goInv: this.go('invoicing', 'all')
         };
@@ -4986,14 +5303,23 @@ class Component extends DCLogic {
       greet: (() => {
         const hr = new Date().getHours();
         const part = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
-        const first = (this.props.ownerName || 'Noora').split(' ')[0];
+        const first = (s.ownerName || this.props.ownerName || '').split(' ')[0];
         return {
           hello: part + ', ' + first,
           sub: attList.length ? attList.length + ' things need a quick look. The rest is running itself.' : 'Everything is settled. Nothing needs you right now.',
           date: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
         };
       })(),
-      usage: { pct: '46%', label: '2,340 of 5,000 transactions used' },
+      usage: s.usage || { pct: '0%', label: '' },
+      profile: s.profile || {},
+      plan: s.plan || { tier: '', price: '', line: '', limitLabel: '' },
+      showVat: !!s.showVat,
+      ownerName: s.ownerName || '',
+      bank: s.bank || {},
+      gateways: s.gateways || { skipcash: {}, shopify: {} },
+      scan: s.scan || {},
+      periodFrom: s.periodFrom || '',
+      periodTo: s.periodTo || '',
       f: Object.assign({ search: s.search }, s.form),
       memberEdit: (() => {
         const editing = d && d.type === 'member' && s.memberEditing === d.id;
@@ -5011,7 +5337,7 @@ class Component extends DCLogic {
           }
         };
       })(),
-      F: Object.assign({ search: (e) => { const v = e.target.value; this.setState({ search: v }); } }, this.forms(['empMethod', 'linkAmount', 'linkDesc', 'linkExpiry', 'expAmount', 'expParty', 'invClient', 'invAmount', 'invDue', 'planName', 'planAmount', 'planInterval', 'planDesc', 'memberName', 'memberEmail', 'memberRole', 'empName', 'empRole', 'empSalary', 'scanVendor', 'scanAmount', 'scanDate', 'scanTag'])),
+      F: Object.assign({ search: (e) => { const v = e.target.value; this.setState({ search: v }); }, linkInvoice: this.onLinkInvoice, periodFrom: (e) => this.setState({ periodFrom: e.target.value }), periodTo: (e) => this.setState({ periodTo: e.target.value }) }, this.forms(['empMethod', 'linkAmount', 'linkDesc', 'linkExpiry', 'linkClient', 'expAmount', 'expParty', 'invClient', 'invAmount', 'invDue', 'planName', 'planAmount', 'planInterval', 'planDesc', 'memberName', 'memberEmail', 'memberRole', 'empName', 'empRole', 'empSalary', 'scanVendor', 'scanAmount', 'scanDate', 'scanTag', 'scanTax'])),
       h: {
         stop: (e) => e.stopPropagation(),
         back: () => this.setState({ detail: null }),
@@ -5038,9 +5364,9 @@ class Component extends DCLogic {
         openHelp: this.openModal('help'),
         toggleUser: () => this.setState(x => ({ userMenu: !x.userMenu })),
         closeUser: () => this.setState({ userMenu: false }),
-        closeModal: () => this.setState({ modal: null, editEmp: null }),
+        closeModal: () => { clearTimeout(this._scanT); this.setState({ modal: null, editEmp: null, scanBusy: false }); },
         submitModal: this.submitModal,
-        simulateScan: () => this.setState(st => ({ scanDone: true, form: Object.assign({}, st.form, { scanVendor: 'Kahramaa', scanAmount: '1180.00', scanDate: '2 Aug 2026', scanTag: 'Utilities' }) })),
+        simulateScan: () => this.startExtract(((this.state.sampleBills || [])[0] || {}).id || 'bill_barzan'),
         goTxns: this.go('transactions', 'all'),
         goMatching: this.go('transactions', 'matching'),
         newLink: this.openModal('link'),
@@ -5055,10 +5381,10 @@ class Component extends DCLogic {
         copy: () => this.toast('Link copied to clipboard'),
         note: (e) => this.toast((e.currentTarget && e.currentTarget.getAttribute('data-note')) || 'Done'),
         signOut: () => { this.setState({ userMenu: false }); this.toast('Signed out of this sandbox'); },
-        syncNow: () => this.toast('Syncing with Zoho Books…'),
-        tallyExport: () => this.toast('Tally XML export queued'),
+        syncNow: () => this.runZohoSync(),
+        tallyExport: () => this.runTallyExport(),
         testTxn: () => this.toast('Sandbox test payment of QR 1.00 sent'),
-        generatePayslips: () => this.toast('Payslips generated for 3 employees')
+        generatePayslips: () => this.toast('Payslips generated for ' + this.state.employees.length + ' employees')
       },
       show: {
         dashboard: !d && s.page === 'dashboard' && !mob,
@@ -5074,13 +5400,50 @@ class Component extends DCLogic {
       },
       detail: { on: !!d },
       modal: { on: !!s.modal, title: md[0], cta: md[1], link: s.modal === 'link', scan: s.modal === 'scan', expense: s.modal === 'expense', invoice: s.modal === 'invoice', plan: s.modal === 'plan', member: s.modal === 'member', employee: s.modal === 'employee', help: s.modal === 'help', pageSettings: s.modal === 'pageSettings', receipts: s.modal === 'receipts' },
-      scan: { done: s.scanDone },
+      scan: Object.assign({}, s.scan || {}, {
+        done: !!s.scanDone,
+        busy: !!s.scanBusy,
+        notBusy: !s.scanBusy,
+        conf: s.scanConf || {},
+        samples: (s.sampleBills || []).map(b => ({
+          id: b.id,
+          cta: b.cta,
+          use: this.memo('_sx', b.id, () => () => this.startExtract(b.id))
+        })),
+        lines: (s.scanLines || []).map((line, i) => ({
+          description: line.description,
+          amount: line.amount,
+          setDesc: this.memo('_sld', String(i), () => (e) => this.setState(st => ({
+            scanLines: (st.scanLines || []).map((row, j) => j === i ? Object.assign({}, row, { description: e.target.value }) : row)
+          }))),
+          setAmount: this.memo('_sla', String(i), () => (e) => this.setState(st => ({
+            scanLines: (st.scanLines || []).map((row, j) => j === i ? Object.assign({}, row, { amount: e.target.value }) : row)
+          })))
+        })),
+        pickFile: this.memo('_sfile', 'pick', () => () => {
+          const el = typeof document !== 'undefined' && document.getElementById('flow-bill-file');
+          if (el && el.click) el.click();
+        }),
+        onFile: this.memo('_sfile', 'chg', () => (e) => {
+          const file = e && e.target && e.target.files && e.target.files[0];
+          this.startExtract(file && file.name ? file.name : '');
+        })
+      }),
       toast: { on: !!s.toast, msg: s.toast },
-      tfs: [['day', 'Day'], ['week', 'Week'], ['month', 'Month']].map(([k, label]) => ({ label, on: s.tf === k, off: s.tf !== k, go: this.memo('_tf', k, () => () => this.setState({ tf: k })) })),
+      tfs: [['day', '24h'], ['week', '7 days'], ['month', '30 days']].map(([k, label]) => ({ label, on: s.tf === k, off: s.tf !== k, go: this.memo('_tf', k, () => () => this.setState({ tf: k })) })),
       chart: this.chart(), chartHover: this.chartHover, chartLeave: this.chartLeave,
-      bal: { total: this.fmt(inflow + outflow), pending: this.fmt0(6300), delta: '+12.4% vs last week' },
+      bal: { total: period.netText || this.fmt(period.net), pending: period.pendingText || this.fmt0(period.pending), delta: '' },
+      periodLabel: period.label || 'Last 30 days',
+      matchLabel: 'Last 30 days',
+      reportsLabel: (this.reportsPeriod().label) || 'Last 30 days',
       balLabel: 'Net this period',
-      match: { matched: String(autoN), totalItems: String(totalN), pctText: matchPct + '%', dash: ((matchPct / 100) * C).toFixed(1) + ' ' + C.toFixed(1), open: openN },
+      match: {
+        matched: String(autoN), totalItems: String(totalN), pctText: matchPct + '%',
+        dash: ((matchPct / 100) * C).toFixed(1) + ' ' + C.toFixed(1),
+        open: openN, hasOpen: openN > 0,
+        openLabel: openN === 1 ? '1 open' : openN + ' open',
+        look: openN === 0 ? 'Everything is matched' : openN === 1 ? '1 still needs a look' : openN + ' still need a look'
+      },
       auto: {
         open: !!s.autoOpen, shut: !s.autoOpen,
         count: String(s.autoMatches.length),
@@ -5089,10 +5452,10 @@ class Component extends DCLogic {
         toggle: () => this.setState(x => ({ autoOpen: !x.autoOpen })),
         rows: s.autoMatches.map(m => Object.assign({}, m, { amt: this.fmt(m.amount), confT: m.conf + '%', open: this.open('match', m.id) }))
       },
-      recent: s.txns.slice(0, 6).map(t => this.row(t)),
+      recent: this.sortedTxns().slice(0, 6).map(t => this.row(t)),
       att: {
         any: attList.length > 0, none: attList.length === 0, count: String(attList.length),
-        items: attList.map(a => ({ id: a.id, amt: this.fmt(a.amount), d: a.d, src: a.src, note: a.note, conf: a.conf, confirm: this.resolveAtt(a.id, true), reject: this.resolveAtt(a.id, false) }))
+        items: attList.map(a => ({ id: a.id, amt: this.fmt(a.amount), d: a.d, src: a.src, note: a.note, conf: typeof a.conf === 'number' ? a.conf + '%' : a.conf, confirm: this.resolveAtt(a.id, true), reject: this.resolveAtt(a.id, false) }))
       },
       quick,
       tagPicks: s.tags.map(t => ({ label: t, on: s.form.expTag === t, off: s.form.expTag !== t, go: this.memo('_tp', t, () => () => this.setState(st => ({ form: Object.assign({}, st.form, { expTag: t }) }))) })),

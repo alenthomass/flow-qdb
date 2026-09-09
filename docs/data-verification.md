@@ -1,0 +1,120 @@
+# Data verification
+
+Computed by `scripts/verify-data.mjs` from `lib/data/selectors.ts` at runtime. Figures below were not typed by hand.
+
+All identity checks passed.
+
+- PASS Home defaults to 30 days: Last 30 days
+- PASS Home period toggle uses rolling labels: 24h / 7 days / 30 days
+- PASS Matching status open equals Needs Your Attention: 9 of 12 · 3 open · attention 3
+- PASS Matching status zero copy: Everything is matched; 12 of 12; kpi 0 open
+- PASS Matching status singular copy: 1 still needs a look; header 1 open; kpi 1 open
+- PASS Money formatting normalizes negative zero: zero QR 0; negative minor unit -QR 0.01
+- PASS Zero P&L expenses have no negative sign: day expenses QR 0, QR 0, QR 0, QR 0
+- PASS Reports independent of Home day: Last 30 days; revenue QR 46,510.00
+- PASS day chart auto-scales with 10% padding and includes zero: domain -QR 0.01 to QR 0.01
+- PASS day chart shows the full balance range: all 2 points inside plot; minimum QR 0, maximum QR 0
+- PASS Reports independent of Home week: Last 30 days; revenue QR 46,510.00
+- PASS week chart auto-scales with 10% padding and includes zero: domain -QR 1,999.00 to QR 21,989.00
+- PASS week chart shows the full balance range: all 7 points inside plot; minimum QR 1,870.00, maximum QR 19,990.00
+- PASS Reports independent of Home month: Last 30 days; revenue QR 46,510.00
+- PASS month chart auto-scales with 10% padding and includes zero: domain -QR 8,850.50 to QR 15,215.50
+- PASS month chart shows the full balance range: all 30 points inside plot; minimum -QR 6,845.00, maximum QR 13,210.00
+- PASS Runtime assertion rejects Home/Reports drift: unclassified completed expense triggers an error
+- PASS Pending outflow excluded from realised money: pending refund excluded from Money Out and P&L
+- PASS day Money In vs completed inflow rows: QR 0 vs ledger QR 0
+- PASS day Money Out vs completed outflow rows: QR 0 vs ledger QR 0
+- PASS day Net equals Money In minus Money Out: QR 0 = QR 0 - QR 0
+- PASS day chart last point equals Net: last QR 0, points 2
+- PASS day pending excluded from Money In: pending QR 0 sits outside Money In QR 0
+- PASS day refunds line sits under revenue: revenue QR 0, refunds QR 0, net QR 0
+- PASS week Money In vs completed inflow rows: QR 21,240.00 vs ledger QR 21,240.00
+- PASS week Money Out vs completed outflow rows: QR 1,250.00 vs ledger QR 1,250.00
+- PASS week Net equals Money In minus Money Out: QR 19,990.00 = QR 21,240.00 - QR 1,250.00
+- PASS week chart last point equals Net: last QR 19,990.00, points 7
+- PASS week chart includes every completed transaction on its day: 7 cumulative points checked, including refunds
+- PASS week pending excluded from Money In: pending QR 6,300.00 sits outside Money In QR 21,240.00
+- PASS week refunds line sits under revenue: revenue QR 21,240.00, refunds QR 0, net QR 19,990.00
+- PASS Month chart thins labels only: 30 data points; ticks 11 Aug, 16 Aug, 21 Aug, 26 Aug, 31 Aug, 5 Sept
+- PASS month Money In vs completed inflow rows: QR 46,510.00 vs ledger QR 46,510.00
+- PASS month Money Out vs completed outflow rows: QR 33,365.00 vs ledger QR 33,365.00
+- PASS month Net equals Money In minus Money Out: QR 13,145.00 = QR 46,510.00 - QR 33,365.00
+- PASS month chart last point equals Net: last QR 13,145.00, points 30
+- PASS month chart includes every completed transaction on its day: 30 cumulative points checked, including refunds
+- PASS month pending excluded from Money In: pending QR 6,300.00 sits outside Money In QR 46,510.00
+- PASS month refunds line sits under revenue: revenue QR 46,510.00, refunds QR 1,540.00, net QR 13,145.00
+- PASS Payroll net equals payroll transaction: QR 19,665.00 vs txn_09 QR 19,665.00
+- PASS Invoice status matches linked transactions: INV-0142 awaiting settlement linked txn_13/sale/pending; INV-0143 paid linked txn_05/sale/settled; INV-0144 paid linked txn_17/sale/settled; INV-0145 refunded linked txn_01/sale/settled, txn_02/refund/refunded; INV-0146 paid linked txn_14/sale/settled; INV-0147 overdue linked none; INV-0148 viewed linked none; INV-0149 paid linked txn_19/sale/settled; INV-0150 paid linked txn_20/sale/settled
+- PASS Outstanding equals unpaid invoice rows: QR 20,900.00 across 3 invoices
+- PASS Who owes me equals Outstanding: QR 20,900.00 across 3 invoices
+- PASS Zero ageing buckets use default colour: NOT DUE YET QR 5,400 var(--ink); 1–14 DAYS QR 15,500 var(--ink); 15–30 DAYS QR 0 var(--ink); OVER 30 DAYS QR 0 var(--ink)
+- PASS Unconfirmed invoice links excluded from matched: excluded txn_02, txn_13; 9 of 12 over 30 days
+- PASS matched + open equals total: 9 matched + 3 open = 12 (75%)
+- PASS No VAT line for this merchant: vat rate 0, country QA
+
+Computed figures (month window, minor units stored, displayed as QR):
+- PASS All requested figures match: Home, Reports, matching, branches, invoices and plan usage
+- PASS Home Net equals Reports net profit (30 days): QR 13,145.00 = QR 13,145.00
+- 30-day P&L: Revenue 46,510; Refunds -1,540; Cost of sales -5,130; Salaries -19,665; Overheads -7,030; Net profit 13,145; margin 28%
+- matched + open = total: 9 + 3 = 12
+- Money In: QR 46,510.00
+- Money Out: QR 33,365.00
+- Net: QR 13,145.00
+- Pending settlement: QR 6,300.00 (txn_13)
+- Cash on hand: QR 98,145.00 = opening QR 85,000.00 + completed net QR 13,145.00
+- Who owes me equals Outstanding: QR 20,900.00 across 3 invoices
+- Overdue: QR 9,200.00
+- Total invoiced: QR 43,300.00 (9)
+- Plan usage: 20 of 5000
+- Branches: Doha inflow QR 28,310.00 (61%); Al Wakrah inflow QR 18,200.00 (39%)
+- PASS Sample bill is distinct from seed Kahramaa: Barzan Water 9 Sept 2026 offset 0
+- PASS Two sample bills ship in the repo: barzan-water.pdf, al-maha-stationery.svg
+- PASS Extraction returns vendor, date, total, tax, lines and tag: Barzan Water / Al Maha Stationery
+- PASS Scan accepts an image or PDF: file input accept image/*,application/pdf
+- PASS Extraction delay is 1.5-2.5s: 1800ms
+- PASS Scan shows extraction in progress: 1544ms
+- PASS Extracted fields are correctable with confidence: Barzan Water tax QR 0 · vendor 96%
+- PASS Scan save recomputes Money Out: Money Out QR 34,545.00 (was QR 33,365.00)
+- PASS Scan save drops Reports net profit: net profit QR 11,965 (was QR 13,145.00)
+- PASS Scanned bill sorts to top of Recent Activity: Barzan Water offset 0
+- PASS Second sample bill saves through selectors: Money Out QR 33,705.00 · Al Maha Stationery
+- PASS Payment link copies to clipboard: submitModal writes the pay URL
+- PASS Spine create leaves Money In unchanged: Money In QR 46,510.00
+- PASS Home Net equals Reports after creating a link: QR 13,145.00
+- PASS Who owes me equals Outstanding after creating a link: QR 20,900.00 across 3
+- PASS Spine success appends a pending ledger row: txn_link_6a8e1fcf49 pending
+- PASS Pending payment is excluded from Money In: Money In QR 46,510.00; pending QR 11,700.00
+- PASS Linked invoice awaits settlement while pending: awaiting settlement
+- PASS Needs Your Attention includes the new proposal: 4 open
+- PASS matched + open after pending payment: 9 + 4 = 13
+- PASS Who owes me equals Outstanding while payment is pending: QR 20,900.00
+- PASS Home Net equals Reports while payment is pending: QR 13,145.00
+- PASS Pending payment is at the top of Recent Activity: Lusail Hospitality Pending
+- PASS Spine settle increases Money In by the bill amount: Money In QR 51,910.00 (was QR 46,510.00)
+- PASS Spine settle lifts Home Net and Reports net profit: Net QR 18,545.00
+- PASS Invoice is paid after settlement: paid
+- PASS Outstanding drops by the paid invoice: QR 15,500.00 across 2
+- PASS Who owes me equals Outstanding after settlement: QR 15,500.00
+- PASS Settled payment stays at the top of Recent Activity: Lusail Hospitality Settled
+- PASS Confirming the new match updates the match rate: 10 of 13 · 3 open
+- PASS Home Net equals Reports after confirm: QR 18,545.00
+- PASS Tally export uses ENVELOPE / HEADER / BODY: envelope present
+- PASS Tally export is one voucher per settled transaction in the last 30 days: 19 vouchers; pending txn_13 omitted
+- PASS Tally vouchers tag the cost centre: COSTCENTREALLOCATIONS.LIST NAME = transaction tag
+- PASS Tally amounts are major units: txn_01 1540.00
+- PASS Tally filename uses from and to stamps: flow-tally-export-20260811-20260909.xml
+- PASS Tally range is editable: 5 vouchers from 3 Sept 2026 to 9 Sept 2026
+- PASS Tally export is recorded in history: 1 tally row(s)
+- PASS Zoho sync is labelled simulated and recorded: Zoho Books (simulated) · 19 items
+- PASS From and To inputs are bound: periodFrom / periodTo onChange
+- PASS Export XML downloads a file: runTallyExport writes XML
+- PASS Tally export history appears in the UI: 2 history row(s)
+- PASS Zoho sync success is visible: Last push simulated · 19 items · 9 Sept 2026
+
+## Not stored in the seed
+
+- Bank account number is not stored. Opening balance is stored on bank_01 (QR 85,000 as of ANCHOR_DATE minus 30 days).
+- Subscription plans, payment-page totals, checkout product price, checkout drop-off and saved report packs are not in the seed, so those lists are empty.
+- Recurring invoice schedules, sync payloads and approval caps are not in the seed.
+- Other Flow billing tiers besides the current Starter plan are not in the seed.
+- Reports profit and loss, the four stat cards and the branch table use their own 30-day period. They do not follow the Home 24h / 7 days / 30 days toggle.
