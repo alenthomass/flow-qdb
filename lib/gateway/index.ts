@@ -1,4 +1,4 @@
-import { createMockSkipCash } from "./mock-skipcash";
+import { clearMockSkipCashStorage, createMockSkipCash } from "./mock-skipcash";
 import type { PaymentGateway } from "./types";
 
 export type GatewayImpl = "mock-skipcash";
@@ -20,6 +20,7 @@ export function getGateway(): PaymentGateway {
 
 export function resetGateway(): void {
   instance = null;
+  clearMockSkipCashStorage();
 }
 
 export type {

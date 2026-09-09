@@ -28,6 +28,7 @@ var FlowStore = (() => {
     SAMPLE_CHECKOUT_ANALYTICS: () => SAMPLE_CHECKOUT_ANALYTICS,
     SAMPLE_SHOPIFY_ORDER: () => SAMPLE_SHOPIFY_ORDER,
     SETTLEMENT_DELAY_MS: () => SETTLEMENT_DELAY_MS,
+    addClient: () => addClient,
     addSubscriber: () => addSubscriber,
     appendTransaction: () => appendTransaction,
     cancelSubscriber: () => cancelSubscriber,
@@ -36,11 +37,15 @@ var FlowStore = (() => {
     confirmMatch: () => confirmMatch,
     connectSampleBank: () => connectSampleBank,
     connectShopify: () => connectShopify,
+    createInvoice: () => createInvoice,
     createPaymentLink: () => createPaymentLink,
     createSubscriptionPlan: () => createSubscriptionPlan,
     dashboardSnapshot: () => dashboardSnapshot,
     dashboardState: () => dashboardState,
+    dateInputValue: () => dateInputValue,
     deactivatePaymentLink: () => deactivatePaymentLink,
+    defaultPayrollPeriod: () => defaultPayrollPeriod,
+    duplicateInvoice: () => duplicateInvoice,
     exportTallyXml: () => exportTallyXml,
     extractBill: () => extractBill,
     extractDelayMs: () => extractDelayMs,
@@ -51,7 +56,10 @@ var FlowStore = (() => {
     pauseSubscriber: () => pauseSubscriber,
     payPublishedCheckout: () => payPublishedCheckout,
     paymentLinkById: () => paymentLinkById,
+    payrollPostedFor: () => payrollPostedFor,
     persistStore: () => persistStore,
+    postPayroll: () => postPayroll,
+    previousMonthLabel: () => previousMonthLabel,
     publishCheckoutPage: () => publishCheckoutPage,
     resetGateway: () => resetGateway,
     resetStore: () => resetStore,
@@ -184,7 +192,12 @@ var FlowStore = (() => {
       { id: "inv_0150", number: "INV-0150", clientId: "cli_10", amountMinor: 187e3, issuedOffset: -9, dueOffset: 5, sentAt: -9, viewedAt: -8, branchId: "br_02" }
     ],
     clients,
-    paymentLinks: [],
+    paymentLinks: [
+      { id: "link_txn_01", payUrl: "/pay/link_txn_01", amountMinor: 154e3, description: "Noor Interiors", clientId: "cli_04", invoiceId: "inv_0145", status: "paid", createdOffset: -29, uses: 1, expiry: "-", txnId: "txn_01" },
+      { id: "link_txn_10", payUrl: "/pay/link_txn_10", amountMinor: 98e3, description: "Mohammed Rashid", clientId: "cli_08", invoiceId: null, status: "paid", createdOffset: -12, uses: 1, expiry: "-", txnId: "txn_10" },
+      { id: "link_txn_14", payUrl: "/pay/link_txn_14", amountMinor: 215e3, description: "Fatima Al-Kuwari", clientId: "cli_05", invoiceId: "inv_0146", status: "paid", createdOffset: -4, uses: 1, expiry: "-", txnId: "txn_14" },
+      { id: "link_txn_20", payUrl: "/pay/link_txn_20", amountMinor: 187e3, description: "Msheireb Boutiques", clientId: "cli_10", invoiceId: "inv_0150", status: "paid", createdOffset: -6, uses: 1, expiry: "-", txnId: "txn_20" }
+    ],
     exportHistory: [],
     checkoutPages: [],
     subscriptionPlans: [],
@@ -233,6 +246,9 @@ var FlowStore = (() => {
     return {
       ...base,
       ...row,
+      invoices: row.invoices && row.invoices.length ? row.invoices : base.invoices,
+      clients: row.clients && row.clients.length ? row.clients : base.clients,
+      paymentLinks: row.paymentLinks && row.paymentLinks.length ? row.paymentLinks : base.paymentLinks,
       checkoutPages: row.checkoutPages || [],
       subscriptionPlans: row.subscriptionPlans || [],
       subscribers: row.subscribers || [],
@@ -267,6 +283,11 @@ var FlowStore = (() => {
   function getStore() {
     return live;
   }
+  function appendClient(client) {
+    live.clients = [client, ...live.clients];
+    persist();
+    return client;
+  }
   function resetStore() {
     live = cloneSeed();
     if (typeof localStorage !== "undefined") {
@@ -291,6 +312,11 @@ var FlowStore = (() => {
     });
     persist();
     return next;
+  }
+  function appendInvoice(invoice) {
+    live.invoices = [invoice, ...live.invoices];
+    persist();
+    return invoice;
   }
   function appendMatchProposal(proposal) {
     live.matchProposals = [proposal, ...live.matchProposals];
@@ -433,10 +459,40 @@ var FlowStore = (() => {
       timeZone: "UTC"
     });
   }
+  function dateInputValue(dayOffset) {
+    const date = dateFor(dayOffset);
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(date.getUTCDate()).padStart(2, "0");
+    return year + "-" + month + "-" + day;
+  }
+  function previousMonthLabel() {
+    const today = dateFor(0);
+    const prev = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1));
+    return prev.toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+  }
+  function monthYearLabel(dayOffset) {
+    return dateFor(dayOffset).toLocaleDateString("en-GB", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC"
+    });
+  }
   function offsetFromLabel(label) {
     const trimmed = String(label || "").trim();
     if (!trimmed) return null;
-    for (let offset = -400; offset <= 1; offset++) {
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+    if (iso) {
+      const year = Number(iso[1]);
+      const month = Number(iso[2]);
+      const day = Number(iso[3]);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+        return null;
+      }
+      return Math.round((date.getTime() - dateFor(0).getTime()) / 864e5);
+    }
+    for (let offset = -400; offset <= 400; offset++) {
       if (formatDate(offset) === trimmed) return offset;
     }
     return null;
@@ -695,16 +751,21 @@ var FlowStore = (() => {
   function getRefunds(period) {
     return db().transactions.filter((txn) => txn.type === "refund" && txn.status !== "pending" && inPeriod(txn.dayOffset, period)).reduce((sum, txn) => sum + txn.amountMinor, 0);
   }
-  function getMatchRate() {
-    const openMatches = getOpenMatches();
-    const openIds = new Set(openMatches.map((proposal) => proposal.transactionId));
-    const universe = db().transactions.filter(
+  function getMatchUniverse() {
+    return db().transactions.filter(
       (txn) => (txn.direction === "in" || txn.type === "refund") && inPeriod(txn.dayOffset, "month")
     );
-    const matched = universe.filter(
+  }
+  function getMatchedTransactions() {
+    const openIds = new Set(getOpenMatches().map((proposal) => proposal.transactionId));
+    return getMatchUniverse().filter(
       (txn) => !openIds.has(txn.id) && (txn.invoiceId !== null || txn.source === "shopify")
-    ).length;
-    const total = universe.length;
+    );
+  }
+  function getMatchRate() {
+    const openMatches = getOpenMatches();
+    const matched = getMatchedTransactions().length;
+    const total = getMatchUniverse().length;
     if (matched + openMatches.length !== total) {
       throw new Error("Match rate " + matched + " + " + openMatches.length + " open does not equal " + total);
     }
@@ -847,7 +908,7 @@ var FlowStore = (() => {
     return source.charAt(0).toUpperCase() + source.slice(1);
   }
   function clientName(clientId) {
-    return seed.clients.find((client) => client.id === clientId)?.name ?? "";
+    return db2().clients.find((client) => client.id === clientId)?.name ?? "";
   }
   function signedMoney(amount) {
     const text = formatMoney(amount, currency, { trimWhole: true });
@@ -1043,9 +1104,13 @@ var FlowStore = (() => {
         id: invoice.id,
         no: invoice.number,
         client: clientName(invoice.clientId),
+        clientId: invoice.clientId,
         amount: major(invoice.amountMinor),
         status: titleStatus(status),
         due: formatDate(invoice.dueOffset),
+        issued: formatDate(invoice.issuedOffset),
+        sentOn: invoice.sentAt != null ? formatDate(invoice.sentAt) : "\u2014",
+        viewedOn: invoice.viewedAt != null ? formatDate(invoice.viewedAt) : "\u2014",
         tag: "Sales",
         outstanding: status === "paid" || status === "refunded" || status === "draft" ? 0 : major(invoice.amountMinor),
         daysLate: invoice.dueOffset < 0 && status !== "paid" && status !== "refunded" ? -invoice.dueOffset : 0
@@ -1069,6 +1134,26 @@ var FlowStore = (() => {
         when: formatDate(txn?.dayOffset ?? 0),
         d: formatDate(txn?.dayOffset ?? 0),
         src: sourceLabel(txn?.source ?? "bank")
+      };
+    });
+    const autoMatches = getMatchedTransactions().map((txn) => {
+      const invoice = db2().invoices.find((row) => row.id === txn.invoiceId);
+      const proposal = db2().matchProposals.find((row) => row.transactionId === txn.id);
+      const inv = invoice?.number ?? "No invoice";
+      return {
+        id: txn.id,
+        amount: major(txn.amountMinor) * (txn.direction === "out" ? -1 : 1),
+        party: txn.counterparty,
+        inv,
+        invoiceId: invoice?.id ?? "",
+        txnId: txn.id,
+        pending: txn.status === "pending",
+        conf: proposal ? Math.round(proposal.confidence * 100) : 100,
+        why: proposal?.reason || "Matched from the ledger",
+        note: "Matched: " + inv,
+        when: formatDate(txn.dayOffset),
+        d: formatDate(txn.dayOffset),
+        src: sourceLabel(txn.source)
       };
     });
     const attention = matches.map((item) => ({
@@ -1241,20 +1326,24 @@ var FlowStore = (() => {
         sample: !!account.sample,
         note: account.sample ? "Sample data. Live bank feeds arrive in a later phase." : formatMoney(account.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset)
       })),
-      linkClients: seed.clients.map((client) => ({ id: client.id, name: client.name })),
+      linkClients: db2().clients.map((client) => ({ id: client.id, name: client.name })),
       linkInvoices: getOutstandingInvoices().map((invoice) => ({
         id: invoice.id,
         clientId: invoice.clientId,
         amount: major(invoice.amountMinor),
         label: invoice.number + " \xB7 " + clientName(invoice.clientId) + " \xB7 " + formatMoney(invoice.amountMinor, currency, { trimWhole: true })
       })),
-      clients: seed.clients.map((client) => ({
-        id: client.id,
-        name: client.name,
-        email: client.email,
-        phone: "",
-        total: major(db2().invoices.filter((invoice) => invoice.clientId === client.id).reduce((sum, invoice) => sum + invoice.amountMinor, 0))
-      })),
+      clients: db2().clients.map((client) => {
+        const rows = db2().invoices.filter((invoice) => invoice.clientId === client.id);
+        return {
+          id: client.id,
+          name: client.name,
+          email: client.email,
+          phone: "",
+          invoiceCount: rows.length,
+          total: major(rows.reduce((sum, invoice) => sum + invoice.amountMinor, 0))
+        };
+      }),
       team: seed.teamMembers.map((member) => ({
         id: member.id,
         name: member.name,
@@ -1304,7 +1393,11 @@ var FlowStore = (() => {
         };
       })(),
       matches,
-      autoMatches: [],
+      autoMatches,
+      reminderInvoices: invoices.filter((row) => {
+        const status = row.status;
+        return status === "Sent" || status === "Viewed" || status === "Overdue" || status === "Awaiting Settlement";
+      }),
       attention,
       periods,
       branches: getBranchComparison().map((branch) => ({
@@ -1353,13 +1446,14 @@ var FlowStore = (() => {
   }
   function bankView() {
     const account = db2().bankAccounts[0];
-    const net = db2().transactions.filter((txn) => txn.source === "bank" && txn.status === "settled").reduce((sum, txn) => sum + signedAmount(txn), 0);
+    const cashOnHand = getCashOnHand();
     const name = account ? account.bank + ", " + account.label : "";
     const opening = account ? account.openingBalanceMinor : 0;
     return {
       name,
       initials: (account?.bank ?? "").split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
-      activity: formatMoney(net, currency),
+      activity: formatMoney(cashOnHand, currency),
+      activityCaption: "Cash on hand",
       note: account ? formatMoney(opening, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset) : "No bank account is stored.",
       extra: db2().bankAccounts.slice(1).map((row) => ({
         id: row.id,
@@ -1405,6 +1499,8 @@ var FlowStore = (() => {
       linkClients: data.linkClients,
       linkInvoices: data.linkInvoices,
       matches: data.matches,
+      autoMatches: data.autoMatches,
+      reminderInvoices: data.reminderInvoices,
       attention: data.attention,
       scan: data.scan,
       sampleBills: data.sampleBills,
@@ -1479,9 +1575,44 @@ var FlowStore = (() => {
       visaId: row.visaId == null && row.VisaId == null ? null : String(row.visaId ?? row.VisaId)
     };
   }
+  var GATEWAY_STORAGE_KEY = "flow-gateway-v1";
+  function clearMockSkipCashStorage() {
+    if (typeof localStorage === "undefined") return;
+    try {
+      localStorage.removeItem(GATEWAY_STORAGE_KEY);
+    } catch {
+    }
+  }
+  function readGatewayStorage() {
+    if (typeof localStorage === "undefined") return { payments: [], settlements: [] };
+    try {
+      const raw = localStorage.getItem(GATEWAY_STORAGE_KEY);
+      if (!raw) return { payments: [], settlements: [] };
+      const saved = JSON.parse(raw);
+      return {
+        payments: Array.isArray(saved.payments) ? saved.payments : [],
+        settlements: Array.isArray(saved.settlements) ? saved.settlements : []
+      };
+    } catch {
+      return { payments: [], settlements: [] };
+    }
+  }
   function createMockSkipCash() {
     const payments = /* @__PURE__ */ new Map();
     const settlements = [];
+    const saved = readGatewayStorage();
+    saved.payments.forEach((row) => payments.set(row.id, row));
+    saved.settlements.forEach((row) => settlements.push(row));
+    function persist2() {
+      if (typeof localStorage === "undefined") return;
+      try {
+        localStorage.setItem(GATEWAY_STORAGE_KEY, JSON.stringify({
+          payments: Array.from(payments.values()),
+          settlements
+        }));
+      } catch {
+      }
+    }
     return {
       async createPaymentLink(input) {
         await delay(300 + Math.floor(Math.random() * 601));
@@ -1508,12 +1639,30 @@ var FlowStore = (() => {
           createdDayOffset: 0
         };
         payments.set(id, record);
+        persist2();
         return { ...record };
       },
       async getPaymentStatus(id) {
         const record = payments.get(id);
         if (!record) throw new Error("SkipCash payment not found: " + id);
         return { ...record };
+      },
+      ensurePayment(record) {
+        const existing = payments.get(record.id);
+        if (existing) return { ...existing };
+        const next = {
+          id: record.id,
+          payUrl: record.payUrl || hostedPayUrl(record.id),
+          amountMinor: record.amountMinor,
+          currency: record.currency,
+          statusId: record.statusId,
+          status: record.status,
+          merchantTransactionId: record.merchantTransactionId,
+          createdDayOffset: record.createdDayOffset
+        };
+        payments.set(next.id, next);
+        persist2();
+        return { ...next };
       },
       async simulatePayment(id, outcome) {
         const record = payments.get(id);
@@ -1557,6 +1706,7 @@ var FlowStore = (() => {
             dayOffset: settlementDayOffset
           });
         }
+        persist2();
         return {
           paymentId: record.id,
           statusId: record.statusId,
@@ -1583,6 +1733,7 @@ var FlowStore = (() => {
   }
   function resetGateway() {
     instance = null;
+    clearMockSkipCashStorage();
   }
 
   // lib/data/spine.ts
@@ -1634,15 +1785,28 @@ var FlowStore = (() => {
   function paymentLinkById(id) {
     return getStore().paymentLinks.find((row) => row.id === id);
   }
+  function ensureGatewayPayment(link) {
+    getGateway().ensurePayment({
+      id: link.id,
+      payUrl: link.payUrl || "/pay/" + link.id,
+      amountMinor: link.amountMinor,
+      currency: getStore().merchant.currency,
+      statusId: 0,
+      status: "new",
+      merchantTransactionId: link.invoiceId,
+      createdDayOffset: link.createdOffset
+    });
+  }
   async function simulatePayment(linkId, outcome) {
+    const link = getStore().paymentLinks.find((row) => row.id === linkId);
+    if (!link) throw new Error("Payment link not found: " + linkId);
+    ensureGatewayPayment(link);
     const gateway = getGateway();
     const payload = await gateway.simulatePayment(linkId, outcome);
     const result = await gateway.handleWebhook(payload);
-    const link = getStore().paymentLinks.find((row) => row.id === linkId);
-    if (!link) throw new Error("Payment link not found: " + linkId);
     if (result.statusId !== 2) {
       replacePaymentLink(linkId, { status: result.statusId === 5 ? "rejected" : "failed" });
-      return { pending: false, txnId: null, delayMs: 0 };
+      return { pending: false, txnId: null, delayMs: 0, reference: payload.visaId, amountMinor: result.amountMinor };
     }
     const client = link.clientId ? getStore().clients.find((row) => row.id === link.clientId) : void 0;
     const invoice = link.invoiceId ? getStore().invoices.find((row) => row.id === link.invoiceId) : void 0;
@@ -1676,7 +1840,7 @@ var FlowStore = (() => {
       status: "open"
     });
     replacePaymentLink(linkId, { status: "pending", txnId, uses: 1 });
-    return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS };
+    return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS, reference: payload.visaId || txnId, amountMinor: result.amountMinor };
   }
   function settlePayment(linkId) {
     const link = getStore().paymentLinks.find((row) => row.id === linkId);
@@ -1803,7 +1967,7 @@ var FlowStore = (() => {
     const payload = await getGateway().simulatePayment(record.id, "success");
     const result = await getGateway().handleWebhook(payload);
     if (result.statusId !== 2) {
-      return { pending: false, txnId: null, delayMs: 0, pageId: page.id };
+      return { pending: false, txnId: null, delayMs: 0, pageId: page.id, reference: payload.visaId, amountMinor: result.amountMinor };
     }
     const txnId = "txn_chk_" + record.id.replace(/-/g, "").slice(0, 10);
     postInbound({
@@ -1819,7 +1983,7 @@ var FlowStore = (() => {
       paidCount: (latest?.paidCount ?? page.paidCount) + 1,
       txnIds: (latest?.txnIds ?? page.txnIds).concat([txnId])
     });
-    return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS, pageId: page.id };
+    return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS, pageId: page.id, reference: payload.visaId || txnId, amountMinor: result.amountMinor };
   }
   function settleCheckoutPayment(txnId) {
     replaceTransaction(txnId, { status: "settled" });
@@ -1975,6 +2139,138 @@ var FlowStore = (() => {
       what: "Payment received, QR " + (sample.amountMinor / 100).toLocaleString("en-US") + ", " + sample.counterparty
     });
     return getStore().transactions.find((txn) => txn.id === txnId);
+  }
+  function nextInvoiceIdentity() {
+    let max = 0;
+    for (const invoice of getStore().invoices) {
+      const n = parseInt(String(invoice.number).replace(/\D/g, ""), 10);
+      if (Number.isFinite(n) && n > max) max = n;
+    }
+    const next = max + 1;
+    const pad = String(next).padStart(4, "0");
+    return { id: "inv_" + pad, number: "INV-" + pad };
+  }
+  function addClient(input) {
+    const name = String(input.name || "").trim();
+    if (!name) throw new Error("Client name is required");
+    const existing = getStore().clients.find((client) => client.name === name);
+    if (existing) return existing;
+    return appendClient({
+      id: "cli_" + Date.now().toString(36),
+      name,
+      email: input.email || "",
+      branchId: input.branchId || getStore().branches[0]?.id || "br_01"
+    });
+  }
+  function resolveInvoiceClient(input) {
+    if (input.clientId) {
+      const found = getStore().clients.find((client) => client.id === input.clientId);
+      if (found) return found;
+    }
+    const name = String(input.clientName || "").trim();
+    if (!name) throw new Error("Client is required");
+    return addClient({ name });
+  }
+  function createInvoice(input) {
+    if (!Number.isFinite(input.dueOffset)) throw new Error("Due date is required");
+    if (!Number.isFinite(input.amountMinor) || input.amountMinor <= 0) throw new Error("Amount is required");
+    const client = resolveInvoiceClient(input);
+    const identity = nextInvoiceIdentity();
+    const draft = !!input.draft;
+    const issuedOffset = input.issuedOffset != null ? input.issuedOffset : 0;
+    const invoice = {
+      id: identity.id,
+      number: identity.number,
+      clientId: client.id,
+      amountMinor: Math.round(input.amountMinor),
+      issuedOffset,
+      dueOffset: input.dueOffset,
+      sentAt: draft ? null : 0,
+      viewedAt: null,
+      branchId: client.branchId,
+      lines: input.lines && input.lines.length ? input.lines.map((line) => ({
+        description: line.description,
+        quantity: line.quantity,
+        unitMinor: line.unitMinor
+      })) : void 0
+    };
+    appendInvoice(invoice);
+    appendActivity({
+      id: "act_" + invoice.id,
+      kind: "edits",
+      dayOffset: 0,
+      actor: getStore().merchant.ownerName,
+      what: draft ? "Invoice " + invoice.number + " saved as draft" : "Invoice " + invoice.number + " sent"
+    });
+    return invoice;
+  }
+  function duplicateInvoice(invoiceId) {
+    const source = getStore().invoices.find((invoice) => invoice.id === invoiceId);
+    if (!source) throw new Error("Invoice not found: " + invoiceId);
+    return createInvoice({
+      clientId: source.clientId,
+      amountMinor: source.amountMinor,
+      dueOffset: 14,
+      issuedOffset: 0,
+      draft: true,
+      lines: source.lines
+    });
+  }
+  function offsetsForMonthLabel(label) {
+    const wanted = String(label || "").trim();
+    if (!wanted) return null;
+    let from = null;
+    let to = null;
+    for (let offset = -400; offset <= 400; offset++) {
+      if (monthYearLabel(offset) === wanted) {
+        if (from == null) from = offset;
+        to = offset;
+      }
+    }
+    if (from == null || to == null) return null;
+    return { from, to };
+  }
+  function defaultPayrollPeriod() {
+    const run = getStore().payrollRuns[0];
+    return monthYearLabel(run ? run.periodOffset : -15);
+  }
+  function payrollPostedFor(periodLabel2) {
+    const range = offsetsForMonthLabel(periodLabel2);
+    if (!range) return false;
+    return getStore().transactions.some(
+      (txn) => txn.type === "payroll" && txn.tag === "Salaries" && txn.status !== "pending" && txn.dayOffset >= range.from && txn.dayOffset <= range.to
+    );
+  }
+  function postPayroll(periodLabel2) {
+    const period = String(periodLabel2 || "").trim();
+    if (!period) throw new Error("Period is required");
+    if (payrollPostedFor(period)) {
+      return { alreadyPosted: true, period };
+    }
+    const range = offsetsForMonthLabel(period);
+    const dayOffset = range ? Math.min(0, range.to) : 0;
+    const amountMinor = getPayrollNet("pay_01");
+    const txn = appendTransaction({
+      id: "txn_pay_" + Date.now().toString(36),
+      dayOffset,
+      counterparty: "Monthly payroll",
+      source: "bank",
+      direction: "out",
+      type: "payroll",
+      tag: "Salaries",
+      status: "settled",
+      amountMinor,
+      branchId: getStore().branches[0]?.id || "br_01",
+      invoiceId: null
+    });
+    appendActivity({
+      id: "act_" + txn.id,
+      kind: "payments",
+      dayOffset,
+      actor: getStore().merchant.ownerName,
+      what: "Payroll paid, QR " + (amountMinor / 100).toLocaleString("en-US")
+    });
+    return { alreadyPosted: false, period, txnId: txn.id };
   }
   function connectSampleBank(bankId) {
     const sample = SAMPLE_BANKS.find((row) => row.id === bankId);

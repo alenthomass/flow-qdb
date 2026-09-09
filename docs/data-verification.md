@@ -65,26 +65,50 @@ Computed figures (month window, minor units stored, displayed as QR):
 - Who owes me equals Outstanding: QR 20,900.00 across 3 invoices
 - Overdue: QR 9,200.00
 - Total invoiced: QR 43,300.00 (9)
+- PASS All Invoices row count equals Total Invoiced count: 9 non-draft rows · 9 invoiced · list 9
+- PASS Invoices hub badge equals Outstanding count: 3 unpaid vs Outstanding 3
+- Hub All Invoices badge equals All Invoices unpaid / Outstanding: 3 unpaid = 3 unpaid
+- PASS Bank Activity equals cash on hand: QR 98,145.00 = opening QR 85,000.00 + QR 13,145.00
+- Bank Activity is cash on hand: opening QR 85,000.00 on bank_01 as of offset -30 + signed completed transactions with dayOffset > -30 (QR 13,145.00) = QR 98,145.00
+- PASS Matched automatically list equals getMatchRate().matched: 9 listed · 9 matched
+- PASS Reminders list is sent, viewed, overdue or awaiting settlement: 3 remindable · INV-0142, INV-0147, INV-0148
+- PASS INV-0147 timeline dates follow invoice offsets: created 20 Aug 2026 · sent 20 Aug 2026 · viewed 24 Aug 2026
+- PASS Invoice detail timeline binds derived dates: 20 Aug 2026 / 20 Aug 2026 / 24 Aug 2026
+- PASS Send reminder toasts the client, not the clipboard: Reminder sent to Lusail Hospitality
+- PASS Creating INV-0151 updates invoiced totals from the store: invoiced QR 46,700.00 / 10 · outstanding QR 24,300.00 / 4
+- After creating INV-0151 (Lusail Hospitality, QR 3,400): Total Invoiced QR 46,700.00 / 10 invoices; Outstanding QR 24,300.00 / 4 unpaid
+- PASS Lusail lifetime and invoice count both read the store: count 2 · lifetime QR 8800
+- PASS Hub unpaid badge follows Outstanding after create: 4 unpaid
+- PASS getInvoiceStatus returns overdue for a new unpaid past-due invoice: INV-0152 overdue
+- PASS Blank due date is blocked with an inline error: Due date is required · invoices 9
+- PASS Duplicate copies client and amount as a draft due in 14 days: INV-0151 draft due +14
+- PASS Seed payroll is already posted for the payslip period: August 2026
+- PASS Post to Transactions is labelled already posted for the seed period: Already posted for August 2026
+- PASS Posting the seed period does not append another salaries row: August 2026
 - Plan usage: 20 of 5000
 - Branches: Doha inflow QR 28,310.00 (61%); Al Wakrah inflow QR 18,200.00 (39%)
+- PASS Seeded payment links match the four paid counterparties: Noor Interiors, Mohammed Rashid, Fatima Al-Kuwari, Msheireb Boutiques
+- PASS Collected via links is QR 6,540 across 4 payments: QR 6,540.00 · times paid 4
+- PASS Page settings slug is derived, not a leftover default: empty slug · Fleet Deposit → fleet-deposit
 - PASS Sample bill is distinct from seed Kahramaa: Barzan Water 9 Sept 2026 offset 0
 - PASS Two sample bills ship in the repo: barzan-water.pdf, al-maha-stationery.svg
 - PASS Extraction returns vendor, date, total, tax, lines and tag: Barzan Water / Al Maha Stationery
 - PASS Scan accepts an image or PDF: file input accept image/*,application/pdf
 - PASS Extraction delay is 1.5-2.5s: 1800ms
-- PASS Scan shows extraction in progress: 2066ms
+- PASS Scan shows extraction in progress: 2291ms
 - PASS Extracted fields are correctable with confidence: Barzan Water tax QR 0 · vendor 96%
 - PASS Scan save recomputes Money Out: Money Out QR 34,545.00 (was QR 33,365.00)
 - PASS Scan save drops Reports net profit: net profit QR 11,965 (was QR 13,145.00)
 - PASS Scanned bill sorts to top of Recent Activity: Barzan Water offset 0
+- PASS Tally after Barzan scan is 20 settled rows: 20 items (21 would include pending txn_13)
 - PASS Second sample bill saves through selectors: Money Out QR 33,705.00 · Al Maha Stationery
 - PASS Payment link copies to clipboard: submitModal writes the pay URL
-- PASS Payment link URL stays on Flow, not SkipCash test: /pay/274476fc-b7f2-439e-bcc7-9f50f5ca729f
+- PASS Payment link URL stays on Flow, not SkipCash test: /pay/53311a40-ff10-45a0-adbe-67d1def8d8b4
 - PASS Copied payment links open Flow checkout: pay.html handles payment links
 - PASS Spine create leaves Money In unchanged: Money In QR 46,510.00
 - PASS Home Net equals Reports after creating a link: QR 13,145.00
 - PASS Who owes me equals Outstanding after creating a link: QR 20,900.00 across 3
-- PASS Spine success appends a pending ledger row: txn_link_274476fcb7 pending
+- PASS Spine success appends a pending ledger row: txn_link_53311a40ff pending
 - PASS Pending payment is excluded from Money In: Money In QR 46,510.00; pending QR 11,700.00
 - PASS Linked invoice awaits settlement while pending: awaiting settlement
 - PASS Needs Your Attention includes the new proposal: 4 open
@@ -100,6 +124,10 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Settled payment stays at the top of Recent Activity: Lusail Hospitality Settled
 - PASS Confirming the new match updates the match rate: 10 of 13 · 3 open
 - PASS Home Net equals Reports after confirm: QR 18,545.00
+- PASS Simulate decline marks the link rejected without a ledger row: rejected
+- PASS Simulate timeout marks the link failed without a ledger row: failed
+- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_cf71719f3d
+- PASS simulatePayment still works after gateway reset: txn_link_7b125e35b6
 - PASS Tally export uses ENVELOPE / HEADER / BODY: envelope present
 - PASS Tally export is one voucher per settled transaction in the last 30 days: 19 vouchers; pending txn_13 omitted
 - PASS Tally vouchers tag the cost centre: COSTCENTREALLOCATIONS.LIST NAME = transaction tag
@@ -114,16 +142,21 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Zoho sync success is visible: Last push simulated · 19 items · 9 Sept 2026
 - PASS Hosted checkout publishes a shareable /pay/ slug: pay.html + rewrite + UI URL
 - PASS Public payment page matches the builder without edit chrome: customer checkout chrome
+- PASS Public pay page validates email and shows a receipt: email + success card
 - PASS Published checkout stores product name, QAR price and slug: eid-hamper QR 250.00
-- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_aacaff1143
+- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_813e06a529
 - PASS Hosted checkout pending is excluded from Money In: QR 46,510.00
 - PASS Hosted checkout settle lifts Money In by the page price: Money In QR 46,760.00
 - PASS Home Net equals Reports after hosted checkout: QR 13,395.00
 - PASS matched + open after hosted checkout: 9 + 4 = 13
+- PASS Publish derives slug from the title: fleet-deposit
+- PASS Duplicate title gets a uniqueness suffix: fleet-deposit-2
+- PASS Publish with no amount names the missing field: Amount is required
+- PASS Publish with no title names the missing field: Page title is required
 - PASS Payment link deactivate updates status: Deactivated
 - PASS Payment links expose expiry, uses and copy URL: 16 Sept 2026 · uses 0
 - PASS Subscription plan creates a customer and upcoming charge: 1 upcoming · QR 400.00
-- PASS Simulated billing appends a pending ledger row: txn_sub_b53d6f2218
+- PASS Simulated billing appends a pending ledger row: txn_sub_32c601499a
 - PASS Simulated billing settle lifts Money In: QR 46,910.00
 - PASS Cancel stops further upcoming charges: 0 upcoming
 - PASS Smart Checkout lives on Get Paid overview: overview toggle card
@@ -138,7 +171,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Reset demo data asks for confirm: modal open, Money In still QR 51,910.00
 - PASS Reset restores Money In: In QR 46,510.00 · Out QR 33,365.00 · Net QR 13,145.00
 - PASS Reset restores match identity: 9 of 12 · 3 open
-- PASS Reset clears created links and plans: paymentLinks/checkoutPages/subscriptionPlans empty
+- PASS Reset restores seeded links and clears created pages: 4 seeded links · QR 6,540 · pages/plans empty
 - PASS Reset disconnects Shopify: disconnected
 - PASS Reset keeps the Tally date range: 3 Sept 2026 → 9 Sept 2026
 - PASS HTML has Reset demo data and confirm modal: button + confirm modal
@@ -150,7 +183,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 ## Not stored in the seed
 
 - Bank account number is not stored. Opening balance is stored on bank_01 (QR 85,000 as of ANCHOR_DATE minus 30 days).
-- Subscription plans, payment-page totals, checkout product price and saved report packs are not in the seed, so those lists start empty. Checkout drop-off uses labelled sample analytics in lib/data/sample-checkout.ts.
+- Four paid payment links are in the seed (collected QR 6,540, times paid 4). Subscription plans, checkout product price and saved report packs are not, so those lists start empty. Checkout drop-off uses labelled sample analytics in lib/data/sample-checkout.ts.
 - Shopify starts disconnected. Seed shopify transactions stay as historical rows; only new incoming after connect are tagged by the plugin.
 - Extra bank connections are labelled sample and store opening QR 0 so cash on hand does not change.
 - Recurring invoice schedules, sync payloads and approval caps are not in the seed.

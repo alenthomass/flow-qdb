@@ -24,58 +24,70 @@
   }
   html, body { margin: 0; min-height: 100%; background: var(--panel-2); color: var(--ink);
     font-family: Urbanist, Cairo, system-ui, sans-serif; }
-  .shell { position: relative; min-height: 100vh; overflow: hidden; }
+  .shell { position: relative; min-height: 100vh; overflow-x: hidden; }
   .wash { position: absolute; inset: 0; pointer-events: none; background: var(--page-wash); }
   .pattern { position: absolute; inset: 0; pointer-events: none; background: var(--page-pattern); background-size: 120px 120px;
     mask-image: linear-gradient(115deg, transparent 18%, rgba(0,0,0,.55) 52%, #000 100%);
     -webkit-mask-image: linear-gradient(115deg, transparent 18%, rgba(0,0,0,.55) 52%, #000 100%); }
-  .page { position: relative; padding: 40px 32px 48px; }
-  .grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,470px); gap: 36px; align-items: start; max-width: 1160px; margin: 0 auto; }
+  .page { position: relative; min-height: 100vh; display: flex; justify-content: center; align-items: center;
+    padding: 48px 40px; }
+  .stage { width: 100%; max-width: 920px; }
+  .grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: clamp(28px, 4vw, 48px);
+    align-items: start; }
+  .brand { display: flex; align-items: center; gap: 13px; }
   .logo { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 13px; border: 1px dashed var(--ink-6); display: flex;
     align-items: center; justify-content: center; overflow: hidden; font-size: 10px; font-weight: 650; color: var(--ink-5); background: var(--bar-solid); }
   .logo img { width: 100%; height: 100%; object-fit: cover; }
   .biz { font-family: 'Clash Display', Urbanist, sans-serif; font-size: 19px; font-weight: 600; letter-spacing: -.025em; }
-  h1 { margin: 26px 0 0; font-family: 'Clash Display', Urbanist, sans-serif; font-size: 32px; font-weight: 600; letter-spacing: -.035em; }
-  .desc { margin-top: 20px; font-size: 14px; line-height: 1.6; color: var(--ink-2); white-space: pre-wrap; }
-  .block { margin-top: 30px; }
+  h1 { margin: 22px 0 0; font-family: 'Clash Display', Urbanist, sans-serif; font-size: 32px; font-weight: 600; letter-spacing: -.035em;
+    line-height: 1.15; }
+  .desc { margin-top: 10px; font-size: 14px; line-height: 1.6; color: var(--ink-2); white-space: pre-wrap; }
+  .meta { display: flex; flex-direction: column; gap: 22px; margin-top: 28px; }
   .block h2 { margin: 0; font-size: 13.5px; font-weight: 650; letter-spacing: -.01em; }
-  .share { display: flex; gap: 9px; margin-top: 12px; }
+  .share { display: flex; gap: 9px; margin-top: 10px; }
   .share a { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--btn-light);
     display: flex; align-items: center; justify-content: center; color: var(--ink-3); text-decoration: none; }
-  .contact { display: flex; flex-direction: column; gap: 11px; margin-top: 12px; }
-  .contact-row { display: flex; align-items: center; gap: 11px; font-size: 13.5px; color: var(--ink-2); }
-  .terms { font-size: 12px; color: var(--ink-5); line-height: 1.65; margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--divider); }
-  .flow { margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--divider); }
+  .contact { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+  .contact-row { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--ink-2); word-break: break-word; }
+  .legal { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--divider); }
+  .terms { margin: 0; font-size: 12px; color: var(--ink-5); line-height: 1.65; }
+  .flow { margin-top: 16px; }
+  .legal > .flow:first-child { margin-top: 0; }
   .flow-mark { display: inline-flex; align-items: center; gap: 8px; font-family: 'Clash Display', Urbanist, sans-serif; font-size: 16px; font-weight: 600; letter-spacing: -.02em; }
-  .flow p { margin: 10px 0 0; font-size: 12px; color: var(--ink-4); line-height: 1.6; }
-  .card { background: var(--bar-solid); border: 1px solid var(--line); border-radius: 11px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.55); overflow: hidden; }
-  .card-head { padding: 22px 22px 6px; }
+  .flow p { margin: 8px 0 0; font-size: 12px; color: var(--ink-4); line-height: 1.6; }
+  .card { width: 100%; background: var(--bar-solid); border: 1px solid var(--line); border-radius: 11px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.55); overflow: hidden; }
+  .card-head { padding: 22px 24px 8px; }
   .card-head h2 { margin: 0; font-family: 'Clash Display', Urbanist, sans-serif; font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
-  .rule { width: 26px; height: 3px; border-radius: 2px; background: var(--ink); margin-top: 10px; }
-  .fields { padding: 18px 22px 0; display: flex; flex-direction: column; gap: 14px; }
-  .field { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 10px; }
-  .field label { width: 82px; flex: 0 0 82px; font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
+  .rule { width: 26px; height: 3px; border-radius: 2px; background: var(--ink); margin-top: 8px; }
+  .fields { padding: 16px 24px 0; display: flex; flex-direction: column; gap: 16px; }
+  .field { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+  .field label { width: auto; font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
   .field .req { color: var(--neg); margin-left: 3px; }
-  .box { flex: 1; min-width: 0; border: 1px solid var(--ink-6); border-radius: 9px; padding: 10px 12px; font-size: 12.5px; color: var(--ink);
+  .box { width: 100%; border: 1px solid var(--ink-6); border-radius: 9px; padding: 11px 12px; font-size: 12.5px; color: var(--ink);
     background: var(--bar-solid); display: flex; align-items: center; gap: 7px; }
   .box.locked { background: var(--panel-2); color: var(--ink); pointer-events: none; }
+  .box.locked span:last-child { font-weight: 650; font-variant-numeric: tabular-nums; }
   .box input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 12.5px; color: var(--ink); font-family: inherit; }
   .chip { width: 18px; height: 18px; border-radius: 50%; background: var(--chip); display: flex; align-items: center; justify-content: center;
     font-size: 9.5px; font-weight: 700; color: var(--ink-3); flex: 0 0 18px; }
-  .foot { display: flex; align-items: center; gap: 12px; margin-top: 22px; padding: 14px 22px; border-top: 1px solid var(--divider); background: var(--panel-2); }
-  .brands { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-  .brand { display: inline-flex; align-items: center; justify-content: center; height: 22px; padding: 0 7px; border-radius: 5px; background: #FFFFFF; border: 1px solid var(--line); }
-  .brand img { height: 13px; width: auto; max-width: 32px; object-fit: contain; display: block; }
-  .secured { display: block; font-size: 10px; color: var(--ink-5); margin-top: 7px; }
-  .pay { flex: 0 0 auto; max-width: 220px; font-size: 12.5px; font-weight: 650; color: var(--on-block); background: var(--btn-dark);
-    padding: 11px 18px; border: none; border-radius: 9px; white-space: nowrap; cursor: pointer; font-family: inherit; }
+  .foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 18px; padding: 14px 24px;
+    border-top: 1px solid var(--divider); background: var(--panel-2); }
+  .brands { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .mark { display: inline-flex; align-items: center; justify-content: center; height: 22px; padding: 0 7px; border-radius: 5px; background: #FFFFFF; border: 1px solid var(--line); }
+  .mark img { height: 13px; width: auto; max-width: 32px; object-fit: contain; display: block; }
+  .secured { display: block; font-size: 10px; color: var(--ink-5); margin-top: 7px; letter-spacing: .01em; }
+  .pay { flex: 0 0 auto; font-size: 12.5px; font-weight: 650; color: var(--on-block); background: var(--btn-dark);
+    padding: 11px 16px; border: none; border-radius: 9px; white-space: nowrap; cursor: pointer; font-family: inherit; }
   .pay[disabled] { opacity: .55; cursor: default; }
   .note { font-size: 12px; color: var(--ink-4); line-height: 1.5; }
   .ok { color: var(--pos); font-weight: 650; }
   .err { color: var(--neg); }
-  @media (max-width: 1160px) {
-    .grid { grid-template-columns: minmax(0,1fr); gap: 28px; }
-    .page { padding: 28px 18px 40px; }
+  @media (max-width: 720px) {
+    .page { padding: 28px 18px 36px; }
+    .grid { grid-template-columns: minmax(0,1fr); }
+    .meta { margin-top: 24px; }
+    .legal { margin-top: 24px; }
+    .foot { flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -83,7 +95,7 @@
   <div class="shell">
     <div class="wash"></div>
     <div class="pattern"></div>
-    <div class="page"><div class="grid" id="card"><div class="note">Loading checkout…</div></div></div>
+    <div class="page"><div class="stage" id="card"><div class="note">Loading checkout…</div></div></div>
   </div>
 <script>
 (function () {
@@ -146,22 +158,24 @@
   }
   function brands() {
     return '<span class="brands">' +
-      '<span class="brand"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Visa%20Inc.%20logo%20(2021%E2%80%93present).svg" alt="VISA"></span>' +
-      '<span class="brand"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Mastercard-logo.svg" alt="MASTERCARD"></span>' +
-      '<span class="brand"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Apple%20Pay%20logo.svg" alt="APPLE PAY"></span>' +
-      '<span class="brand" style="padding:0 8px"><span style="font-size:9px;font-weight:800;letter-spacing:.03em;color:#15151A">NAPS</span></span>' +
+      '<span class="mark"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Visa%20Inc.%20logo%20(2021%E2%80%93present).svg" alt="VISA"></span>' +
+      '<span class="mark"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Mastercard-logo.svg" alt="MASTERCARD"></span>' +
+      '<span class="mark"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Apple%20Pay%20logo.svg" alt="APPLE PAY"></span>' +
+      '<span class="mark" style="padding:0 8px"><span style="font-size:9px;font-weight:800;letter-spacing:.03em;color:#15151A">NAPS</span></span>' +
       "</span>";
   }
-  function leftCol(page, title, description) {
-    return '<div>' +
-      '<div style="display:flex;align-items:center;gap:13px"><span class="logo">' + logoHtml(page) + '</span><div class="biz">' + esc(merchantName()) + "</div></div>" +
+  function copyCol(page, title, description) {
+    return '<div class="copy">' +
+      '<div class="brand"><span class="logo">' + logoHtml(page) + '</span><div class="biz">' + esc(merchantName()) + "</div></div>" +
       "<h1>" + esc(title) + "</h1>" +
       (description ? '<div class="desc">' + esc(description) + "</div>" : "") +
-      shareRow() +
-      contactBlock(page) +
-      termsBlock(page) +
-      flowFoot() +
-      "</div>";
+      '<div class="meta">' + shareRow() + contactBlock(page) + "</div></div>";
+  }
+  function legalCol(page) {
+    return '<div class="legal">' + termsBlock(page) + flowFoot() + "</div>";
+  }
+  function frame(page, title, description, right) {
+    return '<div class="grid">' + copyCol(page, title, description) + right + "</div>" + legalCol(page);
   }
   function fieldRow(field, amountMinor) {
     var isAmount = field.kind === "price" || /^amount$/i.test(field.label || "");
@@ -185,8 +199,24 @@
       (opts.hidePay ? "" : '<button class="pay" id="pay">' + label + "</button>") +
       "</div></div>";
   }
-  function layout(left, right) {
-    return left + right;
+  function successCard(opts) {
+    return '<div class="card"><div class="card-head"><h2>Paid</h2><div class="rule"></div></div>' +
+      '<div class="fields">' +
+      '<div class="note ok">Payment received</div>' +
+      '<div style="font-family:Clash Display,Urbanist,sans-serif;font-size:28px;font-weight:600;letter-spacing:-.03em">' + esc(money(opts.amountMinor)) + "</div>" +
+      '<div class="note">' + esc(opts.merchant) + "</div>" +
+      '<div class="note">Reference ' + esc(opts.reference) + "</div>" +
+      "</div></div>";
+  }
+  function fieldError(msg) {
+    var prev = card.querySelector(".note.err");
+    if (prev) prev.remove();
+    if (!msg) return;
+    var fieldsEl = card.querySelector(".fields");
+    if (fieldsEl) fieldsEl.insertAdjacentHTML("beforeend", '<div class="note err">' + esc(msg) + "</div>");
+  }
+  function validEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
   }
   function bindPay(amountMinor, fields, start) {
     var btn = document.getElementById("pay");
@@ -194,19 +224,20 @@
     btn.onclick = function () {
       var mail = document.getElementById("f-mail");
       var needsEmail = (fields || []).some(function (field) { return field.kind === "mail" && !field.optional; });
-      if (needsEmail && mail && !String(mail.value || "").trim()) {
-        mail.focus();
+      if (needsEmail && (!mail || !validEmail(mail.value))) {
+        if (mail) mail.focus();
+        fieldError("Enter a valid email");
         return;
       }
       btn.disabled = true;
       var original = btn.textContent;
       btn.textContent = "Processing…";
+      fieldError("");
       start().then(function (result) {
         if (!result || !result.pending) {
           btn.disabled = false;
           btn.textContent = original;
-          var fieldsEl = card.querySelector(".fields");
-          if (fieldsEl) fieldsEl.insertAdjacentHTML("beforeend", '<div class="note err">Payment was not recorded.</div>');
+          fieldError("Payment was not recorded.");
           return;
         }
         var delay = result.delayMs || 1200;
@@ -214,9 +245,10 @@
           if (result.settle) result.settle();
           show(result.paidHtml);
         }, delay);
-      }).catch(function () {
+      }).catch(function (err) {
         btn.disabled = false;
         btn.textContent = original;
+        fieldError((err && err.message) || "Payment was not recorded.");
       });
     };
   }
@@ -230,24 +262,17 @@
 
   if (page) {
     var fields = page.fields && page.fields.length ? page.fields : [{ label: "Amount", kind: "price" }, { label: "Email", kind: "mail" }];
-    var paidRight = payCard({
-      amountMinor: page.amountMinor,
-      fields: [{ label: "Amount", kind: "price" }],
-      payLabel: page.payLabel,
-      hidePay: true,
-      statusHtml: '<div class="note ok">Payment settled. It now appears in Money In.</div>'
-    });
-    show(layout(
-      leftCol(page, page.productName, page.description),
-      payCard({ amountMinor: page.amountMinor, fields: fields, payLabel: page.payLabel || "Pay" })
-    ));
+    show(frame(page, page.productName, page.description, payCard({ amountMinor: page.amountMinor, fields: fields, payLabel: page.payLabel || "Pay" })));
     bindPay(page.amountMinor, fields, function () {
+      if (!FlowStore.payPublishedCheckout) return Promise.reject(new Error("Checkout is not available."));
       return FlowStore.payPublishedCheckout(page.slug).then(function (result) {
+        var amount = (result && result.amountMinor) || page.amountMinor;
+        var reference = (result && result.reference) || (result && result.txnId) || page.slug;
         return {
           pending: result && result.pending,
           delayMs: result && result.delayMs,
           settle: function () { if (FlowStore.settleCheckoutPayment) FlowStore.settleCheckoutPayment(result.txnId); },
-          paidHtml: layout(leftCol(page, page.productName, page.description), paidRight.replace("Payment details", "Paid"))
+          paidHtml: frame(page, page.productName, page.description, successCard({ amountMinor: amount, merchant: merchantName(), reference: reference }))
         };
       });
     });
@@ -264,7 +289,7 @@
     var linkFields = [{ label: "Amount", kind: "price" }, { label: "Email", kind: "mail" }];
     var title = link.description || "Payment";
     if (link.status === "deactivated" || link.status === "expired") {
-      show(layout(leftCol(linkPage, title, ""), payCard({
+      show(frame(linkPage, title, "", payCard({
         amountMinor: link.amountMinor,
         fields: [{ label: "Amount", kind: "price" }],
         hidePay: true,
@@ -273,7 +298,7 @@
       return;
     }
     if (link.status === "paid" || link.status === "pending" || link.txnId) {
-      show(layout(leftCol(linkPage, title, ""), payCard({
+      show(frame(linkPage, title, "", payCard({
         amountMinor: link.amountMinor,
         fields: [{ label: "Amount", kind: "price" }],
         hidePay: true,
@@ -281,28 +306,27 @@
       })));
       return;
     }
-    var linkPaid = payCard({
-      amountMinor: link.amountMinor,
-      fields: [{ label: "Amount", kind: "price" }],
-      hidePay: true,
-      statusHtml: '<div class="note ok">Payment settled. It now appears in Money In.</div>'
-    });
-    show(layout(leftCol(linkPage, title, ""), payCard({ amountMinor: link.amountMinor, fields: linkFields, payLabel: "Pay" })));
+    show(frame(linkPage, title, "", payCard({ amountMinor: link.amountMinor, fields: linkFields, payLabel: "Pay" })));
     bindPay(link.amountMinor, linkFields, function () {
+      if (!FlowStore.simulatePayment) return Promise.reject(new Error("Checkout is not available."));
       return FlowStore.simulatePayment(link.id, "success").then(function (result) {
+        var amount = (result && result.amountMinor) || link.amountMinor;
+        var reference = (result && result.reference) || (result && result.txnId) || link.id;
         return {
           pending: result && result.pending,
           delayMs: result && result.delayMs,
           settle: function () { if (FlowStore.settlePayment) FlowStore.settlePayment(link.id); },
-          paidHtml: layout(leftCol(linkPage, title, ""), linkPaid.replace("Payment details", "Paid"))
+          paidHtml: frame(linkPage, title, "", successCard({ amountMinor: amount, merchant: merchantName(), reference: reference }))
         };
       });
     });
     return;
   }
 
-  show(layout(
-    leftCol({ supportEmail: dash().acctEmail || "", terms: false }, "Page not found", "This simulated checkout is not in this browser. Open the link from the same Flow session, or it was created in another profile."),
+  show(frame(
+    { supportEmail: dash().acctEmail || "", terms: false },
+    "Page not found",
+    "This simulated checkout is not in this browser. Open the link from the same Flow session, or it was created in another profile.",
     payCard({ amountMinor: 0, fields: [{ label: "Amount", kind: "price" }], hidePay: true, statusHtml: '<div class="note">No payment is available on this link.</div>' })
   ));
 })();

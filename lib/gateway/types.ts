@@ -81,6 +81,7 @@ export interface WebhookResult {
 export interface PaymentGateway {
   createPaymentLink(input: CreatePaymentLinkRequest): Promise<PaymentRecord>;
   getPaymentStatus(id: string): Promise<PaymentRecord>;
+  ensurePayment(record: PaymentRecord): PaymentRecord;
   simulatePayment(id: string, outcome: PaymentOutcome): Promise<SkipCashWebhookPayload>;
   listSettlements(): Promise<Settlement[]>;
   handleWebhook(payload: unknown): Promise<WebhookResult>;

@@ -924,6 +924,7 @@
                     <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M10 2.3l1.3 2.2 2.5-.4.6 2.4 2.2 1.3-1.2 2.2 1.2 2.2-2.2 1.3-.6 2.4-2.5-.4L10 17.7l-1.3-2.2-2.5.4-.6-2.4-2.2-1.3 1.2-2.2-1.2-2.2 2.2-1.3.6-2.4 2.5.4ZM10 7.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                     Page settings
                   </button>
+                  <sc-if value="{{ pp.publishErrorOn }}"><span style="font-size:12px; font-weight:650; color:var(--neg); white-space:nowrap">{{ pp.publishError }}</span></sc-if>
                   <button onClick="{{ pp.publish }}" style-hover="filter:brightness(1.12); transform:translateY(-1px)" style="font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 8px 18px -10px rgba(0,0,0,.5); padding:9px 16px; border-radius:9px; white-space:nowrap; transition:transform .15s ease, filter .15s ease">{{ pp.publishLabel }}</button>
                 </div>
               </div>
@@ -1556,7 +1557,7 @@
                   <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">{{ bank.name }}</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:12px; color:var(--ink-4); margin-top:2px">{{ bank.note }}</div></div>
                 </div>
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:26px; font-weight:600; margin-top:18px">{{ bank.activity }}</div>
-                <div style="font-size:12.5px; color:var(--ink-4); margin-top:4px">Settled bank rows only</div>
+                <div style="font-size:12.5px; color:var(--ink-4); margin-top:4px">{{ bank.activityCaption }}</div>
                 <div style="margin-top:16px; display:inline-flex; font-size:11px; font-weight:650; color:var(--ink-3); background:linear-gradient(165deg,var(--panel-3),var(--panel)); border:1px solid var(--line); padding:5px 10px; border-radius:7px">Sample data, not a live feed</div>
               </div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); overflow:hidden">
@@ -1626,7 +1627,7 @@
                     <sc-if value="{{ showTax }}">
                     <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Tax %</div><input value="{{ nv.tax }}" onChange="{{ nv.setTax }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif; background:var(--panel)" style-focus="border-color:var(--ink-6)"></label>
                     </sc-if>
-                    <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Due date<span style="color:var(--neg); margin-left:3px">*</span></div><input type="date" value="{{ nv.due }}" onChange="{{ nv.setDue }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel); color:var(--ink)" style-focus="border-color:var(--ink-6)"></label>
+                    <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Due date<span style="color:var(--neg); margin-left:3px">*</span></div><input type="date" value="{{ nv.due }}" onChange="{{ nv.setDue }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel); color:var(--ink)" style-focus="border-color:var(--ink-6)"><sc-if value="{{ nv.dueErrorOn }}"><span style="display:block; font-size:12px; font-weight:650; color:var(--neg); margin-top:6px">{{ nv.dueError }}</span></sc-if></label>
                   </div>
                   <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Notes</div><textarea value="{{ nv.notes }}" onChange="{{ nv.setNotes }}" placeholder="Thanks for your business." rows="3" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; resize:vertical; background:var(--panel)" style-focus="border-color:var(--ink-6)"></textarea></label>
                   <div style="display:flex; gap:10px">
@@ -1748,26 +1749,27 @@
               </div>
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); overflow:hidden">
                 <div style="padding:16px 20px; border-bottom:1px solid var(--divider); font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Send one now</div>
-                <sc-if value="{{ empt.invoices }}">
+              <sc-if value="{{ empt.reminders }}">
                 <div style="display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px; padding:52px 24px">
-                  <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em">No invoices yet</div>
-                  <div style="font-size:12.5px; color:var(--ink-4); max-width:320px; line-height:1.6">Bill a client and Flow will track what is paid and what is late.</div>
-                  <button onClick="{{ h.newInvoice }}" style-hover="filter:brightness(1.12); transform:translateY(-1px)" style="margin-top:12px; font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 8px 18px -10px rgba(0,0,0,.5); transition:transform .15s ease, filter .15s ease; padding:10px 18px; border-radius:9px">New invoice</button>
+                  <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em">Nothing to remind right now</div>
+                  <div style="font-size:12.5px; color:var(--ink-4); max-width:320px; line-height:1.6">Reminders go to invoices that are sent, viewed, overdue or awaiting settlement.</div>
                 </div>
               </sc-if>
+              <sc-if value="{{ hasReminders }}">
               <div style="display:grid; grid-template-columns:minmax(0,1fr) 84px 78px; gap:14px; padding:11px 20px; border-bottom:1px solid var(--divider); font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-5)">
                 <span>Client</span><span>Status</span><span></span>
               </div>
-              <sc-for list="{{ invoices }}" as="i" hint-placeholder-count="5">
+              <sc-for list="{{ reminderInvoices }}" as="i" hint-placeholder-count="5">
                   <div style="display:grid; grid-template-columns:minmax(0,1fr) 84px 78px; gap:14px; align-items:center; padding:14px 20px; border-bottom:1px solid var(--divider-2); transition:background .15s ease" style-hover="background:var(--panel-2)">
                     <span style="min-width:0">
                       <span style="display:block; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ i.client }}</span>
                       <span style="display:block; font-size:11.5px; color:var(--ink-4); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ i.amt }} · due {{ i.due }}</span>
                     </span>
                     <span style="{{ i.chip }}">{{ i.status }}</span>
-                    <button onClick="{{ h.note }}" data-note="Reminder sent" style="justify-self:end; font-size:12px; font-weight:600; padding:8px 13px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:filter .15s ease, border-color .15s ease" style-hover="filter:brightness(.97); border-color:var(--ink-6)">Remind</button>
+                    <button onClick="{{ i.remind }}" style="justify-self:end; font-size:12px; font-weight:600; padding:8px 13px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:filter .15s ease, border-color .15s ease" style-hover="filter:brightness(.97); border-color:var(--ink-6)">Remind</button>
                   </div>
                 </sc-for>
+              </sc-if>
               </div>
             </div>
           </sc-if>
@@ -2364,13 +2366,13 @@
             </div>
             <div style="margin-top:16px; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px; display:flex; align-items:center; gap:16px">
               <div style="flex:1"><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Send payroll to Transactions</div><div style="font-size:12.5px; color:var(--ink-3); margin-top:4px">Adds one expense line tagged Salaries, ready for your books.</div></div>
-              <button onClick="{{ h.export }}" style-hover="filter:brightness(1.12); transform:translateY(-1px)" style="font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:11px 18px; border-radius:9px">Post to Transactions</button>
+              <button onClick="{{ payroll.post }}" style-hover="filter:brightness(1.12); transform:translateY(-1px)" style="{{ payroll.postStyle }}">{{ payroll.postLabel }}</button>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:22px; align-items:start; margin-top:16px">
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px">
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Generate payslips</div>
                 <div style="display:flex; flex-direction:column; gap:14px; margin-top:16px">
-                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Period</div><input defaultValue="August 2026" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
+                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Period</div><input value="{{ payroll.period }}" onChange="{{ payroll.setPeriod }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
                   <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Employees</div><input defaultValue="All ({{ payroll.count }})" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
                   <button onClick="{{ h.generatePayslips }}" style="font-size:13px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:11px 18px; border-radius:9px">Generate</button>
                 </div>
@@ -2620,18 +2622,18 @@
                   </div>
                   <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:14px; border-top:1px solid var(--divider)"><span style="font-size:13px; font-weight:650">Total</span><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:22px; font-weight:600">{{ det.o.total }}</span></div>
                   <div style="display:flex; gap:9px; margin-top:20px">
-                    <button onClick="{{ h.copy }}" style="font-size:12.5px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 16px; border-radius:9px">Send reminder</button>
-                    <button onClick="{{ h.copy }}" style="font-size:12.5px; font-weight:600; padding:10px 16px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light)">Duplicate</button>
-                    <button onClick="{{ h.copy }}" style="font-size:12.5px; font-weight:600; padding:10px 16px; border-radius:9px; border:1px solid var(--line); color:var(--neg)">Void</button>
+                    <button onClick="{{ det.o.sendReminder }}" style="font-size:12.5px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 16px; border-radius:9px">Send reminder</button>
+                    <button onClick="{{ det.o.duplicate }}" style="font-size:12.5px; font-weight:600; padding:10px 16px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light)">Duplicate</button>
+                    <button onClick="{{ det.o.voidInvoice }}" style="font-size:12.5px; font-weight:600; padding:10px 16px; border-radius:9px; border:1px solid var(--line); color:var(--neg)">Void</button>
                   </div>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:16px">
                   <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px">
                     <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:15.5px; font-weight:600; letter-spacing:-.02em">Status timeline</div>
                     <div style="display:flex; flex-direction:column; gap:11px; margin-top:14px">
-                      <div style="display:flex; gap:11px; align-items:center"><span style="width:8px; height:8px; border-radius:50%; background:var(--pos)"></span><span style="font-size:12.5px; flex:1">Created</span><span style="font-size:11.5px; color:var(--ink-4)">1 Aug</span></div>
-                      <div style="display:flex; gap:11px; align-items:center"><span style="width:8px; height:8px; border-radius:50%; background:var(--pos)"></span><span style="font-size:12.5px; flex:1">Sent to client</span><span style="font-size:11.5px; color:var(--ink-4)">1 Aug</span></div>
-                      <div style="display:flex; gap:11px; align-items:center"><span style="width:8px; height:8px; border-radius:50%; background:var(--pos)"></span><span style="font-size:12.5px; flex:1">Viewed</span><span style="font-size:11.5px; color:var(--ink-4)">3 Aug</span></div>
+                      <div style="display:flex; gap:11px; align-items:center"><span style="width:8px; height:8px; border-radius:50%; background:var(--pos)"></span><span style="font-size:12.5px; flex:1">Created</span><span style="font-size:11.5px; color:var(--ink-4)">{{ det.o.createdOn }}</span></div>
+                      <div style="display:flex; gap:11px; align-items:center"><span style="width:8px; height:8px; border-radius:50%; background:var(--pos)"></span><span style="font-size:12.5px; flex:1">Sent to client</span><span style="font-size:11.5px; color:var(--ink-4)">{{ det.o.sentOn }}</span></div>
+                      <div style="display:flex; gap:11px; align-items:center"><span style="width:8px; height:8px; border-radius:50%; background:var(--pos)"></span><span style="font-size:12.5px; flex:1">Viewed</span><span style="font-size:11.5px; color:var(--ink-4)">{{ det.o.viewedOn }}</span></div>
                       <div style="display:flex; gap:11px; align-items:center"><span style="width:8px; height:8px; border-radius:50%; background:var(--toggle-off)"></span><span style="font-size:12.5px; flex:1; color:var(--ink-4)">Paid</span><span style="font-size:11.5px; color:var(--ink-4)">due {{ det.o.due }}</span></div>
                     </div>
                   </div>
@@ -3288,7 +3290,7 @@
               <label style="display:block"><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Client</div><input value="{{ f.invClient }}" onChange="{{ F.invClient }}" placeholder="Select or add a client" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
                 <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Amount (QR)</div><input value="{{ f.invAmount }}" onChange="{{ F.invAmount }}" placeholder="0.00" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif"></label>
-                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Due date</div><input value="{{ f.invDue }}" onChange="{{ F.invDue }}" placeholder="e.g. 30 Aug 2026" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
+                <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Due date<span style="color:var(--neg); margin-left:3px">*</span></div><input type="date" value="{{ f.invDue }}" onChange="{{ F.invDue }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"><sc-if value="{{ invoiceDue.errorOn }}"><span style="display:block; font-size:12px; font-weight:650; color:var(--neg); margin-top:6px">{{ invoiceDue.error }}</span></sc-if></label>
               </div>
               <div style="background:linear-gradient(170deg,var(--panel-3),var(--panel)); border:1px solid var(--line); border-radius:12px; padding:13px; font-size:12.5px; color:var(--ink-3); line-height:1.5">A payment link is created automatically and attached to this invoice.</div>
             </div>
@@ -3391,7 +3393,7 @@ class Component extends DCLogic {
     ppView: 'list',
     ppPages: [],
     ppEditing: null,
-    ps: { slug: 'eid-gift-hampers', theme: 'light', expiry: 'none', after: 'message' },
+    ps: { slug: '', slugCustom: false, theme: 'light', expiry: 'none', after: 'message' },
     rc: { auto: true, showCustomer: false, ref: false },
     pp: {
       title: 'Eid Gift Hampers 2026', desc: 'Pre-order a hamper for pickup from our Doha store between 12 and 18 March.',
@@ -3415,6 +3417,8 @@ class Component extends DCLogic {
     scanLines: [],
     scanConf: {},
     toast: '',
+    ppPublishError: '',
+    invDueError: '',
     search: '',
     filter: { source: 'All', status: 'All', tag: 'All', range: 'All time' },
     form: { planInterval: 'Month', memberRole: 'Staff', expTag: 'Supplies' },
@@ -3438,6 +3442,7 @@ class Component extends DCLogic {
     plans: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).plans || [],
     subscribers: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).subscribers || [],
     invoices: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).invoices || [],
+    reminderInvoices: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).reminderInvoices || [],
     clients: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).clients || [],
     team: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).team || [],
     employees: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).employees || [],
@@ -3504,7 +3509,10 @@ class Component extends DCLogic {
       const form = Object.assign({}, s.form);
       (KEYS[kind] || []).forEach(k => { delete form[k]; });
       if (kind === 'scan') clearTimeout(this._scanT);
-      return { modal: kind, scanDone: false, scanBusy: false, scanLines: [], scanConf: {}, editEmp: null, form };
+      if (kind === 'invoice' && typeof FlowStore !== 'undefined' && FlowStore.dateInputValue) {
+        form.invDue = FlowStore.dateInputValue(14);
+      }
+      return { modal: kind, scanDone: false, scanBusy: false, scanLines: [], scanConf: {}, editEmp: null, form, invDueError: '' };
     }));
   }
   tabOf(page, dflt) { return this.state.tab[page] || dflt; }
@@ -3541,11 +3549,91 @@ class Component extends DCLogic {
     return (this.state.txns || []).slice().sort((a, b) => (b.offset || 0) - (a.offset || 0) || String(a.id).localeCompare(String(b.id)));
   }
 
+  slugify(text) {
+    return String(text || 'page').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'page';
+  }
+
+  pageSlug(st) {
+    const ps = (st && st.ps) || {};
+    if (ps.slugCustom && String(ps.slug || '').trim()) return this.slugify(ps.slug);
+    return this.slugify((st && st.pp && st.pp.title) || '');
+  }
+
   applyStore(extra) {
     const snap = typeof FlowStore !== 'undefined' && FlowStore.dashboardSnapshot ? FlowStore.dashboardSnapshot() : {};
     const patch = Object.assign({}, extra || {}, snap);
     if (snap.shopify) patch.conns = Object.assign({}, this.state.conns, { shopify: !!snap.shopify.connected });
     this.setState(patch);
+  }
+
+  dueOffsetFrom(raw) {
+    if (raw == null || String(raw).trim() === '') return null;
+    if (typeof FlowStore !== 'undefined' && FlowStore.offsetFromLabel) {
+      return FlowStore.offsetFromLabel(String(raw));
+    }
+    return null;
+  }
+
+  persistCreatedInvoice(opts) {
+    const dueRaw = opts && opts.dueRaw;
+    const dueOffset = this.dueOffsetFrom(dueRaw);
+    if (dueRaw == null || String(dueRaw).trim() === '' || dueOffset == null) {
+      return { error: 'Due date is required' };
+    }
+    if (typeof FlowStore === 'undefined' || !FlowStore.createInvoice) {
+      return { error: 'Could not create invoice' };
+    }
+    try {
+      const invoice = FlowStore.createInvoice({
+        clientName: opts.clientName,
+        amountMinor: Math.round((opts.amountMajor || 0) * 100),
+        dueOffset: dueOffset,
+        draft: !!opts.draft,
+        lines: opts.lines || []
+      });
+      return { invoice };
+    } catch (err) {
+      return { error: (err && err.message) || 'Could not create invoice' };
+    }
+  }
+
+  duplicateStoredInvoice(id) {
+    if (typeof FlowStore === 'undefined' || !FlowStore.duplicateInvoice) {
+      this.toast('Could not duplicate invoice');
+      return;
+    }
+    try {
+      const invoice = FlowStore.duplicateInvoice(id);
+      this.applyStore({ detail: { type: 'invoice', id: invoice.id } });
+      this.toast('Invoice duplicated');
+    } catch (err) {
+      this.toast((err && err.message) || 'Could not duplicate invoice');
+    }
+  }
+
+  sendInvoiceReminder(name) {
+    this.toast('Reminder sent to ' + (name || 'the client'));
+  }
+
+  postPayrollToLedger() {
+    const period = (this.state.form && this.state.form.payrollPeriod)
+      || (typeof FlowStore !== 'undefined' && FlowStore.defaultPayrollPeriod && FlowStore.defaultPayrollPeriod())
+      || '';
+    if (typeof FlowStore === 'undefined' || !FlowStore.postPayroll) {
+      this.toast('Could not post payroll');
+      return;
+    }
+    try {
+      const result = FlowStore.postPayroll(period);
+      if (result.alreadyPosted) {
+        this.toast('Already posted for ' + result.period);
+        return;
+      }
+      this.applyStore();
+      this.toast('Payroll posted to Transactions');
+    } catch (err) {
+      this.toast((err && err.message) || 'Could not post payroll');
+    }
   }
 
   bindStoreEvents() {
@@ -3607,10 +3695,14 @@ class Component extends DCLogic {
     const a = document.createElement('a');
     a.href = href;
     a.download = name;
+    a.rel = 'noopener';
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
-    a.remove();
-    if (typeof URL !== 'undefined' && URL.revokeObjectURL) URL.revokeObjectURL(href);
+    setTimeout(function () {
+      a.remove();
+      if (typeof URL !== 'undefined' && URL.revokeObjectURL) URL.revokeObjectURL(href);
+    }, 500);
   }
 
   runTallyExport() {
@@ -3773,9 +3865,23 @@ class Component extends DCLogic {
       });
       this.toast('Bill saved to Transactions');
     } else if (k === 'invoice') {
-      const n = 147 + s.invoices.length - 5;
-      const inv = { id: 'i' + Date.now(), no: 'INV-0' + n, client: f.invClient || 'New client', amount: num(f.invAmount) || 1000, status: 'Draft', due: f.invDue || '30 Aug', tag: 'Sales' };
-      this.setState(st => ({ invoices: [inv].concat(st.invoices), modal: null })); this.toast('Invoice created as draft');
+      const clientName = String(f.invClient || '').trim();
+      if (!clientName) { this.toast('Pick a client first'); return; }
+      const amountMajor = num(f.invAmount);
+      if (!amountMajor) { this.toast('Add an amount'); return; }
+      const saved = this.persistCreatedInvoice({
+        clientName,
+        amountMajor,
+        dueRaw: f.invDue,
+        draft: true,
+        lines: amountMajor ? [{ description: 'Invoice', quantity: 1, unitMinor: Math.round(amountMajor * 100) }] : []
+      });
+      if (saved.error) {
+        this.setState({ invDueError: saved.error });
+        return;
+      }
+      this.applyStore({ modal: null, invDueError: '' });
+      this.toast('Invoice created as draft');
     } else if (k === 'plan') {
       if (!f.planName || !String(f.planName).trim() || !num(f.planAmount)) { this.toast('Add a plan name and amount'); return; }
       if (typeof FlowStore !== 'undefined' && FlowStore.createSubscriptionPlan) {
@@ -3875,7 +3981,7 @@ class Component extends DCLogic {
         self.applyStore();
         self.toast('Payment settled');
       }, delay);
-    }).catch(() => self.toast('Could not simulate payment'));
+    }).catch(err => self.toast((err && err.message) || 'Could not simulate payment'));
   }
 
   deactivateLink(linkId) {
@@ -3897,8 +4003,12 @@ class Component extends DCLogic {
     const priceField = (st.pp.fields || []).find(x => x.kind === 'price');
     const major = Math.abs(parseFloat(String((priceField && priceField.unitPrice) || '').replace(/[^0-9.]/g, '')) || 0);
     const amountMinor = Math.round(major * 100);
-    if (!String(st.pp.title || '').trim() || !amountMinor) {
-      this.toast('Add a product name and price');
+    if (!String(st.pp.title || '').trim()) {
+      this.setState({ ppPublishError: 'Page title is required' });
+      return;
+    }
+    if (!amountMinor) {
+      this.setState({ ppPublishError: 'Amount is required' });
       return;
     }
     try {
@@ -3907,7 +4017,7 @@ class Component extends DCLogic {
         productName: st.pp.title,
         description: st.pp.desc || '',
         amountMinor,
-        slug: (st.ps && st.ps.slug) || st.pp.title,
+        slug: this.pageSlug(st),
         logoDataUrl: st.ppLogo || null,
         accent: st.brandColor || '#17171C',
         supportEmail: st.pp.email || '',
@@ -3923,7 +4033,9 @@ class Component extends DCLogic {
         pp: Object.assign({}, st.pp, { published: true }),
         ppEditing: page.id,
         ppView: 'published',
-        ppPages: (st.ppPages || []).concat([])
+        ppPages: (st.ppPages || []).concat([]),
+        ppPublishError: '',
+        ps: Object.assign({}, st.ps, { slug: page.slug, slugCustom: true })
       });
       this.copyPayUrl(origin + '/pay/' + page.slug);
       this.toast('Page published');
@@ -4438,9 +4550,14 @@ class Component extends DCLogic {
       avg: this.fmt0(subsAll ? Math.round(mrrAll / subsAll) : 0)
     };
     const invoices = s.invoices.map(i => Object.assign({}, i, { amt: this.fmt(i.amount), chip: this.chip(i.status), open: this.open('invoice', i.id) }));
+    const remindable = { Sent: 1, Viewed: 1, Overdue: 1, 'Awaiting Settlement': 1 };
+    const reminderInvoices = (s.reminderInvoices && s.reminderInvoices.length ? s.reminderInvoices : invoices.filter(i => remindable[i.status])).map(i => Object.assign({}, i, {
+      amt: this.fmt(i.amount), chip: this.chip(i.status),
+      remind: this.memo('_irn', i.id, () => () => this.sendInvoiceReminder(i.client))
+    }));
     const clients = s.clients.map(c => Object.assign({}, c, {
       total: this.fmt0(c.total), open: this.open('client', c.id),
-      count: String(s.invoices.filter(i => i.client === c.name).length),
+      count: String(c.invoiceCount != null ? c.invoiceCount : s.invoices.filter(i => i.client === c.name).length),
       initials: c.name.split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase()
     }));
     const team = s.team.map(m => Object.assign({}, m, { open: this.open('member', m.id), initials: m.name.split(' ').map(x => x[0]).join('') }));
@@ -4492,7 +4609,18 @@ class Component extends DCLogic {
       det.gateway = d.type === 'gateway'; det.report = d.type === 'report'; det.member = d.type === 'member'; det.branch = d.type === 'branch'; det.employee = d.type === 'employee';
       const find = (arr, id) => arr.find(x => x.id === id) || {};
       if (det.txn) { const t = find(s.txns, d.id); det.o = Object.assign({}, t, { amt: this.fmt(t.amount), chip: this.chip(t.status), isIn: t.amount > 0 }); }
-      if (det.invoice) { const i = find(s.invoices, d.id); det.o = Object.assign({}, i, { amt: this.fmt(i.amount), chip: this.chip(i.status), taxAmt: this.fmt(0), total: this.fmt(i.amount) }); }
+      if (det.invoice) {
+        const i = find(s.invoices, d.id);
+        det.o = Object.assign({}, i, {
+          amt: this.fmt(i.amount), chip: this.chip(i.status), taxAmt: this.fmt(0), total: this.fmt(i.amount),
+          createdOn: i.issued || i.createdOn || '',
+          sentOn: i.sentOn || '—',
+          viewedOn: i.viewedOn || '—',
+          sendReminder: this.memo('_irs', i.id, () => () => this.sendInvoiceReminder(i.client)),
+          duplicate: this.memo('_idp', i.id, () => () => this.duplicateStoredInvoice(i.id)),
+          voidInvoice: this.memo('_ivd', i.id, () => () => this.toast('Void is sample-only in this sandbox'))
+        });
+      }
       if (det.link) {
         const l = find(s.links, d.id);
         det.o = Object.assign({}, l, {
@@ -4745,7 +4873,8 @@ class Component extends DCLogic {
       mt: flags('team', ['members', 'permissions', 'approvals', 'audit']),
       yt: flags('payroll', ['employees', 'payslips', 'tax']),
       st: flags('settings', ['profile', 'account', 'security', 'billing', 'tags']),
-      links, linkClients: s.linkClients || [], linkInvoices: s.linkInvoices || [], plans, invoices, clients, team, employees, branches, reports, syncLog, exports, zoho: s.zoho || { hasLast: false, line: '' }, matches, rows, tagTotals, cash, det,
+      links, linkClients: s.linkClients || [], linkInvoices: s.linkInvoices || [], plans, invoices, reminderInvoices, hasReminders: reminderInvoices.length > 0, clients, team, employees, branches, reports, syncLog, exports, zoho: s.zoho || { hasLast: false, line: '' }, matches, rows, tagTotals, cash, det,
+      invoiceDue: { error: s.invDueError || '', errorOn: !!s.invDueError },
       pnl, runway, forecast, spend, ageing, pack, branchPerf, perms, limits, pending,
       providers: s.providers.map(p => Object.assign({}, p, { initial: p.n.slice(0, 2), note: p.s !== 'Coming soon', go: () => this.toast(p.n + ' is not available in Phase 1') })),
       history: s.history.filter(x => s.actType === 'all' || x.kind === s.actType).map(x => {
@@ -4789,6 +4918,7 @@ class Component extends DCLogic {
       empt: {
         rows: rows.length === 0,
         invoices: s.invoices.length === 0,
+        reminders: reminderInvoices.length === 0,
         links: s.links.length === 0,
         plans: s.plans.length === 0,
         team: s.team.length === 0,
@@ -4821,7 +4951,23 @@ class Component extends DCLogic {
         const ded = s.figures.payrollDeductions != null ? s.figures.payrollDeductions : 0;
         const net = s.figures.payrollNet != null ? s.figures.payrollNet : gross - ded;
         const pct = s.figures.deductionRate != null ? s.figures.deductionRate : 0;
-        return { total: this.fmt0(gross), net: this.fmt0(net), count: String(s.figures.payrollCount || s.employees.length), deductions: this.fmt0(ded), pctText: (pct * 100).toFixed(pct * 100 % 1 ? 1 : 0) + '%' };
+        const period = (s.form && s.form.payrollPeriod)
+          || (typeof FlowStore !== 'undefined' && FlowStore.defaultPayrollPeriod && FlowStore.defaultPayrollPeriod())
+          || '';
+        const already = typeof FlowStore !== 'undefined' && FlowStore.payrollPostedFor
+          ? !!FlowStore.payrollPostedFor(period)
+          : false;
+        const baseStyle = 'font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:11px 18px; border-radius:9px';
+        return {
+          total: this.fmt0(gross), net: this.fmt0(net), count: String(s.figures.payrollCount || s.employees.length), deductions: this.fmt0(ded), pctText: (pct * 100).toFixed(pct * 100 % 1 ? 1 : 0) + '%',
+          period,
+          setPeriod: (e) => this.setState(st => ({ form: Object.assign({}, st.form, { payrollPeriod: e.target.value }) })),
+          alreadyPosted: already,
+          canPost: !already,
+          postLabel: already ? ('Already posted for ' + period) : 'Post to Transactions',
+          postStyle: already ? baseStyle + '; opacity:.55; pointer-events:none' : baseStyle,
+          post: () => this.postPayrollToLedger()
+        };
       })(),
       connStats: (() => {
         const all = ['skipcash', 'bank', 'zoho', 'tally', 'shopify'];
@@ -5131,7 +5277,7 @@ class Component extends DCLogic {
         const { D, HUBS } = this.dests();
         const META = {
           transactions: { matching: this.liveMatch().open + ' need a look' },
-          invoicing: { all: s.invoices.filter(i => i.status !== 'Paid' && i.status !== 'Draft').length + ' unpaid' },
+          invoicing: { all: String((s.invoiceTotals && s.invoiceTotals.outstandingCount) || 0) + ' unpaid' },
           team: { members: s.team.length + ' people' },
           payroll: { employees: s.employees.length + ' on payroll' },
           reports: { branches: s.branches.length + ' branches' }
@@ -5235,7 +5381,7 @@ class Component extends DCLogic {
           toggleRequired: this.memo('_ppreq', String(i), () => () => this.setState(st => ({ pp: Object.assign({}, st.pp, { fields: st.pp.fields.map((x, j) => j === i ? Object.assign({}, x, { optional: !x.optional }) : x) }) }))),
           reqTrack: 'position:relative; display:inline-block; width:30px; height:17px; border-radius:9px; transition:background .28s cubic-bezier(.32,.72,0,1), box-shadow .28s ease; background:' + (fd.optional ? 'var(--divider)' : 'var(--btn-dark)'),
           reqKnob: 'position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:#FFFFFF; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform .28s cubic-bezier(.32,.72,0,1); transform:translateX(' + (fd.optional ? '0' : '13px') + ')',
-          setPrice: (e) => { const v = e.target.value; this.setState(st => ({ pp: Object.assign({}, st.pp, { fields: st.pp.fields.map((x, j) => j === i ? Object.assign({}, x, { unitPrice: v }) : x) }) })); },
+          setPrice: (e) => { const v = e.target.value; this.setState(st => ({ ppPublishError: '', pp: Object.assign({}, st.pp, { fields: st.pp.fields.map((x, j) => j === i ? Object.assign({}, x, { unitPrice: v }) : x) }) })); },
           qtyUp: this.memo('_qu', String(i), () => () => this.setState(st => ({ pp: Object.assign({}, st.pp, { fields: st.pp.fields.map((x, j) => j === i ? Object.assign({}, x, { qty: (x.qty || 1) + 1 }) : x) }) }))),
           qtyDown: this.memo('_qd', String(i), () => () => this.setState(st => ({ pp: Object.assign({}, st.pp, { fields: st.pp.fields.map((x, j) => j === i ? Object.assign({}, x, { qty: Math.max(1, (x.qty || 1) - 1) }) : x) }) }))),
           moreOpen: s.ppFieldMore === i,
@@ -5266,7 +5412,15 @@ class Component extends DCLogic {
         return {
           title: p.title, desc: p.desc, email: p.email, phone: p.phone,
           titleOut: p.title || 'Your page title', descOut: p.desc || 'A short line about what this payment is for.',
-          setTitle: set('title'), setDesc: set('desc'), setEmail: set('email'), setPhone: set('phone'),
+          setTitle: e => {
+            const v = e.target.value;
+            this.setState(st => {
+              const patch = { pp: Object.assign({}, st.pp, { title: v }), ppPublishError: '' };
+              if (!st.ps.slugCustom) patch.ps = Object.assign({}, st.ps, { slug: this.slugify(v) });
+              return patch;
+            });
+          },
+          setDesc: set('desc'), setEmail: set('email'), setPhone: set('phone'),
           fields, addText: add('text', 'Question'),
           priceMenu: {
             label: ({ fixed: 'Fixed amount', open: 'Customer decides', qty: 'Item with quantity' })[s.ppAmountMode || 'fixed'],
@@ -5290,8 +5444,8 @@ class Component extends DCLogic {
           termsTrack: this.swTrack(!!p.terms), termsKnob: this.swKnob(!!p.terms),
           toggleTerms: () => this.setState(st => ({ pp: Object.assign({}, st.pp, { terms: !st.pp.terms }) })),
           total: 'QR ' + p.fields.filter(x => x.kind === 'price').length * 0 + '0.00',
-          url: ((typeof location !== 'undefined' && location.origin) ? location.origin : '') + '/pay/' + ((s.ps && s.ps.slug) || p.title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-          copyUrl: () => this.copyPayUrl(((typeof location !== 'undefined' && location.origin) ? location.origin : '') + '/pay/' + ((s.ps && s.ps.slug) || p.title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')),
+          url: ((typeof location !== 'undefined' && location.origin) ? location.origin : '') + '/pay/' + this.pageSlug(s),
+          copyUrl: () => this.copyPayUrl(((typeof location !== 'undefined' && location.origin) ? location.origin : '') + '/pay/' + this.pageSlug(s)),
           hasLogo: !!s.ppLogo,
           noLogo: !s.ppLogo,
           logo: s.ppLogo || '',
@@ -5343,15 +5497,22 @@ class Component extends DCLogic {
           })),
           statusLabel: p.published ? 'Published' : 'Draft',
           publishLabel: p.published ? 'Update page' : 'Publish page',
-          publish: () => this.publishCheckout()
+          publish: () => this.publishCheckout(),
+          publishError: s.ppPublishError || '',
+          publishErrorOn: !!s.ppPublishError
         };
       })(),
       ps: (() => {
         const p = s.ps;
         const opt = (k, v) => ({ on: p[k] === v, go: () => this.setState(st => ({ ps: Object.assign({}, st.ps, { [k]: v }) })) });
         return {
-          slug: p.slug,
-          setSlug: e => { const v = e.target.value; this.setState(st => ({ ps: Object.assign({}, st.ps, { slug: v }) })); },
+          slug: (p.slugCustom && String(p.slug || '').trim()) ? p.slug : this.slugify(s.pp.title || p.slug),
+          setSlug: e => {
+            const v = e.target.value;
+            this.setState(st => ({
+              ps: Object.assign({}, st.ps, { slug: v, slugCustom: String(v || '').trim() !== '' })
+            }));
+          },
           themeLight: opt('theme', 'light'), themeDark: opt('theme', 'dark'),
           expNone: opt('expiry', 'none'), expDate: opt('expiry', 'date'),
           dateOn: p.expiry === 'date',
@@ -5398,6 +5559,15 @@ class Component extends DCLogic {
           addClient: () => {
             const nm = (s.nv && s.nv.newClient || '').trim();
             if (!nm) { this.toast('Type a client name first'); return; }
+            if (typeof FlowStore !== 'undefined' && FlowStore.addClient) {
+              FlowStore.addClient({ name: nm });
+              this.applyStore({
+                nvClients: false,
+                nv: Object.assign({}, this.state.nv, { client: nm, newClient: '' })
+              });
+              this.toast(nm + ' added');
+              return;
+            }
             this.setState(st => ({
               nvClients: false,
               clients: [{ id: 'c' + Date.now(), name: nm, email: '', owes: 0, invoices: 0 }].concat(st.clients),
@@ -5417,8 +5587,10 @@ class Component extends DCLogic {
           tax: iv.tax != null ? iv.tax : '0',
           setTax: (e) => patch('tax', e.target.value),
           taxAmt: money(taxAmt),
-          due: iv.due || '',
-          setDue: (e) => patch('due', e.target.value),
+          due: iv.due == null ? ((typeof FlowStore !== 'undefined' && FlowStore.dateInputValue) ? FlowStore.dateInputValue(14) : '') : iv.due,
+          dueError: iv.dueError || '',
+          dueErrorOn: !!iv.dueError,
+          setDue: (e) => this.setState(st => ({ nv: Object.assign({}, st.nv, { due: e.target.value, dueError: '' }) })),
           notes: iv.notes != null ? iv.notes : '',
           setNotes: (e) => patch('notes', e.target.value),
           preview: items.filter(x => x.desc || num(x.price)).map(x => ({
@@ -5429,14 +5601,43 @@ class Component extends DCLogic {
           create: () => {
             if (!clientName) { this.toast('Pick a client first'); return; }
             if (!sub) { this.toast('Add at least one line item'); return; }
-            const inv = { id: 'i' + Date.now(), no: nextNo, client: clientName, amount: Math.round(sub + taxAmt), status: 'Sent', due: iv.due || '30 Aug', tag: 'Sales' };
-            this.setState(st => ({ invoices: [inv].concat(st.invoices), nv: {}, tab: Object.assign({}, st.tab, { invoicing: 'all' }) }));
-            this.toast('Invoice ' + nextNo + ' sent');
+            const saved = this.persistCreatedInvoice({
+              clientName,
+              amountMajor: sub + taxAmt,
+              dueRaw: iv.due,
+              draft: false,
+              lines: items.filter(x => x.desc || num(x.price)).map(x => ({
+                description: x.desc || 'Untitled line',
+                quantity: num(x.qty) || 1,
+                unitMinor: Math.round(num(x.price) * 100)
+              }))
+            });
+            if (saved.error) {
+              this.setState(st => ({ nv: Object.assign({}, st.nv, { dueError: saved.error }) }));
+              return;
+            }
+            this.applyStore({ nv: {}, nvClients: false, tab: Object.assign({}, this.state.tab, { invoicing: 'all' }) });
+            this.toast('Invoice ' + (saved.invoice && saved.invoice.number ? saved.invoice.number : nextNo) + ' sent');
           },
           draft: () => {
             if (!clientName) { this.toast('Pick a client first'); return; }
-            const inv = { id: 'i' + Date.now(), no: nextNo, client: clientName, amount: Math.round(sub + taxAmt), status: 'Draft', due: iv.due || '30 Aug', tag: 'Sales' };
-            this.setState(st => ({ invoices: [inv].concat(st.invoices), nv: {} }));
+            if (!sub) { this.toast('Add at least one line item'); return; }
+            const saved = this.persistCreatedInvoice({
+              clientName,
+              amountMajor: sub + taxAmt,
+              dueRaw: iv.due,
+              draft: true,
+              lines: items.filter(x => x.desc || num(x.price)).map(x => ({
+                description: x.desc || 'Untitled line',
+                quantity: num(x.qty) || 1,
+                unitMinor: Math.round(num(x.price) * 100)
+              }))
+            });
+            if (saved.error) {
+              this.setState(st => ({ nv: Object.assign({}, st.nv, { dueError: saved.error }) }));
+              return;
+            }
+            this.applyStore({ nv: {}, nvClients: false });
             this.toast('Saved as draft');
           }
         };
@@ -5500,7 +5701,9 @@ class Component extends DCLogic {
           ppView: 'edit', ppEditing: null,
           pp: { title: '', desc: '', email: (((typeof window !== 'undefined' && window.FLOW_DATA) || {}).acctEmail) || '', phone: '', terms: true, published: false,
                 fields: [{ label: 'Amount', kind: 'price', locked: true }, { label: 'Email', kind: 'mail', locked: true }] },
-          ppLogo: ''
+          ppLogo: '',
+          ppPublishError: '',
+          ps: Object.assign({}, this.state.ps, { slug: '', slugCustom: false })
         }),
         back: () => this.setState({ ppView: 'list' }),
         rows: (s.checkoutPages || s.ppPages || []).map(p => ({
@@ -5512,7 +5715,7 @@ class Component extends DCLogic {
           open: () => this.setState({
             ppView: 'edit', ppEditing: p.id,
             ppLogo: p.logoDataUrl || '',
-            ps: Object.assign({}, s.ps, { slug: p.slug || s.ps.slug }),
+            ps: Object.assign({}, s.ps, { slug: p.slug || '', slugCustom: !!p.slug }),
             pp: { title: p.title, desc: p.desc, email: p.email, phone: p.phone, terms: p.terms,
                   published: p.published !== false, fields: (p.fields || [{ label: 'Amount', kind: 'price', locked: true, unitPrice: String(p.amount || '') }]).map(x => Object.assign({}, x)) }
           })
@@ -5622,7 +5825,7 @@ class Component extends DCLogic {
             { label: 'Expense', d: 'M10 15.6V5.2M5.8 9.4 10 5.2l4.2 4.2M4.4 16.8h11.2', go: this.openModal('expense') }
           ],
           needsMatch: String(this.liveMatch().open),
-          openInv: String(s.invoices.filter(i => i.status !== 'Paid' && i.status !== 'Draft').length),
+          openInv: String((s.invoiceTotals && s.invoiceTotals.outstandingCount) || 0),
           outstanding: this.fmt0(outstanding),
           pending: period.pendingText || this.fmt0(period.pending), delta: '',
           allTxns: this.sortedTxns().slice(0, 16).map(t => this.row(t)),
@@ -5667,7 +5870,7 @@ class Component extends DCLogic {
           }
         };
       })(),
-      F: Object.assign({ search: (e) => { const v = e.target.value; this.setState({ search: v }); }, linkInvoice: this.onLinkInvoice, periodFrom: (e) => this.setState({ periodFrom: e.target.value }), periodTo: (e) => this.setState({ periodTo: e.target.value }) }, this.forms(['empMethod', 'linkAmount', 'linkDesc', 'linkExpiry', 'linkClient', 'expAmount', 'expParty', 'invClient', 'invAmount', 'invDue', 'planName', 'planAmount', 'planInterval', 'planDesc', 'planCustomer', 'shopDomain', 'memberName', 'memberEmail', 'memberRole', 'empName', 'empRole', 'empSalary', 'scanVendor', 'scanAmount', 'scanDate', 'scanTag', 'scanTax'])),
+      F: Object.assign({ search: (e) => { const v = e.target.value; this.setState({ search: v }); }, linkInvoice: this.onLinkInvoice, periodFrom: (e) => this.setState({ periodFrom: e.target.value }), periodTo: (e) => this.setState({ periodTo: e.target.value }), invDue: (e) => this.setState(st => ({ invDueError: '', form: Object.assign({}, st.form, { invDue: e.target.value }) })) }, this.forms(['empMethod', 'linkAmount', 'linkDesc', 'linkExpiry', 'linkClient', 'expAmount', 'expParty', 'invClient', 'invAmount', 'planName', 'planAmount', 'planInterval', 'planDesc', 'planCustomer', 'shopDomain', 'memberName', 'memberEmail', 'memberRole', 'empName', 'empRole', 'empSalary', 'scanVendor', 'scanAmount', 'scanDate', 'scanTag', 'scanTax'])),
       h: {
         stop: (e) => e.stopPropagation(),
         back: () => this.setState({ detail: null }),
@@ -5777,11 +5980,11 @@ class Component extends DCLogic {
       },
       auto: {
         open: !!s.autoOpen, shut: !s.autoOpen,
-        count: String(s.autoMatches.length),
+        count: String(autoN),
         pctText: matchPct + '%', pctW: matchPct + '%',
         line: autoN + ' matched automatically · ' + openN + (openN === 1 ? ' needs' : ' need') + ' a quick look',
         toggle: () => this.setState(x => ({ autoOpen: !x.autoOpen })),
-        rows: s.autoMatches.map(m => Object.assign({}, m, { amt: this.fmt(m.amount), confT: m.conf + '%', open: this.open('match', m.id) }))
+        rows: (s.autoMatches || []).map(m => Object.assign({}, m, { amt: this.fmt(m.amount), confT: (m.conf || 0) + '%', open: this.open('match', m.id) }))
       },
       recent: this.sortedTxns().slice(0, 6).map(t => this.row(t)),
       att: {

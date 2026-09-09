@@ -1,22 +1,28 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { dashboardSnapshot, dashboardState } from "../lib/data/view.ts";
-import { formatDate, formatMoney, offsetFromLabel } from "../lib/format.ts";
+import { formatDate, formatMoney, offsetFromLabel, dateInputValue, previousMonthLabel } from "../lib/format.ts";
 import { chartScale } from "../lib/chart.ts";
 import { dateFor, seed } from "../lib/data/seed.ts";
 import { SAMPLE_BILL, SAMPLE_BILLS, EXTRACT_DELAY_MS, EXTRACT_DELAY_MIN_MS, EXTRACT_DELAY_MAX_MS, extractBill, extractDelayMs, extractedBillForm } from "../lib/data/sample-bill.ts";
 import { appendTransaction, getStore, resetStore } from "../lib/data/store.ts";
 import {
+  addClient,
   addSubscriber,
   cancelSubscriber,
   confirmMatch,
   connectSampleBank,
   connectShopify,
+  createInvoice,
   createPaymentLink,
   createSubscriptionPlan,
   deactivatePaymentLink,
+  defaultPayrollPeriod,
+  duplicateInvoice,
   ingestShopifyOrder,
   payPublishedCheckout,
+  payrollPostedFor,
+  postPayroll,
   publishCheckoutPage,
   runSimulatedBilling,
   setSmartCheckout,
@@ -33,6 +39,7 @@ import {
   getCashOnHand,
   getInvoiceStatus,
   getMatchRate,
+  getMatchedTransactions,
   getMoneyIn,
   getMoneyOut,
   getNet,
@@ -46,6 +53,7 @@ import {
   getPendingSettlement,
   getProfitAndLoss,
   getRefunds,
+  getReminderInvoices,
   getRunway,
   getSpend,
   getTotalInvoiced,
@@ -83,6 +91,8 @@ const FlowStore = {
   createSubscriptionPlan, addSubscriber, runSimulatedBilling, settleBilling,
   cancelSubscriber, deactivatePaymentLink, connectShopify, ingestShopifyOrder,
   connectSampleBank, setSmartCheckout, SAMPLE_CHECKOUT_ANALYTICS,
+  createInvoice, duplicateInvoice, addClient, postPayroll, payrollPostedFor, defaultPayrollPeriod,
+  dateInputValue, previousMonthLabel,
   exportTallyXml, simulateZohoSync, resetGateway
 };
 let pendingExtract = null;
@@ -429,8 +439,193 @@ lines.push("- Cash on hand: " + money(getCashOnHand()) + " = opening " + money(g
 lines.push("- Who owes me equals Outstanding: " + money(outstanding.amountMinor) + " across " + outstanding.count + " invoices");
 lines.push("- Overdue: " + money(getOverdue().amountMinor));
 lines.push("- Total invoiced: " + money(getTotalInvoiced().amountMinor) + " (" + getTotalInvoiced().count + ")");
+const allInvoiceRows = dashboardState().invoices.filter(row => row.status !== "Draft");
+check(
+  "All Invoices row count equals Total Invoiced count",
+  allInvoiceRows.length === getTotalInvoiced().count && Number(root.renderVals().counts.invoices) === live().invoices.length,
+  allInvoiceRows.length + " non-draft rows · " + getTotalInvoiced().count + " invoiced · list " + root.renderVals().counts.invoices
+);
+root.setState({ page: "invoicing", tab: Object.assign({}, root.state.tab, { invoicing: "hub" }), detail: null });
+const hubAll = (root.renderVals().hub.cards || []).find(card => card.title === "All Invoices");
+check(
+  "Invoices hub badge equals Outstanding count",
+  hubAll && hubAll.meta === getOutstanding().count + " unpaid",
+  (hubAll && hubAll.meta) + " vs Outstanding " + getOutstanding().count
+);
+lines.push("- Hub All Invoices badge equals All Invoices unpaid / Outstanding: " + (hubAll && hubAll.meta) + " = " + getOutstanding().count + " unpaid");
+const asOf = live().bankAccounts.reduce((min, account) => Math.min(min, account.asOfOffset), 0);
+const bankMovement = live().transactions
+  .filter(txn => txn.status !== "pending" && txn.dayOffset > asOf)
+  .reduce((sum, txn) => sum + signedAmount(txn), 0);
+check(
+  "Bank Activity equals cash on hand",
+  dashboardState().bank.activity === money(getCashOnHand()) && getCashOnHand() === getOpeningBalance() + bankMovement,
+  dashboardState().bank.activity + " = opening " + money(getOpeningBalance()) + " + " + money(bankMovement)
+);
+lines.push("- Bank Activity is cash on hand: opening " + money(getOpeningBalance()) + " on bank_01 as of offset " + asOf + " + signed completed transactions with dayOffset > " + asOf + " (" + money(bankMovement) + ") = " + money(getCashOnHand()));
+check(
+  "Matched automatically list equals getMatchRate().matched",
+  getMatchedTransactions().length === getMatchRate().matched &&
+    dashboardState().autoMatches.length === getMatchRate().matched &&
+    Number(root.renderVals().auto.count) === getMatchRate().matched &&
+    root.renderVals().auto.rows.length === getMatchRate().matched,
+  root.renderVals().auto.count + " listed · " + getMatchRate().matched + " matched"
+);
+const reminderStatuses = new Set(["Sent", "Viewed", "Overdue", "Awaiting Settlement"]);
+const reminderView = dashboardState().reminderInvoices;
+check(
+  "Reminders list is sent, viewed, overdue or awaiting settlement",
+  reminderView.length === getReminderInvoices().length &&
+    reminderView.every(row => reminderStatuses.has(row.status)) &&
+    !reminderView.some(row => row.status === "Paid" || row.status === "Refunded" || row.status === "Draft"),
+  reminderView.length + " remindable · " + reminderView.map(row => row.no).join(", ")
+);
+const inv0147 = dashboardState().invoices.find(row => row.no === "INV-0147");
+check(
+  "INV-0147 timeline dates follow invoice offsets",
+  inv0147 && inv0147.issued === formatDate(-20) && inv0147.sentOn === formatDate(-20) && inv0147.viewedOn === formatDate(-16),
+  "created " + (inv0147 && inv0147.issued) + " · sent " + (inv0147 && inv0147.sentOn) + " · viewed " + (inv0147 && inv0147.viewedOn)
+);
+root.setState({ page: "invoicing", detail: { type: "invoice", id: "inv_0147" } });
+const timeline = root.renderVals().det.o;
+check(
+  "Invoice detail timeline binds derived dates",
+  timeline.createdOn === formatDate(-20) && timeline.sentOn === formatDate(-20) && timeline.viewedOn === formatDate(-16),
+  timeline.createdOn + " / " + timeline.sentOn + " / " + timeline.viewedOn
+);
+root.setState({ detail: null });
+root.setState({ page: "invoicing", detail: { type: "invoice", id: "inv_0148" } });
+root.renderVals().det.o.sendReminder();
+check(
+  "Send reminder toasts the client, not the clipboard",
+  root.state.toast === "Reminder sent to Lusail Hospitality",
+  root.state.toast || "(none)"
+);
+root.setState({ detail: null, toast: "" });
+
+const created = createInvoice({
+  clientName: "Lusail Hospitality",
+  amountMinor: 340000,
+  dueOffset: 14
+});
+root.applyStore();
+const afterCreate = getTotalInvoiced();
+const afterOut = getOutstanding();
+const lusail = dashboardState().clients.find(client => client.name === "Lusail Hospitality");
+check(
+  "Creating INV-0151 updates invoiced totals from the store",
+  created.number === "INV-0151" &&
+    afterCreate.amountMinor === 4670000 && afterCreate.count === 10 &&
+    afterOut.amountMinor === 2430000 && afterOut.count === 4 &&
+    Number(root.renderVals().invSum.paidN) === 10 &&
+    Number(root.renderVals().counts.invoices) === 10 &&
+    dashboardState().invoices.filter(row => row.status !== "Draft").length === afterCreate.count,
+  "invoiced " + money(afterCreate.amountMinor) + " / " + afterCreate.count + " · outstanding " + money(afterOut.amountMinor) + " / " + afterOut.count
+);
+lines.push("- After creating INV-0151 (Lusail Hospitality, QR 3,400): Total Invoiced " + money(afterCreate.amountMinor) + " / " + afterCreate.count + " invoices; Outstanding " + money(afterOut.amountMinor) + " / " + afterOut.count + " unpaid");
+check(
+  "Lusail lifetime and invoice count both read the store",
+  lusail && lusail.invoiceCount === 2 && lusail.total === 8800,
+  "count " + (lusail && lusail.invoiceCount) + " · lifetime QR " + (lusail && lusail.total)
+);
+root.setState({ page: "invoicing", tab: Object.assign({}, root.state.tab, { invoicing: "hub" }), detail: null });
+const hubAfter = (root.renderVals().hub.cards || []).find(card => card.title === "All Invoices");
+check(
+  "Hub unpaid badge follows Outstanding after create",
+  hubAfter && hubAfter.meta === afterOut.count + " unpaid",
+  hubAfter && hubAfter.meta
+);
+const overdueCreated = createInvoice({
+  clientName: "Lusail Hospitality",
+  amountMinor: 10000,
+  dueOffset: -1
+});
+check(
+  "getInvoiceStatus returns overdue for a new unpaid past-due invoice",
+  getInvoiceStatus(overdueCreated.id) === "overdue",
+  overdueCreated.number + " " + getInvoiceStatus(overdueCreated.id)
+);
+resetStore();
+root.applyStore();
+
+root.setState({
+  page: "invoicing",
+  tab: Object.assign({}, root.state.tab, { invoicing: "create" }),
+  nv: { client: "Lusail Hospitality", items: [{ desc: "Stay", qty: "1", price: "3400" }], due: "" }
+});
+root.renderVals().nv.create();
+check(
+  "Blank due date is blocked with an inline error",
+  !!root.renderVals().nv.dueErrorOn && live().invoices.length === 9,
+  (root.renderVals().nv.dueError || "no error") + " · invoices " + live().invoices.length
+);
+
+const dup = duplicateInvoice("inv_0148");
+check(
+  "Duplicate copies client and amount as a draft due in 14 days",
+  dup.clientId === "cli_07" && dup.amountMinor === 540000 && dup.dueOffset === 14 && dup.issuedOffset === 0 &&
+    getInvoiceStatus(dup.id) === "draft" && dup.number !== "INV-0148",
+  dup.number + " " + getInvoiceStatus(dup.id) + " due +" + dup.dueOffset
+);
+resetStore();
+root.applyStore();
+
+const payPeriod = defaultPayrollPeriod();
+check(
+  "Seed payroll is already posted for the payslip period",
+  payrollPostedFor(payPeriod) === true,
+  payPeriod
+);
+root.setState({ page: "payroll", tab: Object.assign({}, root.state.tab, { payroll: "payslips" }) });
+check(
+  "Post to Transactions is labelled already posted for the seed period",
+  root.renderVals().payroll.postLabel === "Already posted for " + payPeriod,
+  root.renderVals().payroll.postLabel
+);
+const postedAgain = postPayroll(payPeriod);
+check("Posting the seed period does not append another salaries row", postedAgain.alreadyPosted === true, postedAgain.period);
+resetStore();
+root.applyStore();
+
 lines.push("- Plan usage: " + live().transactions.length + " of " + seed.merchant.plan.txnLimit);
 lines.push("- Branches: " + getBranchComparison().map(branch => branch.name + " inflow " + money(branch.inflow) + " (" + Math.round(branch.inflow / getMoneyIn("month") * 100) + "%)").join("; "));
+
+const seedLinks = live().paymentLinks;
+const seedLinkById = id => seedLinks.find(row => row.id === id);
+const seedCollected = seedLinks.reduce((sum, row) => sum + row.amountMinor * row.uses, 0);
+const seedUses = seedLinks.reduce((sum, row) => sum + row.uses, 0);
+check("Seeded payment links match the four paid counterparties",
+  seedLinks.length === 4 &&
+    seedLinkById("link_txn_01")?.description === "Noor Interiors" &&
+    seedLinkById("link_txn_01")?.amountMinor === 154000 &&
+    seedLinkById("link_txn_01")?.txnId === "txn_01" &&
+    seedLinkById("link_txn_01")?.clientId === "cli_04" &&
+    seedLinkById("link_txn_01")?.invoiceId === "inv_0145" &&
+    seedLinkById("link_txn_10")?.description === "Mohammed Rashid" &&
+    seedLinkById("link_txn_10")?.amountMinor === 98000 &&
+    seedLinkById("link_txn_10")?.txnId === "txn_10" &&
+    seedLinkById("link_txn_10")?.clientId === "cli_08" &&
+    seedLinkById("link_txn_10")?.invoiceId == null &&
+    seedLinkById("link_txn_14")?.description === "Fatima Al-Kuwari" &&
+    seedLinkById("link_txn_14")?.amountMinor === 215000 &&
+    seedLinkById("link_txn_14")?.txnId === "txn_14" &&
+    seedLinkById("link_txn_14")?.clientId === "cli_05" &&
+    seedLinkById("link_txn_14")?.invoiceId === "inv_0146" &&
+    seedLinkById("link_txn_20")?.description === "Msheireb Boutiques" &&
+    seedLinkById("link_txn_20")?.amountMinor === 187000 &&
+    seedLinkById("link_txn_20")?.txnId === "txn_20" &&
+    seedLinkById("link_txn_20")?.clientId === "cli_10" &&
+    seedLinkById("link_txn_20")?.invoiceId === "inv_0150",
+  seedLinks.map(row => row.description).join(", "));
+check("Collected via links is QR 6,540 across 4 payments",
+  seedCollected === 654000 && seedUses === 4 &&
+    data.links.reduce((sum, row) => sum + row.amount * row.uses, 0) === 6540 &&
+    data.links.reduce((sum, row) => sum + row.uses, 0) === 4,
+  money(seedCollected) + " · times paid " + seedUses);
+check("Page settings slug is derived, not a leftover default",
+  root.state.ps.slug === "" && root.state.ps.slugCustom === false &&
+    typeof root.pageSlug === "function" && root.pageSlug({ pp: { title: "Fleet Deposit" }, ps: { slug: "", slugCustom: false } }) === "fleet-deposit",
+  "empty slug · Fleet Deposit → " + root.pageSlug({ pp: { title: "Fleet Deposit" }, ps: { slug: "", slugCustom: false } }));
 
 check("Sample bill is distinct from seed Kahramaa",
   data.scan.vendor === "Barzan Water" &&
@@ -505,6 +700,12 @@ check("Scan save drops Reports net profit",
 check("Scanned bill sorts to top of Recent Activity",
   recentTop && recentTop.party === "Barzan Water" && recentTop.offset === SAMPLE_BILL.dayOffset,
   recentTop ? recentTop.party + " offset " + recentTop.offset : "missing");
+const tallyAfterBarzan = buildTallyExport();
+check("Tally after Barzan scan is 20 settled rows",
+  tallyAfterBarzan.items === 20 &&
+    transactionsInTallyRange(-29, 0).length === 20 &&
+    !transactionsInTallyRange(-29, 0).some(txn => txn.id === "txn_13"),
+  tallyAfterBarzan.items + " items (21 would include pending txn_13)");
 resetStore();
 root.applyStore({ modal: "scan" });
 pendingExtract = null;
@@ -615,6 +816,43 @@ check("Home Net equals Reports after confirm",
 resetStore();
 resetGateway();
 
+const declineLink = await createPaymentLink({ amountMinor: 10000, description: "Decline rehearsal" });
+const declined = await simulatePayment(declineLink.id, "decline");
+check("Simulate decline marks the link rejected without a ledger row",
+  declined.pending === false && declined.txnId == null &&
+    live().paymentLinks.find(row => row.id === declineLink.id)?.status === "rejected" &&
+    !live().transactions.some(txn => txn.id === declined.txnId),
+  live().paymentLinks.find(row => row.id === declineLink.id)?.status || "missing");
+const timeoutLink = await createPaymentLink({ amountMinor: 10000, description: "Timeout rehearsal" });
+const timedOut = await simulatePayment(timeoutLink.id, "timeout");
+check("Simulate timeout marks the link failed without a ledger row",
+  timedOut.pending === false && timedOut.txnId == null &&
+    live().paymentLinks.find(row => row.id === timeoutLink.id)?.status === "failed",
+  live().paymentLinks.find(row => row.id === timeoutLink.id)?.status || "missing");
+const partialLink = await createPaymentLink({
+  amountMinor: 20000,
+  description: "Partial rehearsal",
+  invoiceId: "inv_0148"
+});
+const partial = await simulatePayment(partialLink.id, "partial");
+check("Simulate partial posts half the amount and a match proposal",
+  partial.pending && partial.amountMinor === 10000 &&
+    live().transactions.some(txn => txn.id === partial.txnId && txn.amountMinor === 10000 && txn.status === "pending") &&
+    getOpenMatches().some(proposal => proposal.transactionId === partial.txnId),
+  money(partial.amountMinor) + " · " + (partial.txnId || "missing"));
+resetStore();
+resetGateway();
+
+const persistLink = await createPaymentLink({ amountMinor: 15000, description: "Gateway persist" });
+resetGateway();
+const persistSim = await simulatePayment(persistLink.id, "success");
+check("simulatePayment still works after gateway reset",
+  persistSim.pending && !!persistSim.txnId && persistSim.reference &&
+    live().transactions.some(txn => txn.id === persistSim.txnId && txn.status === "pending"),
+  persistSim.txnId || "missing");
+resetStore();
+resetGateway();
+
 const tallyRows = transactionsInTallyRange(-29, 0);
 const tallyFile = buildTallyExport();
 const tallyXml = tallyFile.xml;
@@ -699,6 +937,12 @@ check("Public payment page matches the builder without edit chrome",
     !/Add new/.test(payPage) &&
     !/pp\.setTitle/.test(payPage),
   "customer checkout chrome");
+check("Public pay page validates email and shows a receipt",
+  /Enter a valid email/.test(payPage) &&
+    /Payment received/.test(payPage) &&
+    /Reference /.test(payPage) &&
+    /box locked/.test(payPage),
+  "email + success card");
 const page = publishCheckoutPage({
   productName: "Eid hamper",
   description: "Pickup from the Doha store",
@@ -727,6 +971,52 @@ check("Home Net equals Reports after hosted checkout",
 check("matched + open after hosted checkout",
   getMatchRate().matched + getOpenMatches().length === getMatchRate().total,
   getMatchRate().matched + " + " + getOpenMatches().length + " = " + getMatchRate().total);
+resetStore();
+resetGateway();
+
+const fleet = publishCheckoutPage({
+  productName: "Fleet Deposit",
+  description: "Vehicle deposit",
+  amountMinor: 10000
+});
+check("Publish derives slug from the title",
+  fleet.slug === "fleet-deposit",
+  fleet.slug);
+const fleetAgain = publishCheckoutPage({
+  productName: "Fleet Deposit",
+  description: "Second vehicle deposit",
+  amountMinor: 12000
+});
+check("Duplicate title gets a uniqueness suffix",
+  fleetAgain.slug === "fleet-deposit-2",
+  fleetAgain.slug);
+root.setState({
+  ppEditing: null,
+  ppPublishError: "",
+  ps: Object.assign({}, root.state.ps, { slug: "", slugCustom: false }),
+  pp: Object.assign({}, root.state.pp, {
+    title: "Fleet Deposit",
+    desc: "Vehicle deposit",
+    published: false,
+    fields: [{ label: "Amount", kind: "price", unitPrice: "" }, { label: "Email", kind: "mail" }]
+  })
+});
+root.publishCheckout();
+check("Publish with no amount names the missing field",
+  root.state.ppPublishError === "Amount is required" &&
+    !live().checkoutPages.some(row => row.slug === "fleet-deposit" && row.amountMinor === 0),
+  root.state.ppPublishError || "no error");
+root.setState({
+  ppPublishError: "",
+  pp: Object.assign({}, root.state.pp, {
+    title: "",
+    fields: [{ label: "Amount", kind: "price", unitPrice: "100" }]
+  })
+});
+root.publishCheckout();
+check("Publish with no title names the missing field",
+  root.state.ppPublishError === "Page title is required",
+  root.state.ppPublishError || "no error");
 resetStore();
 resetGateway();
 
@@ -841,7 +1131,7 @@ check("Reset demo data asks for confirm",
   root.state.modal === "reset" &&
     /resetDemo:\s*this\.openModal\('reset'\)/.test(rootSource) &&
     getMoneyIn("month") === moneyAfterMutate &&
-    live().paymentLinks.length > 0 &&
+    live().paymentLinks.length === 5 &&
     live().shopify.connected === true,
   "modal open, Money In still " + money(moneyAfterMutate));
 root.submitModal();
@@ -854,9 +1144,13 @@ check("Reset restores match identity",
   rateReset.matched === 9 && rateReset.total === 12 && openReset.length === 3 &&
     rateReset.matched + openReset.length === rateReset.total,
   rateReset.matched + " of " + rateReset.total + " · " + openReset.length + " open");
-check("Reset clears created links and plans",
-  live().paymentLinks.length === 0 && live().checkoutPages.length === 0 && live().subscriptionPlans.length === 0,
-  "paymentLinks/checkoutPages/subscriptionPlans empty");
+check("Reset restores seeded links and clears created pages",
+  live().paymentLinks.length === 4 &&
+    live().paymentLinks.reduce((sum, row) => sum + row.amountMinor * row.uses, 0) === 654000 &&
+    live().paymentLinks.reduce((sum, row) => sum + row.uses, 0) === 4 &&
+    live().checkoutPages.length === 0 &&
+    live().subscriptionPlans.length === 0,
+  "4 seeded links · QR 6,540 · pages/plans empty");
 check("Reset disconnects Shopify",
   live().shopify.connected === false && dashboardState().shopify.disconnected === true,
   "disconnected");
@@ -899,7 +1193,7 @@ const doc = [
   "## Not stored in the seed",
   "",
   "- Bank account number is not stored. Opening balance is stored on bank_01 (QR 85,000 as of ANCHOR_DATE minus 30 days).",
-  "- Subscription plans, payment-page totals, checkout product price and saved report packs are not in the seed, so those lists start empty. Checkout drop-off uses labelled sample analytics in lib/data/sample-checkout.ts.",
+  "- Four paid payment links are in the seed (collected QR 6,540, times paid 4). Subscription plans, checkout product price and saved report packs are not, so those lists start empty. Checkout drop-off uses labelled sample analytics in lib/data/sample-checkout.ts.",
   "- Shopify starts disconnected. Seed shopify transactions stay as historical rows; only new incoming after connect are tagged by the plugin.",
   "- Extra bank connections are labelled sample and store opening QR 0 so cash on hand does not change.",
   "- Recurring invoice schedules, sync payloads and approval caps are not in the seed.",

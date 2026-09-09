@@ -132,7 +132,12 @@ export const seed: Seed = {
     { id: "inv_0150", number: "INV-0150", clientId: "cli_10", amountMinor: 187000, issuedOffset: -9, dueOffset: 5, sentAt: -9, viewedAt: -8, branchId: "br_02" }
   ],
   clients,
-  paymentLinks: [],
+  paymentLinks: [
+    { id: "link_txn_01", payUrl: "/pay/link_txn_01", amountMinor: 154000, description: "Noor Interiors", clientId: "cli_04", invoiceId: "inv_0145", status: "paid", createdOffset: -29, uses: 1, expiry: "-", txnId: "txn_01" },
+    { id: "link_txn_10", payUrl: "/pay/link_txn_10", amountMinor: 98000, description: "Mohammed Rashid", clientId: "cli_08", invoiceId: null, status: "paid", createdOffset: -12, uses: 1, expiry: "-", txnId: "txn_10" },
+    { id: "link_txn_14", payUrl: "/pay/link_txn_14", amountMinor: 215000, description: "Fatima Al-Kuwari", clientId: "cli_05", invoiceId: "inv_0146", status: "paid", createdOffset: -4, uses: 1, expiry: "-", txnId: "txn_14" },
+    { id: "link_txn_20", payUrl: "/pay/link_txn_20", amountMinor: 187000, description: "Msheireb Boutiques", clientId: "cli_10", invoiceId: "inv_0150", status: "paid", createdOffset: -6, uses: 1, expiry: "-", txnId: "txn_20" }
+  ],
   exportHistory: [],
   checkoutPages: [],
   subscriptionPlans: [],

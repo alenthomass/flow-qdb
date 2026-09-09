@@ -1,15 +1,16 @@
-import { formatDate, formatMoney } from "../format";
+import { formatDate, formatMoney, offsetFromLabel } from "../format";
 import { chartScale } from "../chart";
 import { seed } from "./seed";
 import { getStore } from "./store";
 import { SAMPLE_BILL, SAMPLE_BILLS } from "./sample-bill";
 import { SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS } from "./sample-checkout";
-import { offsetFromLabel } from "../format";
 import type { Period } from "./types";
 import {
   getBranchComparison,
   getCashForecast,
+  getCashOnHand,
   getInvoiceStatus,
+  getMatchedTransactions,
   getMatchRate,
   getMoneyIn,
   getMoneyOut,
@@ -55,7 +56,7 @@ function sourceLabel(source: string): string {
 }
 
 function clientName(clientId: string): string {
-  return seed.clients.find(client => client.id === clientId)?.name ?? "";
+  return db().clients.find(client => client.id === clientId)?.name ?? "";
 }
 
 function signedMoney(amount: number): string {
@@ -264,9 +265,13 @@ export function dashboardState() {
       id: invoice.id,
       no: invoice.number,
       client: clientName(invoice.clientId),
+      clientId: invoice.clientId,
       amount: major(invoice.amountMinor),
       status: titleStatus(status),
       due: formatDate(invoice.dueOffset),
+      issued: formatDate(invoice.issuedOffset),
+      sentOn: invoice.sentAt != null ? formatDate(invoice.sentAt) : "—",
+      viewedOn: invoice.viewedAt != null ? formatDate(invoice.viewedAt) : "—",
       tag: "Sales",
       outstanding: status === "paid" || status === "refunded" || status === "draft" ? 0 : major(invoice.amountMinor),
       daysLate: invoice.dueOffset < 0 && status !== "paid" && status !== "refunded" ? -invoice.dueOffset : 0
@@ -291,6 +296,27 @@ export function dashboardState() {
       when: formatDate(txn?.dayOffset ?? 0),
       d: formatDate(txn?.dayOffset ?? 0),
       src: sourceLabel(txn?.source ?? "bank")
+    };
+  });
+
+  const autoMatches = getMatchedTransactions().map(txn => {
+    const invoice = db().invoices.find(row => row.id === txn.invoiceId);
+    const proposal = db().matchProposals.find(row => row.transactionId === txn.id);
+    const inv = invoice?.number ?? "No invoice";
+    return {
+      id: txn.id,
+      amount: major(txn.amountMinor) * (txn.direction === "out" ? -1 : 1),
+      party: txn.counterparty,
+      inv,
+      invoiceId: invoice?.id ?? "",
+      txnId: txn.id,
+      pending: txn.status === "pending",
+      conf: proposal ? Math.round(proposal.confidence * 100) : 100,
+      why: proposal?.reason || "Matched from the ledger",
+      note: "Matched: " + inv,
+      when: formatDate(txn.dayOffset),
+      d: formatDate(txn.dayOffset),
+      src: sourceLabel(txn.source)
     };
   });
 
@@ -476,20 +502,24 @@ export function dashboardState() {
         ? "Sample data. Live bank feeds arrive in a later phase."
         : formatMoney(account.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset)
     })),
-    linkClients: seed.clients.map(client => ({ id: client.id, name: client.name })),
+    linkClients: db().clients.map(client => ({ id: client.id, name: client.name })),
     linkInvoices: getOutstandingInvoices().map(invoice => ({
       id: invoice.id,
       clientId: invoice.clientId,
       amount: major(invoice.amountMinor),
       label: invoice.number + " · " + clientName(invoice.clientId) + " · " + formatMoney(invoice.amountMinor, currency as CurrencyCode, { trimWhole: true })
     })),
-    clients: seed.clients.map(client => ({
-      id: client.id,
-      name: client.name,
-      email: client.email,
-      phone: "",
-      total: major(db().invoices.filter(invoice => invoice.clientId === client.id).reduce((sum, invoice) => sum + invoice.amountMinor, 0))
-    })),
+    clients: db().clients.map(client => {
+      const rows = db().invoices.filter(invoice => invoice.clientId === client.id);
+      return {
+        id: client.id,
+        name: client.name,
+        email: client.email,
+        phone: "",
+        invoiceCount: rows.length,
+        total: major(rows.reduce((sum, invoice) => sum + invoice.amountMinor, 0))
+      };
+    }),
     team: seed.teamMembers.map(member => ({
       id: member.id,
       name: member.name,
@@ -541,7 +571,11 @@ export function dashboardState() {
       };
     })(),
     matches,
-    autoMatches: [] as typeof matches,
+    autoMatches,
+    reminderInvoices: invoices.filter(row => {
+      const status = row.status;
+      return status === "Sent" || status === "Viewed" || status === "Overdue" || status === "Awaiting Settlement";
+    }),
     attention,
     periods,
     branches: getBranchComparison().map(branch => ({
@@ -598,15 +632,14 @@ function sourceStats() {
 
 function bankView() {
   const account = db().bankAccounts[0];
-  const net = db().transactions
-    .filter(txn => txn.source === "bank" && txn.status === "settled")
-    .reduce((sum, txn) => sum + signedAmount(txn), 0);
+  const cashOnHand = getCashOnHand();
   const name = account ? account.bank + ", " + account.label : "";
   const opening = account ? account.openingBalanceMinor : 0;
   return {
     name,
     initials: (account?.bank ?? "").split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(),
-    activity: formatMoney(net, currency as CurrencyCode),
+    activity: formatMoney(cashOnHand, currency as CurrencyCode),
+    activityCaption: "Cash on hand",
     note: account
       ? formatMoney(opening, currency as CurrencyCode, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset)
       : "No bank account is stored.",
@@ -659,6 +692,8 @@ export function dashboardSnapshot() {
     linkClients: data.linkClients,
     linkInvoices: data.linkInvoices,
     matches: data.matches,
+    autoMatches: data.autoMatches,
+    reminderInvoices: data.reminderInvoices,
     attention: data.attention,
     scan: data.scan,
     sampleBills: data.sampleBills,

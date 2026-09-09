@@ -4,6 +4,8 @@ import {
   appendActivity,
   appendBankAccount,
   appendCheckoutPage,
+  appendClient,
+  appendInvoice,
   appendMatchProposal,
   appendPaymentLink,
   appendSubscriber,
@@ -22,8 +24,13 @@ import {
   replaceUpcomingCharge
 } from "./store";
 import { SAMPLE_BANKS, SAMPLE_SHOPIFY_ORDER } from "./sample-checkout";
+import { getPayrollNet } from "./selectors";
+import { monthYearLabel } from "../format";
 import type {
   CheckoutPage,
+  Client,
+  Invoice,
+  InvoiceLine,
   PaymentLink,
   PlanInterval,
   Subscriber,
@@ -92,16 +99,30 @@ export function paymentLinkById(id: string): PaymentLink | undefined {
   return getStore().paymentLinks.find(row => row.id === id);
 }
 
+function ensureGatewayPayment(link: PaymentLink): void {
+  getGateway().ensurePayment({
+    id: link.id,
+    payUrl: link.payUrl || "/pay/" + link.id,
+    amountMinor: link.amountMinor,
+    currency: getStore().merchant.currency,
+    statusId: 0,
+    status: "new",
+    merchantTransactionId: link.invoiceId,
+    createdDayOffset: link.createdOffset
+  });
+}
+
 export async function simulatePayment(linkId: string, outcome: PaymentOutcome) {
+  const link = getStore().paymentLinks.find(row => row.id === linkId);
+  if (!link) throw new Error("Payment link not found: " + linkId);
+  ensureGatewayPayment(link);
   const gateway = getGateway();
   const payload = await gateway.simulatePayment(linkId, outcome);
   const result = await gateway.handleWebhook(payload);
-  const link = getStore().paymentLinks.find(row => row.id === linkId);
-  if (!link) throw new Error("Payment link not found: " + linkId);
 
   if (result.statusId !== 2) {
     replacePaymentLink(linkId, { status: result.statusId === 5 ? "rejected" : "failed" });
-    return { pending: false, txnId: null as string | null, delayMs: 0 };
+    return { pending: false, txnId: null as string | null, delayMs: 0, reference: payload.visaId, amountMinor: result.amountMinor };
   }
 
   const client = link.clientId ? getStore().clients.find(row => row.id === link.clientId) : undefined;
@@ -138,7 +159,7 @@ export async function simulatePayment(linkId: string, outcome: PaymentOutcome) {
     status: "open"
   });
   replacePaymentLink(linkId, { status: "pending", txnId, uses: 1 });
-  return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS };
+  return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS, reference: payload.visaId || txnId, amountMinor: result.amountMinor };
 }
 
 export function settlePayment(linkId: string): void {
@@ -304,7 +325,7 @@ export async function payPublishedCheckout(slug: string) {
   const payload = await getGateway().simulatePayment(record.id, "success");
   const result = await getGateway().handleWebhook(payload);
   if (result.statusId !== 2) {
-    return { pending: false, txnId: null as string | null, delayMs: 0, pageId: page.id };
+    return { pending: false, txnId: null as string | null, delayMs: 0, pageId: page.id, reference: payload.visaId, amountMinor: result.amountMinor };
   }
   const txnId = "txn_chk_" + record.id.replace(/-/g, "").slice(0, 10);
   postInbound({
@@ -320,7 +341,7 @@ export async function payPublishedCheckout(slug: string) {
     paidCount: (latest?.paidCount ?? page.paidCount) + 1,
     txnIds: (latest?.txnIds ?? page.txnIds).concat([txnId])
   });
-  return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS, pageId: page.id };
+  return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS, pageId: page.id, reference: payload.visaId || txnId, amountMinor: result.amountMinor };
 }
 
 export function settleCheckoutPayment(txnId: string): void {
@@ -501,6 +522,158 @@ export function ingestShopifyOrder() {
     what: "Payment received, QR " + (sample.amountMinor / 100).toLocaleString("en-US") + ", " + sample.counterparty
   });
   return getStore().transactions.find(txn => txn.id === txnId);
+}
+
+export interface CreateInvoiceInput {
+  clientId?: string | null;
+  clientName?: string;
+  amountMinor: number;
+  dueOffset: number;
+  issuedOffset?: number;
+  draft?: boolean;
+  lines?: InvoiceLine[];
+}
+
+function nextInvoiceIdentity(): { id: string; number: string } {
+  let max = 0;
+  for (const invoice of getStore().invoices) {
+    const n = parseInt(String(invoice.number).replace(/\D/g, ""), 10);
+    if (Number.isFinite(n) && n > max) max = n;
+  }
+  const next = max + 1;
+  const pad = String(next).padStart(4, "0");
+  return { id: "inv_" + pad, number: "INV-" + pad };
+}
+
+export function addClient(input: { name: string; email?: string; branchId?: string }): Client {
+  const name = String(input.name || "").trim();
+  if (!name) throw new Error("Client name is required");
+  const existing = getStore().clients.find(client => client.name === name);
+  if (existing) return existing;
+  return appendClient({
+    id: "cli_" + Date.now().toString(36),
+    name,
+    email: input.email || "",
+    branchId: input.branchId || getStore().branches[0]?.id || "br_01"
+  });
+}
+
+function resolveInvoiceClient(input: { clientId?: string | null; clientName?: string }): Client {
+  if (input.clientId) {
+    const found = getStore().clients.find(client => client.id === input.clientId);
+    if (found) return found;
+  }
+  const name = String(input.clientName || "").trim();
+  if (!name) throw new Error("Client is required");
+  return addClient({ name });
+}
+
+export function createInvoice(input: CreateInvoiceInput): Invoice {
+  if (!Number.isFinite(input.dueOffset)) throw new Error("Due date is required");
+  if (!Number.isFinite(input.amountMinor) || input.amountMinor <= 0) throw new Error("Amount is required");
+  const client = resolveInvoiceClient(input);
+  const identity = nextInvoiceIdentity();
+  const draft = !!input.draft;
+  const issuedOffset = input.issuedOffset != null ? input.issuedOffset : 0;
+  const invoice: Invoice = {
+    id: identity.id,
+    number: identity.number,
+    clientId: client.id,
+    amountMinor: Math.round(input.amountMinor),
+    issuedOffset,
+    dueOffset: input.dueOffset,
+    sentAt: draft ? null : 0,
+    viewedAt: null,
+    branchId: client.branchId,
+    lines: input.lines && input.lines.length ? input.lines.map(line => ({
+      description: line.description,
+      quantity: line.quantity,
+      unitMinor: line.unitMinor
+    })) : undefined
+  };
+  appendInvoice(invoice);
+  appendActivity({
+    id: "act_" + invoice.id,
+    kind: "edits",
+    dayOffset: 0,
+    actor: getStore().merchant.ownerName,
+    what: draft ? "Invoice " + invoice.number + " saved as draft" : "Invoice " + invoice.number + " sent"
+  });
+  return invoice;
+}
+
+export function duplicateInvoice(invoiceId: string): Invoice {
+  const source = getStore().invoices.find(invoice => invoice.id === invoiceId);
+  if (!source) throw new Error("Invoice not found: " + invoiceId);
+  return createInvoice({
+    clientId: source.clientId,
+    amountMinor: source.amountMinor,
+    dueOffset: 14,
+    issuedOffset: 0,
+    draft: true,
+    lines: source.lines
+  });
+}
+
+function offsetsForMonthLabel(label: string): { from: number; to: number } | null {
+  const wanted = String(label || "").trim();
+  if (!wanted) return null;
+  let from: number | null = null;
+  let to: number | null = null;
+  for (let offset = -400; offset <= 400; offset++) {
+    if (monthYearLabel(offset) === wanted) {
+      if (from == null) from = offset;
+      to = offset;
+    }
+  }
+  if (from == null || to == null) return null;
+  return { from, to };
+}
+
+export function defaultPayrollPeriod(): string {
+  const run = getStore().payrollRuns[0];
+  return monthYearLabel(run ? run.periodOffset : -15);
+}
+
+export function payrollPostedFor(periodLabel: string): boolean {
+  const range = offsetsForMonthLabel(periodLabel);
+  if (!range) return false;
+  return getStore().transactions.some(txn =>
+    txn.type === "payroll" && txn.tag === "Salaries" && txn.status !== "pending"
+    && txn.dayOffset >= range.from && txn.dayOffset <= range.to
+  );
+}
+
+export function postPayroll(periodLabel?: string): { alreadyPosted: boolean; period: string; txnId?: string } {
+  const period = String(periodLabel || "").trim();
+  if (!period) throw new Error("Period is required");
+  if (payrollPostedFor(period)) {
+    return { alreadyPosted: true, period };
+  }
+  const range = offsetsForMonthLabel(period);
+  const dayOffset = range ? Math.min(0, range.to) : 0;
+  const amountMinor = getPayrollNet("pay_01");
+  const txn = appendTransaction({
+    id: "txn_pay_" + Date.now().toString(36),
+    dayOffset,
+    counterparty: "Monthly payroll",
+    source: "bank",
+    direction: "out",
+    type: "payroll",
+    tag: "Salaries",
+    status: "settled",
+    amountMinor,
+    branchId: getStore().branches[0]?.id || "br_01",
+    invoiceId: null
+  });
+  appendActivity({
+    id: "act_" + txn.id,
+    kind: "payments",
+    dayOffset,
+    actor: getStore().merchant.ownerName,
+    what: "Payroll paid, QR " + (amountMinor / 100).toLocaleString("en-US")
+  });
+  return { alreadyPosted: false, period, txnId: txn.id };
 }
 
 export function connectSampleBank(bankId: string) {

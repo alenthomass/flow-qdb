@@ -71,6 +71,12 @@ export interface Transaction {
   invoiceId: string | null;
 }
 
+export interface InvoiceLine {
+  description: string;
+  quantity: number;
+  unitMinor: number;
+}
+
 export interface Invoice {
   id: string;
   number: string;
@@ -81,6 +87,7 @@ export interface Invoice {
   sentAt: number | null;
   viewedAt: number | null;
   branchId: string;
+  lines?: InvoiceLine[];
 }
 
 export interface Client {

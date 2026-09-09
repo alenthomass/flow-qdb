@@ -3,6 +3,7 @@ import type {
   ActivityLog,
   BankAccount,
   CheckoutPage,
+  Client,
   ExportRecord,
   Invoice,
   MatchProposal,
@@ -41,6 +42,9 @@ function withDefaults(row: Seed): Seed {
   return {
     ...base,
     ...row,
+    invoices: (row.invoices && row.invoices.length) ? row.invoices : base.invoices,
+    clients: (row.clients && row.clients.length) ? row.clients : base.clients,
+    paymentLinks: (row.paymentLinks && row.paymentLinks.length) ? row.paymentLinks : base.paymentLinks,
     checkoutPages: row.checkoutPages || [],
     subscriptionPlans: row.subscriptionPlans || [],
     subscribers: row.subscribers || [],
@@ -88,6 +92,16 @@ export function getTransactions(): Transaction[] {
 
 export function getInvoices(): Invoice[] {
   return live.invoices;
+}
+
+export function getClients(): Client[] {
+  return live.clients;
+}
+
+export function appendClient(client: Client): Client {
+  live.clients = [client, ...live.clients];
+  persist();
+  return client;
 }
 
 export function getMatchProposals(): MatchProposal[] {

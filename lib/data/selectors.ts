@@ -144,16 +144,30 @@ export function getRefunds(period: Period): number {
     .reduce((sum, txn) => sum + txn.amountMinor, 0);
 }
 
-export function getMatchRate(): { matched: number; total: number; percent: number } {
-  const openMatches = getOpenMatches();
-  const openIds = new Set(openMatches.map(proposal => proposal.transactionId));
-  const universe = db().transactions.filter(txn =>
+export function getMatchUniverse(): Transaction[] {
+  return db().transactions.filter(txn =>
     (txn.direction === "in" || txn.type === "refund") && inPeriod(txn.dayOffset, "month")
   );
-  const matched = universe.filter(txn =>
+}
+
+export function getMatchedTransactions(): Transaction[] {
+  const openIds = new Set(getOpenMatches().map(proposal => proposal.transactionId));
+  return getMatchUniverse().filter(txn =>
     !openIds.has(txn.id) && (txn.invoiceId !== null || txn.source === "shopify")
-  ).length;
-  const total = universe.length;
+  );
+}
+
+export function getReminderInvoices(): Invoice[] {
+  return db().invoices.filter(invoice => {
+    const status = getInvoiceStatus(invoice.id);
+    return status === "sent" || status === "viewed" || status === "overdue" || status === "awaiting settlement";
+  });
+}
+
+export function getMatchRate(): { matched: number; total: number; percent: number } {
+  const openMatches = getOpenMatches();
+  const matched = getMatchedTransactions().length;
+  const total = getMatchUniverse().length;
   if (matched + openMatches.length !== total) {
     throw new Error("Match rate " + matched + " + " + openMatches.length + " open does not equal " + total);
   }

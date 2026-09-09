@@ -55,9 +55,50 @@ function asWebhook(payload: unknown): SkipCashWebhookPayload {
   };
 }
 
+const GATEWAY_STORAGE_KEY = "flow-gateway-v1";
+
+export function clearMockSkipCashStorage(): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.removeItem(GATEWAY_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function readGatewayStorage(): { payments: PaymentRecord[]; settlements: Settlement[] } {
+  if (typeof localStorage === "undefined") return { payments: [], settlements: [] };
+  try {
+    const raw = localStorage.getItem(GATEWAY_STORAGE_KEY);
+    if (!raw) return { payments: [], settlements: [] };
+    const saved = JSON.parse(raw) as { payments?: PaymentRecord[]; settlements?: Settlement[] };
+    return {
+      payments: Array.isArray(saved.payments) ? saved.payments : [],
+      settlements: Array.isArray(saved.settlements) ? saved.settlements : []
+    };
+  } catch {
+    return { payments: [], settlements: [] };
+  }
+}
+
 export function createMockSkipCash(): PaymentGateway {
   const payments = new Map<string, PaymentRecord>();
   const settlements: Settlement[] = [];
+  const saved = readGatewayStorage();
+  saved.payments.forEach(row => payments.set(row.id, row));
+  saved.settlements.forEach(row => settlements.push(row));
+
+  function persist(): void {
+    if (typeof localStorage === "undefined") return;
+    try {
+      localStorage.setItem(GATEWAY_STORAGE_KEY, JSON.stringify({
+        payments: Array.from(payments.values()),
+        settlements
+      }));
+    } catch {
+      /* sandbox quota */
+    }
+  }
 
   return {
     async createPaymentLink(input: CreatePaymentLinkRequest): Promise<PaymentRecord> {
@@ -85,6 +126,7 @@ export function createMockSkipCash(): PaymentGateway {
         createdDayOffset: 0
       };
       payments.set(id, record);
+      persist();
       return { ...record };
     },
 
@@ -92,6 +134,24 @@ export function createMockSkipCash(): PaymentGateway {
       const record = payments.get(id);
       if (!record) throw new Error("SkipCash payment not found: " + id);
       return { ...record };
+    },
+
+    ensurePayment(record: PaymentRecord): PaymentRecord {
+      const existing = payments.get(record.id);
+      if (existing) return { ...existing };
+      const next: PaymentRecord = {
+        id: record.id,
+        payUrl: record.payUrl || hostedPayUrl(record.id),
+        amountMinor: record.amountMinor,
+        currency: record.currency,
+        statusId: record.statusId,
+        status: record.status,
+        merchantTransactionId: record.merchantTransactionId,
+        createdDayOffset: record.createdDayOffset
+      };
+      payments.set(next.id, next);
+      persist();
+      return { ...next };
     },
 
     async simulatePayment(id: string, outcome: PaymentOutcome): Promise<SkipCashWebhookPayload> {
@@ -138,6 +198,7 @@ export function createMockSkipCash(): PaymentGateway {
           dayOffset: settlementDayOffset
         });
       }
+      persist();
       return {
         paymentId: record.id,
         statusId: record.statusId,

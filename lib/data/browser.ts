@@ -12,9 +12,10 @@ export {
   extractedBillForm
 } from "./sample-bill";
 export { SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS, SAMPLE_SHOPIFY_ORDER } from "./sample-checkout";
-export { offsetFromLabel } from "../format";
+export { offsetFromLabel, dateInputValue, previousMonthLabel } from "../format";
 export {
   SETTLEMENT_DELAY_MS,
+  addClient,
   addSubscriber,
   cancelSubscriber,
   cancelSubscriptionPlan,
@@ -22,13 +23,18 @@ export {
   confirmMatch,
   connectSampleBank,
   connectShopify,
+  createInvoice,
   createPaymentLink,
   createSubscriptionPlan,
   deactivatePaymentLink,
+  defaultPayrollPeriod,
+  duplicateInvoice,
   ingestShopifyOrder,
   pauseSubscriber,
   paymentLinkById,
   payPublishedCheckout,
+  payrollPostedFor,
+  postPayroll,
   publishCheckoutPage,
   runSimulatedBilling,
   setSmartCheckout,
