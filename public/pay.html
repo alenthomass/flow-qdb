@@ -53,11 +53,12 @@
   .card-head h2 { margin: 0; font-family: 'Clash Display', Urbanist, sans-serif; font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
   .rule { width: 26px; height: 3px; border-radius: 2px; background: var(--ink); margin-top: 10px; }
   .fields { padding: 18px 22px 0; display: flex; flex-direction: column; gap: 14px; }
-  .field { display: flex; align-items: center; gap: 10px; }
+  .field { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 10px; }
   .field label { width: 82px; flex: 0 0 82px; font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
   .field .req { color: var(--neg); margin-left: 3px; }
   .box { flex: 1; min-width: 0; border: 1px solid var(--ink-6); border-radius: 9px; padding: 10px 12px; font-size: 12.5px; color: var(--ink);
     background: var(--bar-solid); display: flex; align-items: center; gap: 7px; }
+  .box.locked { background: var(--panel-2); color: var(--ink); pointer-events: none; }
   .box input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 12.5px; color: var(--ink); font-family: inherit; }
   .chip { width: 18px; height: 18px; border-radius: 50%; background: var(--chip); display: flex; align-items: center; justify-content: center;
     font-size: 9.5px; font-weight: 700; color: var(--ink-3); flex: 0 0 18px; }
@@ -163,14 +164,15 @@
       "</div>";
   }
   function fieldRow(field, amountMinor) {
+    var isAmount = field.kind === "price" || /^amount$/i.test(field.label || "");
+    if (isAmount) {
+      return '<div class="field"><label>' + esc(field.label || "Amount") + '</label><div class="box locked"><span class="chip">QR</span><span>' + esc(money(amountMinor).replace(/^QR /, "")) + "</span></div></div>";
+    }
     var required = !field.optional;
     var label = esc(field.label || "Field") + (required ? '<span class="req">*</span>' : "");
-    if (field.kind === "price") {
-      return '<div class="field"><label>' + label + '</label><div class="box"><span class="chip">QR</span><span>' + esc(money(amountMinor).replace(/^QR /, "")) + "</span></div></div>";
-    }
     var type = field.kind === "mail" ? "email" : field.kind === "phone" ? "tel" : "text";
     var ph = field.kind === "mail" ? "name@company.com" : "";
-    return '<div class="field"><label>' + label + '</label><div class="box"><input id="f-' + esc(field.kind) + '" type="' + type + '" placeholder="' + ph + '" ' + (required ? "required" : "") + "></div></div>";
+    return '<div class="field"><label>' + label + '</label><div class="box"><input id="f-' + esc(field.kind || "text") + '" type="' + type + '" placeholder="' + ph + '" autocomplete="email" ' + (required ? "required" : "") + "></div></div>";
   }
   function payCard(opts) {
     var fields = (opts.fields && opts.fields.length) ? opts.fields : [{ label: "Amount", kind: "price" }, { label: "Email", kind: "mail" }];

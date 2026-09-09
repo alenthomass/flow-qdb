@@ -694,6 +694,7 @@ check("Public payment page matches the builder without edit chrome",
     /Share this on/.test(payPage) &&
     /Secured by SkipCash · SANDBOX/.test(payPage) &&
     /Contact us/.test(payPage) &&
+    /box locked/.test(payPage) &&
     !/Click any text to edit/i.test(payPage) &&
     !/Add new/.test(payPage) &&
     !/pp\.setTitle/.test(payPage),

@@ -72,19 +72,19 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Extraction returns vendor, date, total, tax, lines and tag: Barzan Water / Al Maha Stationery
 - PASS Scan accepts an image or PDF: file input accept image/*,application/pdf
 - PASS Extraction delay is 1.5-2.5s: 1800ms
-- PASS Scan shows extraction in progress: 2023ms
+- PASS Scan shows extraction in progress: 2066ms
 - PASS Extracted fields are correctable with confidence: Barzan Water tax QR 0 · vendor 96%
 - PASS Scan save recomputes Money Out: Money Out QR 34,545.00 (was QR 33,365.00)
 - PASS Scan save drops Reports net profit: net profit QR 11,965 (was QR 13,145.00)
 - PASS Scanned bill sorts to top of Recent Activity: Barzan Water offset 0
 - PASS Second sample bill saves through selectors: Money Out QR 33,705.00 · Al Maha Stationery
 - PASS Payment link copies to clipboard: submitModal writes the pay URL
-- PASS Payment link URL stays on Flow, not SkipCash test: /pay/18a1e07e-a1d9-4256-9ab3-9b349367294e
+- PASS Payment link URL stays on Flow, not SkipCash test: /pay/274476fc-b7f2-439e-bcc7-9f50f5ca729f
 - PASS Copied payment links open Flow checkout: pay.html handles payment links
 - PASS Spine create leaves Money In unchanged: Money In QR 46,510.00
 - PASS Home Net equals Reports after creating a link: QR 13,145.00
 - PASS Who owes me equals Outstanding after creating a link: QR 20,900.00 across 3
-- PASS Spine success appends a pending ledger row: txn_link_18a1e07ea1 pending
+- PASS Spine success appends a pending ledger row: txn_link_274476fcb7 pending
 - PASS Pending payment is excluded from Money In: Money In QR 46,510.00; pending QR 11,700.00
 - PASS Linked invoice awaits settlement while pending: awaiting settlement
 - PASS Needs Your Attention includes the new proposal: 4 open
@@ -115,7 +115,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Hosted checkout publishes a shareable /pay/ slug: pay.html + rewrite + UI URL
 - PASS Public payment page matches the builder without edit chrome: customer checkout chrome
 - PASS Published checkout stores product name, QAR price and slug: eid-hamper QR 250.00
-- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_f46538878a
+- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_aacaff1143
 - PASS Hosted checkout pending is excluded from Money In: QR 46,510.00
 - PASS Hosted checkout settle lifts Money In by the page price: Money In QR 46,760.00
 - PASS Home Net equals Reports after hosted checkout: QR 13,395.00
@@ -123,7 +123,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Payment link deactivate updates status: Deactivated
 - PASS Payment links expose expiry, uses and copy URL: 16 Sept 2026 · uses 0
 - PASS Subscription plan creates a customer and upcoming charge: 1 upcoming · QR 400.00
-- PASS Simulated billing appends a pending ledger row: txn_sub_019b93b11b
+- PASS Simulated billing appends a pending ledger row: txn_sub_b53d6f2218
 - PASS Simulated billing settle lifts Money In: QR 46,910.00
 - PASS Cancel stops further upcoming charges: 0 upcoming
 - PASS Smart Checkout lives on Get Paid overview: overview toggle card
