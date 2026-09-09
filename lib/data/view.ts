@@ -323,6 +323,7 @@ export function dashboardState() {
     acctEmail: emailFromName(owner),
     ratesVat: String(getVatRate() * 100),
     showVat: getVatRate() > 0,
+    showTax: getVatRate() > 0,
     periodFrom: formatDate(-29),
     periodTo: formatDate(0),
     profile: {

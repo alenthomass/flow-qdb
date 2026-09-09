@@ -138,7 +138,12 @@
       <sc-if value="{{ railOn }}">
         <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:21px; font-weight:600; letter-spacing:-.03em; white-space:nowrap">Flow</div>
       </sc-if>
-      <div style="{{ sty.railChip }}">{{ envLabel }}</div>
+      <span style="position:relative; display:inline-flex" onMouseEnter="{{ sandboxTipOn }}" onMouseLeave="{{ sandboxTipOff }}">
+        <div style="{{ sty.railChip }}" title="Simulated gateway. Live payment processing pending Qatar commercial registration.">{{ envLabel }}</div>
+        <sc-if value="{{ sandboxTip }}">
+          <span style="position:absolute; top:calc(100% + 8px); right:0; width:220px; background:var(--bar-solid); border:1px solid var(--line); border-radius:9px; box-shadow:0 20px 40px -20px rgba(0,0,0,.5); padding:10px 12px; font-size:11.5px; font-weight:500; color:var(--ink-3); line-height:1.5; text-transform:none; letter-spacing:normal; z-index:30">Simulated gateway. Live payment processing pending Qatar commercial registration.</span>
+        </sc-if>
+      </span>
     </div>
 
     <nav style="{{ sty.navWrap }}">
@@ -714,7 +719,7 @@
                 <div style="display:flex; align-items:center; gap:12px">
                   <div style="width:44px; height:44px; border-radius:15px; background:var(--accent-soft); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--accent); font-size:13px">SC</div>
                   <div>
-                    <div style="font-size:15.5px; font-weight:700">SkipCash</div>
+                    <div style="font-size:15.5px; font-weight:700">SkipCash <span style="font-size:11px; font-weight:500; color:var(--ink-5)">Simulated</span></div>
                     <div style="font-size:12.5px; color:var(--ink-4)">Your payment gateway, money settles straight to you</div>
                   </div>
                   <div style="margin-left:auto; display:flex; align-items:center; gap:3px; padding:3px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px">
@@ -1308,7 +1313,7 @@
                 <div style="display:flex; align-items:center; gap:12px">
                   <div style="width:42px; height:42px; border-radius:12px; background:var(--ink-block); color:var(--on-block); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700">{{ bank.initials }}</div>
                   <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em">{{ bank.name }}</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:12.5px; color:var(--ink-4); margin-top:2px">{{ bank.note }}</div></div>
-                  <span style="margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected</span>
+                  <span style="margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected<span style="font-size:11px; font-weight:500; color:var(--ink-5)">Simulated</span></span>
                 </div>
                 <div style="display:flex; gap:22px; margin-top:18px; padding-top:16px; border-top:1px solid var(--divider)">
                   <div><div style="font-size:11.5px; color:var(--ink-4); font-weight:600">Bank activity</div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:3px">{{ bank.activity }}</div></div>
@@ -1320,7 +1325,7 @@
                   <div style="display:flex; align-items:center; gap:12px">
                     <div style="width:42px; height:42px; border-radius:12px; background:var(--ink-block); color:var(--on-block); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700">{{ bx.initials }}</div>
                     <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em">{{ bx.name }}</div><div style="font-size:12.5px; color:var(--ink-4); margin-top:2px">{{ bx.note }}</div></div>
-                    <span style="margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected</span>
+                    <span style="margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected<span style="font-size:11px; font-weight:500; color:var(--ink-5)">Simulated</span></span>
                   </div>
                 </div>
               </sc-for>
@@ -1354,7 +1359,7 @@
                 <div style="display:flex; align-items:center; gap:12px">
                   <div style="width:42px; height:42px; border-radius:12px; background:var(--chip); color:var(--ink-2); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700">SH</div>
                   <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em">Shopify</div><div style="font-size:12.5px; color:var(--ink-4)">{{ shopify.shopLine }}</div></div>
-                  <sc-if value="{{ shopify.connected }}"><span style="margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected</span></sc-if>
+                  <sc-if value="{{ shopify.connected }}"><span style="margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected<span style="font-size:11px; font-weight:500; color:var(--ink-5)">Simulated</span></span></sc-if>
                   <sc-if value="{{ shopify.disconnected }}"><span style="margin-left:auto; font-size:12.5px; font-weight:600; color:var(--ink-4)">Not connected</span></sc-if>
                 </div>
                 <sc-if value="{{ shopify.idle }}">
@@ -1618,7 +1623,7 @@
                     </div>
                   </div>
                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
-                    <sc-if value="{{ showVat }}">
+                    <sc-if value="{{ showTax }}">
                     <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Tax %</div><input value="{{ nv.tax }}" onChange="{{ nv.setTax }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif; background:var(--panel)" style-focus="border-color:var(--ink-6)"></label>
                     </sc-if>
                     <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Due date<span style="color:var(--neg); margin-left:3px">*</span></div><input type="date" value="{{ nv.due }}" onChange="{{ nv.setDue }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel); color:var(--ink)" style-focus="border-color:var(--ink-6)"></label>
@@ -1640,13 +1645,12 @@
                     <sc-for list="{{ nv.preview }}" as="pv" hint-placeholder-count="2">
                       <div style="display:flex; justify-content:space-between; gap:12px; font-size:12.5px"><span style="color:var(--ink-3); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ pv.label }}</span><span style="font-family:'Urbanist','Cairo',sans-serif; flex:0 0 auto">{{ pv.amt }}</span></div>
                     </sc-for>
-                    <sc-if value="{{ showVat }}">
+                    <sc-if value="{{ showTax }}">
                     <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:var(--ink-3)">Tax</span><span style="font-family:'Urbanist','Cairo',sans-serif">{{ nv.taxAmt }}</span></div>
                     </sc-if>
                   </div>
                   <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:14px; border-top:1px solid var(--divider)"><span style="font-size:13px; font-weight:650">Total due</span><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600">{{ nv.total }}</span></div>
                   <div style="margin-top:16px; background:var(--ink-block); color:var(--on-block); text-align:center; padding:12px; border-radius:11px; font-size:13px; font-weight:650">Pay this invoice</div>
-                  <div style="text-align:center; font-size:10.5px; color:var(--ink-5); margin-top:9px">Peppol-ready e-invoice · {{ profile.taxRegistrationNumber }}</div>
                 </div>
               </div>
             </div>
@@ -1802,7 +1806,7 @@
                 <div style="display:flex; align-items:center; gap:12px">
                   <div style="width:42px; height:42px; border-radius:12px; background:var(--neg-soft); color:var(--neg); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700">ZB</div>
                   <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em">Zoho Books</div><div style="font-size:12.5px; color:var(--ink-4)">books.zoho.com · {{ me.business }}</div></div>
-                  <span style="margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected</span>
+                  <span style="margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected<span style="font-size:11px; font-weight:500; color:var(--ink-5)">Simulated</span></span>
                 </div>
                 <div style="display:flex; align-items:center; gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid var(--divider)">
                   <div style="flex:1"><div style="font-size:13px; font-weight:600">Sync automatically</div><div style="font-size:12px; color:var(--ink-4); margin-top:2px">Every day at 06:00</div></div>
@@ -1865,23 +1869,11 @@
           </sc-if>
 
           <sc-if value="{{ at.tax }}">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start">
-              <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px">
-                <div style="display:flex; align-items:center; gap:10px"><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Tax &amp; e-invoicing</div><span style="font-size:12.5px; font-weight:600; color:var(--pos)">E-invoicing ready</span></div>
-                <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px">
-                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Tax registration number</div><input value="{{ profile.taxRegistrationNumber }}" placeholder="Not registered" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif"></label>
-                  <label><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Default tax rate</div><input value="{{ rates.vat }}" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px"></label>
-                </div>
-              </div>
-              <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px">
-                <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Peppol-ready by default</div>
-                <div style="font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px">Every invoice Flow creates carries the structured fields Qatar's e-invoicing rules expect, so when the mandate lands you're already compliant, nothing to re-do.</div>
-                <div style="display:flex; flex-direction:column; gap:8px; margin-top:16px">
-                  <div style="display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--ink-2)"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="m3 7.4 2.6 2.6L11 4.6" stroke="var(--pos)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>Seller and buyer identifiers</div>
-                  <div style="display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--ink-2)"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="m3 7.4 2.6 2.6L11 4.6" stroke="var(--pos)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>Line-level tax categories</div>
-                  <div style="display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--ink-2)"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="m3 7.4 2.6 2.6L11 4.6" stroke="var(--pos)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>Structured XML alongside the PDF</div>
-                </div>
-              </div>
+            <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px; max-width:720px">
+              <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Tax</div>
+              <div style="font-size:12.5px; color:var(--ink-4); margin-top:4px">Not registered for this merchant</div>
+              <div style="font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:14px">This merchant is not registered. Qatar commercial invoices do not add a goods-and-services tax line.</div>
+              <label style="display:block; margin-top:18px"><div style="font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px">Tax registration number</div><input value="{{ profile.taxRegistrationNumber }}" placeholder="Not registered" style="width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif"></label>
             </div>
           </sc-if>
 
@@ -1903,11 +1895,11 @@
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em">SkipCash</div>
                 <div style="font-size:12.5px; color:var(--ink-4); margin-top:2px">Sandbox keys · last event 12 minutes ago</div>
               </div>
-              <span style="flex:0 0 auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected</span>
+              <span style="flex:0 0 auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected<span style="font-size:11px; font-weight:500; color:var(--ink-5)">Simulated</span></span>
               <button onClick="{{ connMan.skipcash }}" style="flex:0 0 auto; font-size:12px; font-weight:650; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)" style-hover="filter:brightness(.97)">Manage</button>
             </div>
             </div>
-            <div style="font-size:12.5px; color:var(--ink-4); margin-bottom:14px">One gateway is live in this phase. These are on the roadmap.</div>
+            <div style="font-size:12.5px; color:var(--ink-4); margin-bottom:14px">One simulated gateway in this phase. These are on the roadmap.</div>
             <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px">
               <sc-for list="{{ providers }}" as="pv" hint-placeholder-count="9">
                 <div style="background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px">
@@ -1945,7 +1937,7 @@
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em">Tally</div>
                 <div style="font-size:12.5px; color:var(--ink-4); margin-top:2px">Last export 1 Aug · XML</div>
               </div>
-              <span style="flex:0 0 auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected</span>
+              <span style="flex:0 0 auto; font-size:12px; color:var(--ink-4)">File export</span>
               <button onClick="{{ connMan.tally }}" style="flex:0 0 auto; font-size:12px; font-weight:650; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)" style-hover="filter:brightness(.97)">Manage</button>
             </div>
             <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:18px 20px">
@@ -1954,16 +1946,17 @@
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em">Zoho Books</div>
                 <div style="font-size:12.5px; color:var(--ink-4); margin-top:2px">Last sync today, 06:00</div>
               </div>
-              <span style="flex:0 0 auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected</span>
+              <span style="flex:0 0 auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected<span style="font-size:11px; font-weight:500; color:var(--ink-5)">Simulated</span></span>
               <button onClick="{{ connMan.zoho }}" style="flex:0 0 auto; font-size:12px; font-weight:650; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)" style-hover="filter:brightness(.97)">Manage</button>
             </div>
             <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:18px 20px">
               <div style="width:40px; height:40px; flex:0 0 40px; border-radius:11px; background:var(--chip); color:var(--ink-2); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11.5px">SH</div>
               <div style="flex:1 1 200px; min-width:0">
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em">Shopify</div>
-                <div style="font-size:12.5px; color:var(--ink-4); margin-top:2px">142 orders synced</div>
+                <div style="font-size:12.5px; color:var(--ink-4); margin-top:2px">{{ shopify.appsLine }}</div>
               </div>
-              <span style="flex:0 0 auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected</span>
+              <sc-if value="{{ shopify.connected }}"><span style="flex:0 0 auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)"><span style="width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)"></span>Connected<span style="font-size:11px; font-weight:500; color:var(--ink-5)">Simulated</span></span></sc-if>
+              <sc-if value="{{ shopify.disconnected }}"><span style="flex:0 0 auto; font-size:12.5px; font-weight:600; color:var(--ink-4)">Not connected</span></sc-if>
               <button onClick="{{ connMan.shopify }}" style="flex:0 0 auto; font-size:12px; font-weight:650; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)" style-hover="filter:brightness(.97)">Manage</button>
             </div>
             </div>
@@ -2386,7 +2379,7 @@
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Breakdown preview</div>
                 <div style="display:flex; flex-direction:column; gap:9px; margin-top:16px">
                   <div style="display:flex; justify-content:space-between; font-size:13px"><span style="color:var(--ink-3)">Base salaries</span><span style="font-family:'Urbanist','Cairo',sans-serif">{{ payroll.total }}</span></div>
-                  <div style="display:flex; justify-content:space-between; font-size:13px"><span style="color:var(--ink-3)">Deductions</span><span style="font-family:'Urbanist','Cairo',sans-serif">-{{ payroll.vat }}</span></div>
+                  <div style="display:flex; justify-content:space-between; font-size:13px"><span style="color:var(--ink-3)">Deductions</span><span style="font-family:'Urbanist','Cairo',sans-serif">-{{ payroll.deductions }}</span></div>
                   <div style="display:flex; justify-content:space-between; align-items:baseline; padding-top:12px; margin-top:6px; border-top:1px solid var(--divider)"><span style="font-size:13px; font-weight:650">Net to pay</span><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600">{{ payroll.net }}</span></div>
                 </div>
               </div>
@@ -2399,16 +2392,6 @@
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">Qatar rates in use</div>
                 <div style="font-size:12.5px; color:var(--ink-4); margin-top:4px">Change a rate and every payroll figure follows</div>
                 <div style="display:flex; flex-direction:column; margin-top:16px; border-top:1px solid var(--divider)">
-                  <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; padding:13px 0; border-bottom:1px solid var(--divider-2)">
-                    <span style="flex:1 1 160px; min-width:0">
-                      <span style="display:block; font-size:13px; font-weight:600">VAT (goods &amp; services)</span>
-                      <span style="display:block; font-size:11.5px; color:var(--ink-4); margin-top:2px">Qatar has no VAT yet, keep this at zero</span>
-                    </span>
-                    <span style="flex:0 0 auto; display:flex; align-items:center; gap:7px">
-                      <input value="{{ rates.vat }}" onChange="{{ rates.setvat }}" inputMode="decimal" style="width:74px; padding:9px 11px; border:1px solid var(--line); border-radius:8px; outline:none; font-size:13px; font-weight:650; text-align:right; background:var(--panel); transition:border-color .15s ease" style-focus="border-color:var(--ink-6)">
-                      <span style="font-size:12.5px; color:var(--ink-4)">%</span>
-                    </span>
-                  </div>
                   <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; padding:13px 0; border-bottom:1px solid var(--divider-2)">
                     <span style="flex:1 1 160px; min-width:0">
                       <span style="display:block; font-size:13px; font-weight:600">Withholding, services</span>
@@ -2436,7 +2419,7 @@
                 <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em">This period</div>
                 <div style="display:flex; flex-direction:column; gap:9px; margin-top:16px">
                   <div style="display:flex; justify-content:space-between; font-size:13px"><span style="color:var(--ink-3)">Payroll base</span><span style="font-family:'Urbanist','Cairo',sans-serif">{{ payroll.total }}</span></div>
-                  <div style="display:flex; justify-content:space-between; font-size:13px"><span style="color:var(--ink-3)">Withholding due</span><span style="font-family:'Urbanist','Cairo',sans-serif">{{ payroll.vat }}</span></div>
+                  <div style="display:flex; justify-content:space-between; font-size:13px"><span style="color:var(--ink-3)">Withholding due</span><span style="font-family:'Urbanist','Cairo',sans-serif">{{ payroll.deductions }}</span></div>
                 </div>
                 <div style="margin-top:16px; font-size:12.5px; color:var(--ink-4); line-height:1.5">These are indicative figures for your records, confirm with your accountant before filing.</div>
               </div>
@@ -2522,6 +2505,11 @@
                 </div>
               </div>
               <button onClick="{{ acct.save }}" style-hover="filter:brightness(1.12); transform:translateY(-1px)" style="margin-top:20px; font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 8px 18px -10px rgba(0,0,0,.5); transition:transform .15s ease, filter .15s ease; padding:11px 20px; border-radius:9px">Save changes</button>
+              <div style="margin-top:20px; padding-top:18px; border-top:1px solid var(--divider)">
+                <div style="font-family:'Urbanist','Cairo',sans-serif; font-size:14px; font-weight:600; letter-spacing:-.015em">Reset demo data</div>
+                <div style="font-size:12px; color:var(--ink-4); margin-top:3px">Restores the seed and clears simulated payments, matches, scans, links and subscriptions.</div>
+                <button onClick="{{ h.resetDemo }}" style="margin-top:14px; font-size:13px; font-weight:650; padding:11px 20px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light); color:var(--ink); transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)" style-hover="filter:brightness(.97)">Reset demo data</button>
+              </div>
             </div>
           </sc-if>
 
@@ -2626,8 +2614,8 @@
                   <div style="font-size:15px; font-weight:700; margin-top:3px">{{ det.o.client }}</div>
                   <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--divider); display:flex; flex-direction:column; gap:9px">
                     <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:var(--ink-3)">Subtotal</span><span style="font-family:'Urbanist','Cairo',sans-serif">{{ det.o.amt }}</span></div>
-                    <sc-if value="{{ showVat }}">
-                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:var(--ink-3)">Tax</span><span style="font-family:'Urbanist','Cairo',sans-serif">{{ det.o.vat }}</span></div>
+                    <sc-if value="{{ showTax }}">
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:var(--ink-3)">Tax</span><span style="font-family:'Urbanist','Cairo',sans-serif">{{ det.o.taxAmt }}</span></div>
                     </sc-if>
                   </div>
                   <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:14px; border-top:1px solid var(--divider)"><span style="font-size:13px; font-weight:650">Total</span><span style="font-family:'Urbanist','Cairo',sans-serif; font-size:22px; font-weight:600">{{ det.o.total }}</span></div>
@@ -2843,7 +2831,7 @@
               <div style="background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:26px">
                 <div style="display:flex; align-items:center; gap:12px">
                   <div style="width:44px; height:44px; border-radius:13px; background:var(--accent-soft); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700">SC</div>
-                  <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:23px; font-weight:600; letter-spacing:-.03em">SkipCash</div><div style="font-size:12.5px; color:var(--ink-4)">Connection healthy</div></div>
+                  <div><div style="font-family:'Urbanist','Cairo',sans-serif; font-size:23px; font-weight:600; letter-spacing:-.03em">SkipCash</div><div style="font-size:12.5px; color:var(--ink-4)">Simulated connection</div></div>
                   <div style="margin-left:auto; display:flex; align-items:center; gap:3px; padding:3px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px">
                     <button onClick="{{ env.goTest }}" style="{{ env.testStyle }}">Sandbox</button>
                     <button onClick="{{ env.goLive }}" style="{{ env.liveStyle }}">Live</button>
@@ -3356,8 +3344,11 @@
           <sc-if value="{{ modal.help }}">
             <div style="font-size:13px; color:var(--ink-2); line-height:1.65">
               <p style="margin:0 0 12px">This is a Phase 1 sandbox build for Qatar. Everything settles directly to your own gateway account, Flow never holds your money.</p>
-              <p style="margin:0">Connected: SkipCash, Ahli Bank, Zoho Books, Shopify. Anything marked “Coming soon” is a later phase.</p>
+              <p style="margin:0">Simulated: SkipCash, Ahli Bank, Zoho Books, Shopify. Anything marked “Coming soon” is a later phase.</p>
             </div>
+          </sc-if>
+          <sc-if value="{{ modal.reset }}">
+            <div style="font-size:13px; color:var(--ink-2); line-height:1.65">This restores the seed and clears simulated payments, confirmed matches, scanned bills, created links and subscriptions.</div>
           </sc-if>
         </div>
         <div style="display:flex; align-items:center; gap:10px; padding:16px 22px; border-top:1px solid var(--divider); background:var(--modal-foot); border-radius:0 0 26px 26px">
@@ -3380,7 +3371,7 @@ class Component extends DCLogic {
     theme: (() => { try { return localStorage.getItem('flow-theme') || null; } catch (e) { return null; } })() || this.props.theme || 'light',
     page: this.props.startPage || 'dashboard',
     hoverIdx: null,
-    rates: { vat: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).ratesVat || '0', wht: String((((typeof window !== 'undefined' && window.FLOW_DATA) || {}).figures || {}).deductionRate != null ? Math.round((((typeof window !== 'undefined' && window.FLOW_DATA) || {}).figures || {}).deductionRate * 100) : 0), royalty: '0' },
+    rates: { wht: String((((typeof window !== 'undefined' && window.FLOW_DATA) || {}).figures || {}).deductionRate != null ? Math.round((((typeof window !== 'undefined' && window.FLOW_DATA) || {}).figures || {}).deductionRate * 100) : 0), royalty: '0' },
     acctName: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).acctName || '',
     acctEmail: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).acctEmail || '',
     acctPw: '',
@@ -3443,7 +3434,7 @@ class Component extends DCLogic {
     plan: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).plan || { tier: '', price: '' },
     invoiceTotals: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).invoiceTotals || { outstanding: 0, outstandingCount: 0, overdue: 0, overdueCount: 0, invoiced: 0, invoicedCount: 0 },
     ageing: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).ageing || { buckets: [], rows: [] },
-    showVat: !!((typeof window !== 'undefined' && window.FLOW_DATA) || {}).showVat,
+    showTax: !!((typeof window !== 'undefined' && window.FLOW_DATA) || {}).showTax,
     plans: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).plans || [],
     subscribers: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).subscribers || [],
     invoices: ((typeof window !== 'undefined' && window.FLOW_DATA) || {}).invoices || [],
@@ -3828,8 +3819,30 @@ class Component extends DCLogic {
         const e = { id: 'e' + Date.now(), name: f.empName || 'New employee', role: f.empRole || 'Staff', salary: num(f.empSalary) || 5000, method: f.empMethod || 'Bank transfer' };
         this.setState(st => ({ employees: st.employees.concat([e]), modal: null })); this.toast('Employee added');
       }
+    } else if (k === 'reset') {
+      this.runResetDemo();
     } else { this.setState({ modal: null }); }
   };
+
+  runResetDemo() {
+    if (typeof FlowStore !== 'undefined') {
+      if (FlowStore.resetStore) FlowStore.resetStore();
+      if (FlowStore.resetGateway) FlowStore.resetGateway();
+    }
+    this.applyStore({
+      modal: null,
+      detail: null,
+      shopifyOauth: 'idle',
+      bankOnboarding: 0,
+      bankPick: null,
+      ppView: 'list',
+      ppPages: [],
+      ppEditing: null,
+      matchDone: 0,
+      env: 'test'
+    });
+    this.toast('Demo data restored');
+  }
 
   copyPayUrl(url) {
     const text = url || '';
@@ -4302,10 +4315,10 @@ class Component extends DCLogic {
       accounting: [
         ['tally', 'Tally Export', 'The file your accountant already works in', 'doc'],
         ['zoho', 'Zoho Sync', 'Two-way sync if you keep books in Zoho', 'repeat'],
-        ['tax', 'Tax & e-invoicing', 'Structured invoices, ready for what comes next', 'cash']
+        ['tax', 'Tax', 'Not registered for this merchant', 'cash']
       ],
       connections: [
-        ['gateways', 'Payment Gateways', 'What is live, and what is on the way', 'card'],
+        ['gateways', 'Payment Gateways', 'What is simulated, and what is on the way', 'card'],
         ['banks', 'Banks', 'Where your account activity comes from', 'bank'],
         ['platforms', 'Accounting & Platforms', 'Zoho, Tally and your online store', 'repeat']
       ],
@@ -4470,7 +4483,7 @@ class Component extends DCLogic {
       det.gateway = d.type === 'gateway'; det.report = d.type === 'report'; det.member = d.type === 'member'; det.branch = d.type === 'branch'; det.employee = d.type === 'employee';
       const find = (arr, id) => arr.find(x => x.id === id) || {};
       if (det.txn) { const t = find(s.txns, d.id); det.o = Object.assign({}, t, { amt: this.fmt(t.amount), chip: this.chip(t.status), isIn: t.amount > 0 }); }
-      if (det.invoice) { const i = find(s.invoices, d.id); det.o = Object.assign({}, i, { amt: this.fmt(i.amount), chip: this.chip(i.status), vat: this.fmt(0), total: this.fmt(i.amount) }); }
+      if (det.invoice) { const i = find(s.invoices, d.id); det.o = Object.assign({}, i, { amt: this.fmt(i.amount), chip: this.chip(i.status), taxAmt: this.fmt(0), total: this.fmt(i.amount) }); }
       if (det.link) {
         const l = find(s.links, d.id);
         det.o = Object.assign({}, l, {
@@ -4799,7 +4812,7 @@ class Component extends DCLogic {
         const ded = s.figures.payrollDeductions != null ? s.figures.payrollDeductions : 0;
         const net = s.figures.payrollNet != null ? s.figures.payrollNet : gross - ded;
         const pct = s.figures.deductionRate != null ? s.figures.deductionRate : 0;
-        return { total: this.fmt0(gross), net: this.fmt0(net), count: String(s.figures.payrollCount || s.employees.length), vat: this.fmt0(ded), pctText: (pct * 100).toFixed(pct * 100 % 1 ? 1 : 0) + '%' };
+        return { total: this.fmt0(gross), net: this.fmt0(net), count: String(s.figures.payrollCount || s.employees.length), deductions: this.fmt0(ded), pctText: (pct * 100).toFixed(pct * 100 % 1 ? 1 : 0) + '%' };
       })(),
       connStats: (() => {
         const all = ['skipcash', 'bank', 'zoho', 'tally', 'shopify'];
@@ -4838,14 +4851,15 @@ class Component extends DCLogic {
           disconnected: !sh.connected,
           shopDomain: sh.shopDomain || '',
           shopLine: sh.connected ? sh.shopDomain : 'Connect a store to tag new orders',
+          appsLine: sh.connected ? String(sh.orderCount || 0) + ' orders on ledger' : 'Connect a store to tag new orders',
           idle: !sh.connected && step === 'idle',
           authorize: !sh.connected && step === 'authorize',
           pendingDomain: s.form.shopDomain || '',
           sampleReady: !!sh.sampleReady,
           orderCount: String(sh.orderCount || 0),
-          plugin: sh.connected ? 'Connected' : 'Not connected',
+          plugin: sh.connected ? 'Connected · simulated' : 'Not connected',
           syncNote: sh.connected
-            ? (sh.sampleReady ? 'Connected. Pull a sample order to tag a new Shopify sale.' : 'Connected. New incoming orders are tagged Shopify.')
+            ? (sh.sampleReady ? 'Connected · simulated. Pull a sample order to tag a new Shopify sale.' : 'Connected · simulated. New incoming orders are tagged Shopify.')
             : 'Historical Shopify rows stay on the ledger. New ones are tagged after connect.',
           begin: () => {
             const domain = String((this.state.form || {}).shopDomain || '').trim();
@@ -4997,7 +5011,7 @@ class Component extends DCLogic {
       { label: 'Auto-matched', val: matchPct + '%', delta: openN === 1 ? '1 open' : openN + ' open', up: false, down: false, d: 'm6 10.2 2.9 2.9L14.4 7.6M10 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Z' }
     ].map(k => Object.assign({}, k, { neutral: !k.up && !k.down }));
 
-    const MODAL = { pageSettings: ['Page settings', 'Save settings'], receipts: ['Payment receipts', 'Save'], link: ['New payment link', 'Create link'], scan: ['Scan a bill', 'Save to transactions'], expense: ['Log an expense', 'Log expense'], invoice: ['Create invoice', 'Create invoice'], plan: ['New subscription plan', 'Create plan'], member: ['Invite a team member', 'Send invite'], employee: ['Add an employee', 'Add employee'], help: ['About this build', 'Got it'] };
+    const MODAL = { pageSettings: ['Page settings', 'Save settings'], receipts: ['Payment receipts', 'Save'], link: ['New payment link', 'Create link'], scan: ['Scan a bill', 'Save to transactions'], expense: ['Log an expense', 'Log expense'], invoice: ['Create invoice', 'Create invoice'], plan: ['New subscription plan', 'Create plan'], member: ['Invite a team member', 'Send invite'], employee: ['Add an employee', 'Add employee'], help: ['About this build', 'Got it'], reset: ['Reset demo data', 'Reset demo data'] };
     const md = (s.modal === 'employee' && s.editEmp) ? ['Edit employee', 'Save changes'] : (MODAL[s.modal] || ['', '']);
 
     const vals = {
@@ -5046,11 +5060,11 @@ class Component extends DCLogic {
         return null;
       })(),
       rates: (() => {
-        const r = s.rates || { vat: '0', wht: '0', royalty: '0' };
+        const r = s.rates || { wht: '0', royalty: '0' };
         const mk = k => (e) => this.setState(x => ({ rates: Object.assign({}, x.rates, { [k]: e.target.value.replace(/[^0-9.]/g, '') }) }));
         return {
-          vat: r.vat, wht: r.wht, royalty: r.royalty,
-          setvat: mk('vat'), setwht: mk('wht'), setroyalty: mk('royalty'),
+          wht: r.wht, royalty: r.royalty,
+          setwht: mk('wht'), setroyalty: mk('royalty'),
           save: () => this.toast('Rates saved, payroll figures updated')
         };
       })(),
@@ -5158,10 +5172,13 @@ class Component extends DCLogic {
           testStyle: b(!live), liveStyle: b(live),
           goTest: () => this.setState({ env: 'test' }),
           goLive: () => this.setState({ env: 'live' }),
-          note: live ? 'Live keys are in use, every payment here moves real money.' : 'Sandbox keys are in use, so nothing here moves real money yet.'
+          note: live ? 'Live mode is still simulated. Payment processing pending Qatar commercial registration.' : 'Sandbox keys are in use, so nothing here moves real money yet.'
         };
       })(),
-      envLabel: s.env === 'live' ? 'LIVE' : 'SANDBOX',
+      envLabel: 'SANDBOX',
+      sandboxTip: !!s.sandboxTip,
+      sandboxTipOn: () => this.setState({ sandboxTip: true }),
+      sandboxTipOff: () => this.setState({ sandboxTip: false }),
       pp: (() => {
         const p = s.pp;
         const IC = {
@@ -5617,7 +5634,7 @@ class Component extends DCLogic {
       usage: s.usage || { pct: '0%', label: '' },
       profile: s.profile || {},
       plan: s.plan || { tier: '', price: '', line: '', limitLabel: '' },
-      showVat: !!s.showVat,
+      showTax: !!s.showTax,
       ownerName: s.ownerName || '',
       bank: s.bank || {},
       gateways: s.gateways || { skipcash: {}, shopify: {} },
@@ -5688,7 +5705,8 @@ class Component extends DCLogic {
         syncNow: () => this.runZohoSync(),
         tallyExport: () => this.runTallyExport(),
         testTxn: () => this.toast('Sandbox test payment of QR 1.00 sent'),
-        generatePayslips: () => this.toast('Payslips generated for ' + this.state.employees.length + ' employees')
+        generatePayslips: () => this.toast('Payslips generated for ' + this.state.employees.length + ' employees'),
+        resetDemo: this.openModal('reset')
       },
       show: {
         dashboard: !d && s.page === 'dashboard' && !mob,
@@ -5703,7 +5721,7 @@ class Component extends DCLogic {
         settings: !d && s.page === 'settings'
       },
       detail: { on: !!d },
-      modal: { on: !!s.modal, title: md[0], cta: md[1], link: s.modal === 'link', scan: s.modal === 'scan', expense: s.modal === 'expense', invoice: s.modal === 'invoice', plan: s.modal === 'plan', member: s.modal === 'member', employee: s.modal === 'employee', help: s.modal === 'help', pageSettings: s.modal === 'pageSettings', receipts: s.modal === 'receipts' },
+      modal: { on: !!s.modal, title: md[0], cta: md[1], link: s.modal === 'link', scan: s.modal === 'scan', expense: s.modal === 'expense', invoice: s.modal === 'invoice', plan: s.modal === 'plan', member: s.modal === 'member', employee: s.modal === 'employee', help: s.modal === 'help', pageSettings: s.modal === 'pageSettings', receipts: s.modal === 'receipts', reset: s.modal === 'reset' },
       scan: Object.assign({}, s.scan || {}, {
         done: !!s.scanDone,
         busy: !!s.scanBusy,

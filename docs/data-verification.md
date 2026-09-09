@@ -72,7 +72,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Extraction returns vendor, date, total, tax, lines and tag: Barzan Water / Al Maha Stationery
 - PASS Scan accepts an image or PDF: file input accept image/*,application/pdf
 - PASS Extraction delay is 1.5-2.5s: 1800ms
-- PASS Scan shows extraction in progress: 2057ms
+- PASS Scan shows extraction in progress: 1983ms
 - PASS Extracted fields are correctable with confidence: Barzan Water tax QR 0 · vendor 96%
 - PASS Scan save recomputes Money Out: Money Out QR 34,545.00 (was QR 33,365.00)
 - PASS Scan save drops Reports net profit: net profit QR 11,965 (was QR 13,145.00)
@@ -82,7 +82,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Spine create leaves Money In unchanged: Money In QR 46,510.00
 - PASS Home Net equals Reports after creating a link: QR 13,145.00
 - PASS Who owes me equals Outstanding after creating a link: QR 20,900.00 across 3
-- PASS Spine success appends a pending ledger row: txn_link_b581934a13 pending
+- PASS Spine success appends a pending ledger row: txn_link_303a48680d pending
 - PASS Pending payment is excluded from Money In: Money In QR 46,510.00; pending QR 11,700.00
 - PASS Linked invoice awaits settlement while pending: awaiting settlement
 - PASS Needs Your Attention includes the new proposal: 4 open
@@ -112,7 +112,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Zoho sync success is visible: Last push simulated · 19 items · 9 Sept 2026
 - PASS Hosted checkout publishes a shareable /pay/ slug: pay.html + rewrite + UI URL
 - PASS Published checkout stores product name, QAR price and slug: eid-hamper QR 250.00
-- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_4bd80e6bea
+- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_c0fd28cd6d
 - PASS Hosted checkout pending is excluded from Money In: QR 46,510.00
 - PASS Hosted checkout settle lifts Money In by the page price: Money In QR 46,760.00
 - PASS Home Net equals Reports after hosted checkout: QR 13,395.00
@@ -120,7 +120,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Payment link deactivate updates status: Deactivated
 - PASS Payment links expose expiry, uses and copy URL: 16 Sept 2026 · uses 0
 - PASS Subscription plan creates a customer and upcoming charge: 1 upcoming · QR 400.00
-- PASS Simulated billing appends a pending ledger row: txn_sub_2eb151071d
+- PASS Simulated billing appends a pending ledger row: txn_sub_9d60cac6c2
 - PASS Simulated billing settle lifts Money In: QR 46,910.00
 - PASS Cancel stops further upcoming charges: 0 upcoming
 - PASS Smart Checkout lives on Get Paid overview: overview toggle card
@@ -132,6 +132,17 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Seed Shopify rows were not rewritten: 3 seed shopify rows
 - PASS Sample bank connect is labelled and does not change cash: QR 98,145.00
 - PASS Bank onboarding is wired in the UI: onboarding steps
+- PASS Reset demo data asks for confirm: modal open, Money In still QR 51,910.00
+- PASS Reset restores Money In: In QR 46,510.00 · Out QR 33,365.00 · Net QR 13,145.00
+- PASS Reset restores match identity: 9 of 12 · 3 open
+- PASS Reset clears created links and plans: paymentLinks/checkoutPages/subscriptionPlans empty
+- PASS Reset disconnects Shopify: disconnected
+- PASS Reset keeps the Tally date range: 3 Sept 2026 → 9 Sept 2026
+- PASS HTML has Reset demo data and confirm modal: button + confirm modal
+- PASS SANDBOX tooltip string present: SANDBOX hover tooltip
+- PASS No Peppol or VAT in public HTML: flow.dc.html and pay.html
+- PASS Simulated labels on Payment Setup and Connected Apps: Payment Setup / Connected Apps
+- PASS getVatRate still 0 after Stage 6: 0
 
 ## Not stored in the seed
 

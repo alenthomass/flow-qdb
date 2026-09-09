@@ -83,7 +83,7 @@ const FlowStore = {
   createSubscriptionPlan, addSubscriber, runSimulatedBilling, settleBilling,
   cancelSubscriber, deactivatePaymentLink, connectShopify, ingestShopifyOrder,
   connectSampleBank, setSmartCheckout, SAMPLE_CHECKOUT_ANALYTICS,
-  exportTallyXml, simulateZohoSync
+  exportTallyXml, simulateZohoSync, resetGateway
 };
 let pendingExtract = null;
 function gatedTimeout(fn, ms) {
@@ -794,6 +794,78 @@ check("Sample bank connect is labelled and does not change cash",
 check("Bank onboarding is wired in the UI",
   /bankOn\.start/.test(html) && /Connect sample bank/.test(html),
   "onboarding steps");
+resetStore();
+resetGateway();
+
+const linkReset = await createPaymentLink({
+  amountMinor: 540000,
+  description: "Reset rehearsal",
+  clientId: "cli_07",
+  invoiceId: "inv_0148"
+});
+await simulatePayment(linkReset.id, "success");
+settlePayment(linkReset.id);
+await createSubscriptionPlan({ name: "Reset plan", amountMinor: 40000, interval: "Month" });
+publishCheckoutPage({
+  productName: "Reset hamper",
+  description: "Cleared by reset",
+  amountMinor: 25000,
+  accent: "#17171C"
+});
+connectShopify("albidda.myshopify.com");
+const moneyAfterMutate = getMoneyIn("month");
+const periodFromKept = "3 Sept 2026";
+const periodToKept = "9 Sept 2026";
+root.setState({ periodFrom: periodFromKept, periodTo: periodToKept });
+root.renderVals().h.resetDemo();
+check("Reset demo data asks for confirm",
+  root.state.modal === "reset" &&
+    /resetDemo:\s*this\.openModal\('reset'\)/.test(rootSource) &&
+    getMoneyIn("month") === moneyAfterMutate &&
+    live().paymentLinks.length > 0 &&
+    live().shopify.connected === true,
+  "modal open, Money In still " + money(moneyAfterMutate));
+root.submitModal();
+const rateReset = getMatchRate();
+const openReset = getOpenMatches();
+check("Reset restores Money In",
+  getMoneyIn("month") === 4651000 && getMoneyOut("month") === 3336500 && getNet("month") === 1314500,
+  "In " + money(getMoneyIn("month")) + " · Out " + money(getMoneyOut("month")) + " · Net " + money(getNet("month")));
+check("Reset restores match identity",
+  rateReset.matched === 9 && rateReset.total === 12 && openReset.length === 3 &&
+    rateReset.matched + openReset.length === rateReset.total,
+  rateReset.matched + " of " + rateReset.total + " · " + openReset.length + " open");
+check("Reset clears created links and plans",
+  live().paymentLinks.length === 0 && live().checkoutPages.length === 0 && live().subscriptionPlans.length === 0,
+  "paymentLinks/checkoutPages/subscriptionPlans empty");
+check("Reset disconnects Shopify",
+  live().shopify.connected === false && dashboardState().shopify.disconnected === true,
+  "disconnected");
+check("Reset keeps the Tally date range",
+  root.state.periodFrom === periodFromKept && root.state.periodTo === periodToKept,
+  root.state.periodFrom + " → " + root.state.periodTo);
+check("HTML has Reset demo data and confirm modal",
+  /Reset demo data/.test(html) && /modal\.reset/.test(html) && /s\.modal === 'reset'/.test(html) &&
+    /This restores the seed/.test(html),
+  "button + confirm modal");
+check("SANDBOX tooltip string present",
+  html.includes("Simulated gateway. Live payment processing pending Qatar commercial registration.") &&
+    /envLabel:\s*'SANDBOX'/.test(rootSource) &&
+    /title="Simulated gateway\. Live payment processing pending Qatar commercial registration\."/.test(html),
+  "SANDBOX hover tooltip");
+const payHtml = readFileSync(new URL("../public/pay.html", import.meta.url), "utf8");
+check("No Peppol or VAT in public HTML",
+  !/Peppol/i.test(html) && !/\bVAT\b/i.test(html) && !/Peppol/i.test(payHtml) && !/\bVAT\b/i.test(payHtml),
+  "flow.dc.html and pay.html");
+check("Simulated labels on Payment Setup and Connected Apps",
+  /money settles straight to you/.test(html) &&
+    /One simulated gateway in this phase/.test(html) &&
+    /Live mode is still simulated\. Payment processing pending Qatar commercial registration\./.test(html) &&
+    /Simulated connection/.test(html),
+  "Payment Setup / Connected Apps");
+check("getVatRate still 0 after Stage 6",
+  getVatRate() === 0,
+  String(getVatRate()));
 resetStore();
 resetGateway();
 
