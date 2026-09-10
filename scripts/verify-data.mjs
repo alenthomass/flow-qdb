@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { runInNewContext } from "node:vm";
 import { dashboardSnapshot, dashboardState } from "../lib/data/view.ts";
+import { Component } from "../lib/dashboard/component.js";
 import { formatDate, formatMoney, offsetFromLabel, dateInputValue, previousMonthLabel } from "../lib/format.ts";
 import { chartScale } from "../lib/chart.ts";
 import { dateFor, seed } from "../lib/data/seed.ts";
@@ -10,11 +10,13 @@ import {
   addClient,
   addSubscriber,
   cancelSubscriber,
+  cancelRecurringInvoice,
   confirmMatch,
   connectSampleBank,
   connectShopify,
   createInvoice,
   createPaymentLink,
+  createRecurringInvoice,
   createSubscriptionPlan,
   deactivatePaymentLink,
   defaultPayrollPeriod,
@@ -22,9 +24,18 @@ import {
   ingestShopifyOrder,
   payPublishedCheckout,
   payrollPostedFor,
+  pauseRecurringInvoice,
   postPayroll,
   publishCheckoutPage,
+  recurringNextOffsets,
+  removeTag,
+  renameTag,
+  requestApproval,
+  resolveApproval,
   runSimulatedBilling,
+  sendRecurringInvoice,
+  setApprovalLimit,
+  setRolePermission,
   setSmartCheckout,
   settleBilling,
   settleCheckoutPayment,
@@ -41,7 +52,10 @@ import {
   getMatchRate,
   getMatchedTransactions,
   getMoneyIn,
+  getMoneyInPrevious,
   getMoneyOut,
+  getMoneyOutPrevious,
+  getMoneyShare,
   getNet,
   getNetSeries,
   getOpenMatches,
@@ -58,7 +72,8 @@ import {
   getSpend,
   getTotalInvoiced,
   getVatRate,
-  signedAmount
+  signedAmount,
+  assertPhase1Invariants
 } from "../lib/data/selectors.ts";
 
 resetStore();
@@ -92,40 +107,52 @@ const FlowStore = {
   cancelSubscriber, deactivatePaymentLink, connectShopify, ingestShopifyOrder,
   connectSampleBank, setSmartCheckout, SAMPLE_CHECKOUT_ANALYTICS,
   createInvoice, duplicateInvoice, addClient, postPayroll, payrollPostedFor, defaultPayrollPeriod,
-  dateInputValue, previousMonthLabel,
-  exportTallyXml, simulateZohoSync, resetGateway
+  dateInputValue, previousMonthLabel, formatDate,
+  exportTallyXml, simulateZohoSync, resetGateway,
+  createRecurringInvoice, sendRecurringInvoice, recurringNextOffsets,
+  pauseRecurringInvoice, cancelRecurringInvoice,
+  renameTag, removeTag, setRolePermission, setApprovalLimit,
+  requestApproval, resolveApproval
 };
 let pendingExtract = null;
+const realTimeout = setTimeout;
 function gatedTimeout(fn, ms) {
   if (typeof ms === "number" && ms >= EXTRACT_DELAY_MIN_MS && ms <= EXTRACT_DELAY_MAX_MS) {
     pendingExtract = { fn, ms };
     return { extract: true };
   }
-  return setTimeout(fn, ms);
+  return realTimeout(fn, ms);
 }
-const html = readFileSync(new URL("../public/flow.dc.html", import.meta.url), "utf8");
-const payPage = readFileSync(new URL("../public/pay.html", import.meta.url), "utf8");
-const rootSource = html.match(/<script\b[^>]*data-dc-script[^>]*>([\s\S]*?)<\/script>/)[1];
-const root = runInNewContext(rootSource + "; new Component()", {
-  DCLogic: class {
-    props = {};
-    setState(update) {
-      const patch = typeof update === "function" ? update(this.state) : update;
-      if (!patch) return;
-      this.state = Object.assign({}, this.state, patch);
-    }
-  },
-  FlowStore,
-  navigator: { clipboard: { writeText: async () => {} } },
-  setTimeout: gatedTimeout,
-  clearTimeout,
-  Promise,
-  window: { FLOW_DATA: data, FlowStore, innerWidth: 1440 }
-});
+globalThis.setTimeout = gatedTimeout;
+if (!globalThis.localStorage) {
+  const saved = new Map();
+  globalThis.localStorage = {
+    getItem: key => saved.get(key) ?? null,
+    setItem: (key, value) => saved.set(key, value),
+    removeItem: key => saved.delete(key)
+  };
+}
+try {
+  Object.defineProperty(globalThis.navigator, "clipboard", {
+    configurable: true,
+    value: { writeText: async () => {} }
+  });
+} catch {
+  /* Node 22 navigator is read-only; copy helpers already try/catch. */
+}
+globalThis.window = Object.assign(globalThis.window || {}, { FLOW_DATA: data, FlowStore, innerWidth: 1440 });
+const html = [
+  readFileSync(new URL("../app/dashboard/view.tsx", import.meta.url), "utf8"),
+  readFileSync(new URL("../app/dashboard/dashboard.css", import.meta.url), "utf8"),
+  readFileSync(new URL("../lib/dashboard/component.js", import.meta.url), "utf8")
+].join("\n");
+const payPage = readFileSync(new URL("../app/pay/pay-checkout.tsx", import.meta.url), "utf8");
+const rootSource = readFileSync(new URL("../lib/dashboard/component.js", import.meta.url), "utf8");
+const root = new Component();
 check("Home defaults to 30 days", root.state.tf === "month", root.periodOf().label);
 const homeToggle = root.renderVals().tfs.map(item => item.label).join(" / ");
 check("Home period toggle uses rolling labels",
-  homeToggle === "24h / 7 days / 30 days",
+  homeToggle === "Day / Week / Month",
   homeToggle);
 const homeMatch = root.renderVals();
 check("Matching status open equals Needs Your Attention",
@@ -253,6 +280,37 @@ for (const period of periods) {
     period + " Net equals Money In minus Money Out",
     net === moneyIn - moneyOut,
     money(net) + " = " + money(moneyIn) + " - " + money(moneyOut)
+  );
+  const share = getMoneyShare(period);
+  const moved = moneyIn + moneyOut;
+  check(
+    period + " Money In/Out share of movement",
+    (moved <= 0 && share.inPct === 0 && share.outPct === 0) ||
+      (share.inPct + share.outPct === 100 && share.inPct === Math.round((moneyIn / moved) * 100)),
+    share.inPct + "% in · " + share.outPct + "% out"
+  );
+  const days = period === "month" ? 30 : period === "week" ? 7 : 1;
+  const prevHi = -days;
+  const prevLo = -(2 * days - 1);
+  const pageInPrev = completed("in")
+    .filter(txn => txn.dayOffset <= prevHi && txn.dayOffset >= prevLo)
+    .reduce((sum, txn) => sum + txn.amountMinor, 0);
+  const pageOutPrev = completed("out")
+    .filter(txn => txn.dayOffset <= prevHi && txn.dayOffset >= prevLo)
+    .reduce((sum, txn) => sum + txn.amountMinor, 0);
+  const inPrev = getMoneyInPrevious(period);
+  const outPrev = getMoneyOutPrevious(period);
+  const inTrend = inPrev === 0 ? null : Math.round(((moneyIn - inPrev) / inPrev) * 100);
+  const outTrend = outPrev === 0 ? null : Math.round(((moneyOut - outPrev) / outPrev) * 100);
+  const block = data.periods[period];
+  check(
+    period + " Money In/Out vs prior equivalent window",
+    inPrev === pageInPrev && outPrev === pageOutPrev &&
+      block.moneyInTrendPct === inTrend && block.moneyOutTrendPct === outTrend &&
+      block.moneyInShare === (inTrend == null ? "" : (inTrend > 0 ? "+" : "") + inTrend + "%") &&
+      block.moneyOutShare === (outTrend == null ? "" : (outTrend > 0 ? "+" : "") + outTrend + "%"),
+    "In " + (inTrend == null ? "n/a" : (inTrend > 0 ? "+" : "") + inTrend + "%") +
+      " · Out " + (outTrend == null ? "n/a" : (outTrend > 0 ? "+" : "") + outTrend + "%")
   );
   check(
     period + " chart last point equals Net",
@@ -408,7 +466,7 @@ Object.assign(expected, {
   cashOnHand: 9814500, opening: 8500000,
   spendTotal: 3182500, spendRefunds: 154000, spendHasSales: false, spendHasRefundVendor: false,
   runwayProfitable: true, accountantName: "Priya Menon", ownerOnTeam: true,
-  transactions: 20, planLimit: 5000, doha: 2831000, wakrah: 1820000, dohaShare: 61, wakrahShare: 39,
+  transactions: 40, planLimit: 5000, doha: 2831000, wakrah: 1820000, dohaShare: 61, wakrahShare: 39,
   inv0149: "paid", inv0150: "paid"
 });
 const mismatch = Object.keys(expected).filter(key => observed[key] !== expected[key]);
@@ -463,6 +521,20 @@ check(
   dashboardState().bank.activity + " = opening " + money(getOpeningBalance()) + " + " + money(bankMovement)
 );
 lines.push("- Bank Activity is cash on hand: opening " + money(getOpeningBalance()) + " on bank_01 as of offset " + asOf + " + signed completed transactions with dayOffset > " + asOf + " (" + money(bankMovement) + ") = " + money(getCashOnHand()));
+lines.push("- Verified Stage B clean-seed baseline: cash on hand = opening 85,000 + inflows 46,510 - outflows 33,365 = 98,145, pending 6,300 excluded.");
+lines.push("- The previously reported QR 96,965 was measured against a dirty store after saving a scanned bill (Money Out QR 34,545), not the clean seed.");
+root.setState({ bank: { activity: "-QR 31,475.00", activityCaption: "Settled bank rows only" } });
+check("Bank Activity ignores a stale display snapshot",
+  root.renderVals().bank.activity === money(getCashOnHand()) && root.renderVals().bank.activityCaption === "Cash on hand",
+  root.renderVals().bank.activity + " · " + root.renderVals().bank.activityCaption);
+const cashBefore = getCashOnHand();
+const cashProbe = { ...live().transactions[0], id: "cash-invariant-probe", dayOffset: 0, direction: "out", status: "pending", amountMinor: 118000 };
+appendTransaction(cashProbe);
+check("Pending cash movement is excluded", getCashOnHand() === cashBefore, money(getCashOnHand()));
+cashProbe.status = "refunded";
+check("Completed refunded outflow reduces live cash", getCashOnHand() === cashBefore - cashProbe.amountMinor, money(getCashOnHand()));
+resetStore();
+root.applyStore();
 check(
   "Matched automatically list equals getMatchRate().matched",
   getMatchedTransactions().length === getMatchRate().matched &&
@@ -740,9 +812,9 @@ check("Payment link URL stays on Flow, not SkipCash test",
   link.payUrl);
 check("Copied payment links open Flow checkout",
   /\/pay\//.test(dashboardState().links.find(row => row.id === link.id)?.payUrl || "") &&
-    /paymentLinkById/.test(payPage) &&
+    /checkoutBySlug/.test(payPage) &&
     !/skipcashtest|azurewebsites/i.test(payPage),
-  "pay.html handles payment links");
+  "React /pay handles payment links");
 check("Spine create leaves Money In unchanged",
   getMoneyIn("month") === moneyIn0 && getNet("month") === net0,
   "Money In " + money(getMoneyIn("month")));
@@ -901,7 +973,7 @@ check("Zoho sync is labelled simulated and recorded",
     history.some(row => row.id === zoho.id && row.kind === "zoho" && row.items === 19),
   zoho.target + " · " + zoho.items + " items");
 check("From and To inputs are bound",
-  /onChange="\{\{ F\.periodFrom \}\}"/.test(html) && /onChange="\{\{ F\.periodTo \}\}"/.test(html),
+  /onChange=\{v\.F\.periodFrom\}/.test(html) && /onChange=\{v\.F\.periodTo\}/.test(html),
   "periodFrom / periodTo onChange");
 check("Export XML downloads a file",
   /downloadNamedFile/.test(rootSource) && /exportTallyXml/.test(rootSource),
@@ -923,10 +995,10 @@ resetStore();
 resetGateway();
 
 check("Hosted checkout publishes a shareable /pay/ slug",
-  existsSync(new URL("../public/pay.html", import.meta.url)) &&
-    /\/pay\/:slug/.test(readFileSync(new URL("../next.config.js", import.meta.url), "utf8")) &&
+  existsSync(new URL("../app/pay/pay-checkout.tsx", import.meta.url)) &&
+    existsSync(new URL("../app/pay/[slug]/page.tsx", import.meta.url)) &&
     /\/pay\//.test(html),
-  "pay.html + rewrite + UI URL");
+  "React route + UI URL");
 check("Public payment page matches the builder without edit chrome",
   /Payment details/.test(payPage) &&
     /Share this on/.test(payPage) &&
@@ -938,7 +1010,7 @@ check("Public payment page matches the builder without edit chrome",
     !/pp\.setTitle/.test(payPage),
   "customer checkout chrome");
 check("Public pay page validates email and shows a receipt",
-  /Enter a valid email/.test(payPage) &&
+  /emailError/.test(payPage) &&
     /Payment received/.test(payPage) &&
     /Reference /.test(payPage) &&
     /box locked/.test(payPage),
@@ -1106,6 +1178,95 @@ check("Bank onboarding is wired in the UI",
 resetStore();
 resetGateway();
 
+assertPhase1Invariants();
+check("Phase 1 invariants hold on the seed", true, "Home Net / Outstanding / match / payroll / cash / invoice status");
+root.state.team = [];
+root.state.employees = [];
+root.applyStore();
+check("applyStore copies team and employees from the ledger",
+  root.state.team.length === live().teamMembers.length &&
+    root.state.employees.length === live().employees.length,
+  root.state.team.length + " members · " + root.state.employees.length + " employees");
+
+const recRow = createRecurringInvoice({
+  clientName: "Lusail Hospitality",
+  amountMinor: 540000,
+  interval: "Month"
+});
+const recNext = recurringNextOffsets(recRow);
+check("Recurring invoice next three offsets",
+  recNext.length === 3 && recNext[0] === 0 && recNext[1] === 30 && recNext[2] === 60,
+  recNext.join(", "));
+const invoiceCountBeforeSend = live().invoices.length;
+const sentRecurring = sendRecurringInvoice(recRow.id);
+check("Sending a recurring invoice appends an invoice",
+  live().invoices.length === invoiceCountBeforeSend + 1 &&
+    sentRecurring.amountMinor === 540000 &&
+    sentRecurring.clientId === recRow.clientId &&
+    live().recurringInvoices[0].sentCount === 1,
+  sentRecurring.number + " · sentCount " + live().recurringInvoices[0].sentCount);
+resetStore();
+resetGateway();
+
+root.applyStore();
+root.setState(st => ({ form: Object.assign({}, st.form, { recClient: "Lusail Hospitality", recAmount: "5400", recEvery: "Month" }) }));
+root.renderVals().rec.start();
+const uiRec = live().recurringInvoices[0];
+check("Recurring Start schedule writes the store",
+  uiRec && uiRec.amountMinor === 540000 && uiRec.interval === "Month" && recurringNextOffsets(uiRec).length === 3,
+  uiRec ? uiRec.id + " · " + recurringNextOffsets(uiRec).join(", ") : "missing");
+check("Recurring UI shows the next three sends",
+  root.renderVals().rec.hasNext === true && root.renderVals().rec.next.length === 3 && root.renderVals().rec.none === false,
+  String(root.renderVals().rec.next.map(row => row.label).join(" / ")));
+resetStore();
+resetGateway();
+root.applyStore();
+
+const salesCount = live().transactions.filter(txn => txn.tag === "Sales").length;
+const renamed = renameTag("Sales", "Sales renamed");
+check("Tag rename updates ledger rows",
+  renamed.count === salesCount &&
+    live().transactions.filter(txn => txn.tag === "Sales renamed").length === salesCount &&
+    live().transactions.every(txn => txn.tag !== "Sales"),
+  renamed.count + " rows");
+root.applyStore();
+const salesTag = root.renderVals().tagList.find(row => row.label === "Sales renamed");
+check("Tag list counts come from the ledger",
+  salesTag && salesTag.count === String(salesCount),
+  salesTag ? salesTag.count + " items" : "missing");
+let removeUsed = "";
+try { removeTag("Sales renamed"); } catch (err) { removeUsed = err.message; }
+check("Removing a used tag fails loudly",
+  /still use/.test(removeUsed),
+  removeUsed || "no error");
+renameTag("Sales renamed", "Sales");
+resetStore();
+resetGateway();
+
+setRolePermission("Payroll", "staff", "view");
+check("Permission write persists",
+  live().rolePermissions.find(row => row.area === "Payroll")?.staff === "view",
+  live().rolePermissions.find(row => row.area === "Payroll")?.staff || "missing");
+setApprovalLimit("tm_01", 500000);
+check("Approval limit write persists",
+  live().approvalLimits.tm_01 === 500000,
+  money(live().approvalLimits.tm_01 || 0));
+const asked = requestApproval({ memberId: "tm_01", amountMinor: 900000, what: "Vendor bill" });
+check("Approval request waits on the owner",
+  live().approvalRequests.some(row => row.id === asked.id && row.status === "open"),
+  asked.id);
+resolveApproval(asked.id, "approved");
+check("Approval resolve writes the store",
+  live().approvalRequests.find(row => row.id === asked.id)?.status === "approved",
+  live().approvalRequests.find(row => row.id === asked.id)?.status || "missing");
+check("Recurring / tags / approvals are bound in the view",
+  /v\.rec\.start/.test(html) && /v\.F\.recClient/.test(html) && /v\.F\.recAmount/.test(html) &&
+    /tg\.rename/.test(html) && /tg\.setName/.test(html) && /l\.setCap/.test(html) && /l\.readOnly/.test(html),
+  "start + rename + limits");
+resetStore();
+resetGateway();
+root.applyStore();
+
 const linkReset = await createPaymentLink({
   amountMinor: 540000,
   description: "Reset rehearsal",
@@ -1168,7 +1329,7 @@ check("SANDBOX tooltip string present",
   "SANDBOX hover tooltip");
 check("No Peppol or VAT in public HTML",
   !/Peppol/i.test(html) && !/\bVAT\b/i.test(html) && !/Peppol/i.test(payPage) && !/\bVAT\b/i.test(payPage),
-  "flow.dc.html and pay.html");
+  "React dashboard and pay route");
 check("Simulated labels on Payment Setup and Connected Apps",
   /money settles straight to you/.test(html) &&
     /One simulated gateway in this phase/.test(html) &&

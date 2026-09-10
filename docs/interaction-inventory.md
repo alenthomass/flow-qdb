@@ -1,240 +1,186 @@
 # Interaction inventory
 
-Stage 0 audit of the live dashboard (`/` → `public/flow.dc.html`). No fix code in this stage.
+Walk of the React dashboard (`/` → `app/dashboard/view.tsx` + `lib/dashboard/component.js`). No silent no-ops: every control either mutates, navigates, shows an explicit empty/sample state, or toasts why it did not do the labelled work.
 
-**Method.** Static walk of every `dests()` route and sub-tab, plus chrome (sidebar, header, search, modals, detail panes). Behaviour is classified from the bound handler, not from a live click of every control. Toast-only handlers are recorded as **dead (toast only)** — they have a click handler, but they do not do the work a user would reasonably expect.
+**Method.** Static walk of `dests()` routes, chrome, modals and detail panes. Behaviour is classified from the bound handler and the spine it calls. Not a live click of every control, and not a browser pass.
 
-**AGENTS.md.** Not present in this repo at audit time. Data rules used from the running project: seed/selectors are source of truth; Home Net must equal Reports net profit; Who owes me must equal Outstanding; do not invent seed figures.
-
-**Seed lists that start empty.** Payment links, subscription plans, payment-page analytics, saved report packs. Creating a link or plan appends local UI state only; it does not go through a gateway or update the ledger.
+**Source of truth.** `lib/data/seed.ts` via `dashboardState()`. Money is integer fils through `formatMoney`. Invoice status is derived. Recurring schedules, approval requests and extra bank connections are not in the seed.
 
 ---
 
 ## Demo-critical
 
-Controls on the core demo path (pay → ledger → match → books) or Beat 1 screens later stages must make real.
-
-| Location | Control | Behaviour | Expected |
+| Location | Control | Behaviour | Notes |
 | --- | --- | --- | --- |
-| Home | Greeting + Needs Your Attention Confirm / Reject | **works** | Confirm/reject mutates match queue, match rate, invoice derived status. Zero state: “You're all caught up”. |
-| Home | Matching Status Review | **works** (hidden when 0 open) | Opens Match My Payments. Footer “Everything is matched” / “1 still needs a look” / “N still need a look”. |
-| Home | Matching Status % / N of 12 / progress bar | **works** (display) | Live match rate; bar eases after confirm/reject. |
-| Home | Quick Actions: Send Payment Link | **works** (modal) | Opens New payment link modal. Submit appends a local `links` row; **does not** call a gateway, mint a URL, or write a ledger row. |
-| Home | Quick Actions: Scan Bill | **works** (modal) | Opens Scan a bill modal. “Use a sample bill” fills canned fields instantly. Save appends a local txn; **does not** wait, extract from a file, or recompute selectors. |
-| Home | Quick Actions: Log Expense | **works** (modal) | Appends a local txn; date hardcoded “9 Aug”; **does not** flow through `lib/data` selectors, so Home Net / Reports P&L stay on seed. |
-| Home | Quick Actions: Create Invoice | **works** (modal) | Creates a draft invoice in local state; Who owes me / Outstanding stay on seed until wired. |
-| Home | Payment link / New invoice (header) | **works** (same modals) | Same as Quick Actions. |
-| Home | 24h / 7 days / 30 days | **works** | Switches Home period, chart, Money In/Out/Net. Reports stay on their own 30-day window. |
-| Home | Recent Activity row | **works** | Opens transaction detail. |
-| Home | Recent Activity View all | **works** | Goes to All Transactions. |
-| Home | Auto-matched KPI | **works** (display) | `%` and `N open` / `1 open` from live match. |
-| Get Paid → Payment Links | New link | **works** (modal, local only) | User expects a shareable SkipCash link and later a payment on the ledger. Today: toast “created and copied”, no clipboard write, no gateway, no simulate-payment control. List starts empty. |
-| Get Paid → Payment Links | Copy | **dead (toast only)** | “Link copied to clipboard” — no clipboard API, no URL on the row. |
-| Get Paid → Payment Links | Description | **works** | Opens link detail. Detail Copy/Deactivate also toast-only. |
-| Get Paid → Payment Page | New payment page | **works** (builder) | Editor stores title, fields, branding in `pp` state. Publish marks the page Published in-app. |
-| Get Paid → Payment Page | Publish page | **opens empty-ish published view** | User expects a shareable customer route. There is no public URL, no pay action, no ledger write. Preview is in-dashboard only. |
-| Get Paid → Payment Page | Copy link / Share | **dead (toast only)** | Copy does not write clipboard; Share says sample-only. |
-| Get Paid → Payment Page | Logo (builder) | **dead (no handler)** | Dashed “Logo” tile has no upload handler. Payment Setup Upload is toast-only. |
-| Get Paid → Subscriptions | New plan | **works** (modal, local only) | Plan appears in the list. No customer, no upcoming charges, no simulated billing run. Seed plans empty. |
-| Get Paid → Subscriptions | Copy signup link | **dead (toast only)** | “Signup link copied”. |
-| Get Paid → Subscriptions | Plan row | **works** | Opens plan detail. Add subscriber mutates local subscribers. Pause / Cancel / Deactivate toast-only (`h.copy`). |
-| Get Paid → Payment Setup | Sandbox / Live | **works** (local flag) | Toggles `env`. Live does not talk to a real gateway. |
-| Get Paid → Payment Setup | Send a test payment | **dead (toast only)** | “Sandbox test payment of QR 1.00 sent” — no txn, no pending, no match. |
-| Get Paid → Payment Setup | Manage connection | **works** | Opens SkipCash gateway detail. Send test / Disconnect there are toast-only. |
-| Get Paid overview | Smart Checkout card | **works** (expand + toggles) | Expands sample analytics; wallet-detect / retry toggles flip local `toggles`. Not a payment workflow. No “on” that changes checkout behaviour. |
-| Get Paid → Shopify Store | Store URL / checkout map / currency | **dead (no persist)** | Uncontrolled inputs; Connected is hardcoded. No OAuth. Domain is leftover `desertbloom.myshopify.com`. |
-| Get Paid → Shopify Store | Sync products / Test mode | **works** (local toggles) | Flip only. Incoming txns are not tagged `shopify` by this screen. |
-| Get Paid → Connect Your Bank | Connected Ahli card | **works** (display) | Copy already says sample data. |
-| Get Paid → Connect Your Bank | Connect another bank | **dead (toast only)** | “Bank linking is sample-only”. No onboarding steps. |
-| Money In & Out → All Transactions | Filters, clear, row open | **works** | Filters local `txns`. Export toast-only. |
-| Money In & Out → Match My Payments | Review / Confirm / Reject / Undo | **works** | Same mutation path as Home attention. |
-| Money In & Out → Scan a Bill | Upload a bill | **works** (opens modal) | Modal does not accept an image/PDF. Sample bill is instant canned fill. |
-| Money In & Out → Scan a Bill | What we pull out | **works** (display of canned `scan`) | Not extraction. |
-| Money In & Out → Bank Activity | Display | **works** | Sample bank figures from seed. |
-| Invoices → New Invoice (page) | Client picker, line items, Create / Draft | **works** (local invoices) | Creates invoice in UI state. Preview still says Peppol-ready. |
-| Invoices → All Invoices | Row, New invoice | **works** | Detail Send reminder / Duplicate / Void toast-only (`h.copy`). |
-| Invoices → All Invoices | Send reminders / Export | **dead (toast only)** | No messages, no file. |
-| Sync to Books → Tally Export | Export XML | **dead (toast only)** | “Tally XML export queued”. No file, no cost centre, no history write. From/To inputs are not bound. |
-| Sync to Books → Tally Export | Export history | **opens empty state** | “No export history is stored.” |
-| Sync to Books → Zoho Sync | Sync now | **dead (toast only)** | “Syncing with Zoho Books…” — no success state, no history row. |
-| Sync to Books → Zoho Sync | Disconnect | **dead (toast only)** | |
-| Sync to Books → Zoho Sync | Sync log rows | **works** | Open detail. Re-run / Export toast-only. |
-| Reports → Am I making money? | P&L + stat cards | **works** (display) | Independent 30-day period; net equals Home month net. |
-| Reports → Who owes me? | Ageing buckets + rows | **works** (display) | Equals Outstanding. QR 0 buckets use default ink, not red. |
-| Reports → Who owes me? | Chase all overdue | **dead (toast only)** | |
-| Reports → What do I hand my accountant? | Download pack | **dead (toast only)** | No ZIP. Saved reports empty state is copy-only. |
-| Reports → What do I hand my accountant? | Turn on monthly send | **dead (toast only)** (`h.copy`) | |
-| Settings → Account | Reset demo data | **missing** | No control. After a rehearsal, matches stay confirmed. |
+| Home | Greeting + Needs Your Attention Confirm / Reject | **works** | Confirm/reject mutates the match queue, match rate and derived invoice status. Zero state: “You're all caught up”. |
+| Home | Matching Status Review | **works** (hidden when 0 open) | Opens Match My Payments. Footer copy follows open count. |
+| Home | Matching Status % / N of 12 / progress bar | **works** (display) | Live `getMatchRate()`. |
+| Home | Quick Actions: Send Payment Link | **works** (modal) | `createPaymentLink` → shareable `/pay/{id}` URL. |
+| Home | Quick Actions: Scan Bill | **works** (modal) | Sample bills extract after a gated delay. Save appends an outflow through the store. Barzan is labelled simulated. |
+| Home | Quick Actions: Log Expense | **works** (modal) | Appends an outflow; Home Net / Reports P&L recompute. |
+| Home | Quick Actions: Create Invoice | **works** (modal) | `createInvoice`. Due date required (default today+14). Who owes me / Outstanding follow the new row. |
+| Home | Payment link / New invoice (header) | **works** | Same modals. |
+| Home | 24h / 7 days / 30 days | **works** | Home period only. Reports keep their own 30-day window. |
+| Home | Recent Activity row / View all | **works** | Detail / All Transactions. |
+| Get Paid → Payment Links | New link | **works** | Store + `/pay` URL. Seed has 4 paid links. |
+| Get Paid → Payment Links | Copy | **works** (clipboard when available) | Falls back to a toast if clipboard is missing. |
+| Get Paid → Payment Links | Simulate payment | **works** | Gateway outcomes; settle lifts Money In. |
+| Get Paid → Payment Links | Deactivate | **works** | Status Deactivated. |
+| Get Paid → Payment Page | Publish | **works** | `/pay/{slug}`. Empty title → “Page title is required”. |
+| Get Paid → Subscriptions | New plan | **works** | Plan, optional subscriber, upcoming charge. Simulated billing appends pending then settle. |
+| Get Paid → Subscriptions | Pause / Cancel | **works** | Spine; cancel stops upcoming charges. |
+| Get Paid → Payment Setup | Sandbox / Live | **works** (local flag) | Live copy: “Live mode is still simulated…”. |
+| Get Paid → Payment Setup | Send a test payment | **toast only** | “Sandbox test payment of QR 1.00 sent” — no ledger row. Explicit sandbox toast, not a silent no-op. |
+| Get Paid overview | Smart Checkout | **works** | Persists `setSmartCheckout`. Analytics are labelled sample. |
+| Get Paid → Shopify Store | Connect | **works** | Starts disconnected. Simulated OAuth; new sample order tagged `shopify`. Seed Shopify rows are not rewritten. |
+| Get Paid → Connect Your Bank | Connect sample bank | **works** | Labelled sample; opening QR 0 so cash on hand does not change. |
+| Money In & Out → All Transactions | Filters, row open | **works** | Export is toast (“CSV is sample-only”). |
+| Money In & Out → Match My Payments | Review / Confirm / Reject / Undo | **works** | Same queue as Home. |
+| Money In & Out → Scan a Bill | Sample + save | **works** | File input starts the same extract path. |
+| Money In & Out → Bank Activity | Display | **works** | Cash on hand = opening + non-pending signed. Caption “Cash on hand”. |
+| Invoices → New Invoice | Create / Draft | **works** | Store invoices; status derived. |
+| Invoices → All Invoices | Row, New invoice | **works** | Duplicate creates a draft with due +14. |
+| Invoices → Reminders | Remind | **works** | Toast includes the client name. List is sent/viewed/overdue/awaiting settlement only. |
+| Invoices → Recurring | Start schedule / Send now / Pause / Cancel | **works** | Seed starts empty. Create needs client + amount. Next three offsets come from the running row. |
+| Invoices → Clients | Cards | **works** | Lifetime totals from invoices. |
+| Sync to Books → Tally Export | Export XML | **works** | Downloads XML for the bound From/To range. History is stored. Pending rows omitted. |
+| Sync to Books → Zoho Sync | Sync now | **works** | Labelled simulated push; history row. |
+| Reports → Am I making money? | P&L + stat cards | **works** (display) | Independent 30-day period; net equals Home month net (`getNet`). |
+| Reports → Who owes me? | Ageing + rows | **works** (display) | Equals Outstanding. |
+| Reports → Who owes me? | Chase all overdue | **toast only** | “Reminders queued for overdue invoices”. |
+| Reports → What do I hand my accountant? | Download pack | **toast only** | No ZIP in this phase. Tally XML is the file export. |
+| Settings → Account | Reset demo data | **works** | Confirm modal; restores seed; keeps Tally From/To. |
 
 ---
 
 ## Secondary
 
-Useful screens that work for browsing, or that mutate local UI without touching the ledger/gateway.
-
-| Location | Control | Behaviour | Expected |
+| Location | Control | Behaviour | Notes |
 | --- | --- | --- | --- |
-| Chrome | Sidebar nav, hub cards, tabs, back | **works** | Route/tab changes. |
-| Chrome | Search | **works** | Filters in-app search list. |
-| Chrome | Theme toggle | **works** | Light/dark + `localStorage`. |
-| Chrome | Account menu → Profile / Security / Billing | **works** | Jumps to Settings tabs. |
-| Chrome | Sign out | **dead (toast only)** | Stays signed in. Reasonable for a sandbox; still a fake exit. |
-| Chrome | SANDBOX pill | **works** (display) | No tooltip. User cannot tell *what* is simulated. |
-| Home | Chart hover | **works** | Tooltip/dot. |
-| Home | KPI cards Money In / Out / Outstanding | **works** (display) | Outstanding from seed invoices. |
-| Get Paid → Payment Setup | Accent swatches / hex / picker | **works** | Local brand colour. |
-| Get Paid → Payment Setup | Other gateway CTAs | **dead (toast)** | “X is not available in Phase 1”. |
-| Get Paid → Payment Page | Title, description, fields, pay label, receipts, page settings | **works** (local) | Settings persist in `pp` / `ps` / `rc`. |
-| Get Paid → Payment Page | Share icons | **dead (toast only)** | Same `h.copy`. |
-| Invoices → Reminders | Schedule toggles | **works** (local) | Remind (per row) toast-only. |
-| Invoices → Recurring | Recurring toggle | **works** (local flag) | Every/Ends inputs unbound. “No recurring invoices are stored.” |
-| Invoices → Clients | Client cards | **works** | Opens client detail. |
-| Invoices → Create | Add client | **works** (local client list) | |
-| Team → Members | Invite, row, edit save | **works** (local team) | |
-| Team → Permissions | Role matrices | **works** (local `perms`) | |
-| Team → Approvals | Approve / Decline | **works** if `approvals` has rows | Seed has none → empty. |
-| Team → Activity | Kind filters | **works** | |
-| Payroll → Employees | Add / edit employee | **works** (local) | |
-| Payroll → Payslips | Generate | **dead (toast only)** | No slip records. Post to Transactions also toast (`h.export`). |
-| Payroll → Deductions | VAT / WHT / royalty fields | **works** (local `rates`) | VAT wording on a QA unregistered merchant. |
+| Chrome | Sidebar, hubs, tabs, back | **works** | Route/tab only. |
+| Chrome | Search | **works** | In-app list. |
+| Chrome | Theme toggle | **works** | `localStorage` `flow-theme`. Light/dark pixels not checked in a browser. |
+| Chrome | Account menu | **works** | Jumps to Settings tabs. Sign out toasts and stays in the sandbox. |
+| Chrome | SANDBOX pill | **works** | Tooltip: simulated gateway, CR pending. |
+| Get Paid → Payment Setup | Accent / other gateway CTAs | **works** / **toast** | Coming-soon gateways toast “not available in Phase 1”. |
+| Get Paid → Payment Page | Builder fields, receipts, page settings | **works** (local page model) | Logo upload toasts sample-only. |
+| Invoices → Reminders | Schedule toggles | **works** (local) | Prefs only; send uses the invoice list. |
+| Team → Members | Invite, edit | **works** (local team row) | Invite is not a seed member; next `applyStore` restores ledger team. |
+| Team → Permissions | Role matrix | **works** | `setRolePermission` persists. Empty seed uses the default 7-row template. |
+| Team → Approvals | Limit inputs / Approve / Decline | **works** | Limits persist. Owner is “No limit”. Pending list starts empty. |
+| Team → Activity | Kind filters | **works** | From `activityLog`. |
+| Payroll → Employees | Add / edit | **works** (local) | Same applyStore caveat as Members. |
+| Payroll → Payslips | Post to Transactions | **works** | Blocks a second post for August 2026. Generate payslips is toast-only (no slip files). |
+| Payroll → Deductions | WHT / royalty fields | **works** (local rates) | No VAT field. |
 | Settings → Account | Name, email, password, notifications, Save | **works** (local) | Password is sandbox theatre. |
-| Settings → Tags | Remove tag | **works** | Strips tag from list; does not retag txns. |
-| Settings → Security | 2FA / biometric toggles | **works** (local) | Sign out session / Roll keys toast-only. |
-| Settings → Billing | Downgrade / Upgrade / Contact sales | **dead (toast only)** | |
-| Settings → Profile | Fields + Save changes | **dead (toast; fields unbound)** | Save toasts “Changes saved”; inputs have no `onChange`, so edits vanish. |
-| Connected Apps | Manage on SkipCash / bank / Tally / Zoho / Shopify | **works** | Navigates to the matching setup tab. |
-| Reports → Where is money leaking? | Category / vendor lists | **works** (display) | |
-| Reports → Will I have enough? | Runway + forecast | **works** (display) | |
-| Reports → How is each branch doing? | Branch rows | **works** | Opens branch detail. |
-| Detail panes | Transaction / invoice / match / member / etc. | **works** (open/close) | Several action buttons inside details are toast-only (see Cosmetic / dead list). |
-| Modals | Cancel / backdrop / Escape | **works** | |
-| Modals | Primary CTA | **works** for link, expense, scan, invoice, plan, member, employee; **closes only** for help, page settings, receipts | Page/receipt settings save as close, not a separate persist path. |
+| Settings → Tags | Rename / Remove | **works** | Rename rewrites ledger tags. Remove fails with a toast if any txn still uses the tag. |
+| Settings → Security | 2FA / biometric | **works** (local) | Sign out session / Roll keys toast. |
+| Settings → Billing | Downgrade / Upgrade / Contact sales | **toast only** | Sample-only notes. |
+| Settings → Profile | Fields + Save | **toast; fields display-only** | Inputs are `value` from the merchant profile with no `onChange`. Save toasts “Changes saved”. Explicit, not silent. |
+| Connected Apps | Manage | **works** | Navigates to the matching setup tab. |
+| Reports → Spend / Cash / Branches | Lists and runway | **works** (display) | |
+| Modals | Cancel / backdrop | **works** | Help / page settings / receipts close without a second persist path. |
 
 ---
 
 ## Cosmetic
 
-Display, copy, or chrome that does not change money or routing.
-
-| Location | Control | Behaviour | Expected |
-| --- | --- | --- | --- |
-| Home | Matching Status check icon | **works** (display) | |
-| Home | Needs Your Attention count badge | **works** | Hidden at zero. |
-| Get Paid | SkipCash “This month / Settling / Settled share” | **works** (display from seed `gateways`) | |
-| Reports | Saved reports muted placeholder | **works** (empty state) | Heading + 12-month copy + ghost row. No fake packs. |
-| Reports | Ageing QR 0 colour | **works** | Default ink when bucket is zero. |
-| Header | Logo → Home | **works** | |
-| More menu (mobile overflow) | **works** | Opens extra nav. |
-| Help modal | **works** | About this build. |
-| Toast | **works** | Auto-dismiss ~2.6s. |
+| Location | Control | Behaviour |
+| --- | --- | --- |
+| Home | Matching Status check icon, attention badge | Display; badge hidden at zero. |
+| Reports | Saved reports empty, ageing QR 0 colour | Empty state is copy-only. Zero buckets use default ink. |
+| Header | Logo → Home | Works. |
+| Help modal / toasts | Works | Auto-dismiss ~2.6s. |
 
 ---
 
-## Needs a decision
+## Toast-only or display-only (labelled)
 
-Do not guess product intent.
+These have a click target. None pretend to have finished the labelled side effect without saying so.
 
-| Location | Control | Why it is unclear |
+| Location | Control | What the user sees |
 | --- | --- | --- |
-| Get Paid → Payment Setup | Live | Should Live be blocked with a registration message, or a labelled simulation of “live mode”? Qatar CR is pending; a Live switch that only flips a chip is misleading. |
-| Invoice / Tax screens | Peppol-ready, Default tax rate, “E-invoicing ready” | Stage 6 says strip VAT/Peppol from UI. Keep `getVatRate() = 0` in logic. Whether Tax & e-invoicing tab remains at all is a product call. |
-| Payroll deductions | “VAT (goods & services)” with “Qatar has no VAT yet” | Same as above vs payroll WHT which may still be real for QA. |
-| Shopify | Hardcoded `desertbloom.myshopify.com` and “Connected” | Merchant is Al Bidda. Is this leftover copy to replace, or a second sample store? |
-| Payment links Copy | Toast without clipboard | Is a fake toast enough for demo, or must `navigator.clipboard` run? |
-| Sign out | Toast, session remains | Sandbox-only is fine; or should it reset to a locked splash? |
-| New invoice modal vs Invoices → New Invoice page | Two create paths | Modal is quick; full page has line items. Which is canonical for the demo spine? |
-| Match Review “Review” on a row | Opens match detail | vs Confirm on Home which stays on Home. Intentional? |
-| Reports Download pack | Toast vs real ZIP | Stage 3 specifies Tally XML, not the accountant ZIP. Is the pack still toast in Phase 1? |
-| Settings Profile Save | Toast, fields not bound | Bind to merchant profile, or treat as display-only and disable Save? |
-| “Post to Transactions” on payslips | Toast `h.export` | Should generating slips append salary txns (would break seed payroll identity unless designed)? |
-| Gateway “Manage connection” vs Connected Apps | Two doors to the same SkipCash detail | Fine, or should one be read-only? |
+| Payment Setup / gateway detail | Send a test payment | Sandbox toast, no txn |
+| Payment page | Share, Logo Upload | Sample-only toast |
+| All Transactions / Activity / Accountant pack / Payslips | Export / Download pack / Generate | Sample-only or queued toast |
+| Reports | Turn on monthly send, Chase all overdue | Toast |
+| Invoice list | Send reminders (bulk) | “Reminders queued…” |
+| Zoho / gateway | Disconnect | Sample-only toast |
+| Settings | Profile Save, session Sign out, Roll keys, billing CTAs | Toast; profile fields do not edit the merchant record |
+| Header | Sign out | Stays signed in |
+| Employee detail | Payslip Download | “Download queued” |
 
----
-
-## Dead or toast-only (full list)
-
-These have a click target. None perform the labelled side effect.
-
-| Location | Control | Handler today |
-| --- | --- | --- |
-| Get Paid / Payment Setup / gateway detail | Send a test payment | `h.testTxn` toast |
-| Payment links, payment page, plan, invoice, member, sub | Copy / Copy link | `h.copy` toast, no clipboard |
-| Payment page | Share | `h.note` sample-only |
-| Payment Setup | Logo Upload | `h.note` sample-only |
-| Connect Your Bank | Connect another bank | `h.note` sample-only |
-| All Transactions / All Invoices / Activity / Accountant pack / Payslips / sync detail | Export / Download pack / Re-run | `h.export` toast |
-| Tally | Export XML | `h.tallyExport` toast |
-| Zoho | Sync now | `h.syncNow` toast |
-| Zoho / gateway | Disconnect | `h.note` / `h.copy` |
-| Invoices | Send reminders, Remind, Chase all overdue | `h.note` |
-| Reports | Turn on monthly send | `h.copy` |
-| Invoice detail | Send reminder, Duplicate, Void | `h.copy` |
-| Plan / sub / member / gateway detail | Deactivate, Pause, Cancel subscription | `h.copy` |
-| Payslips | Generate, Post to Transactions | `h.generatePayslips` / `h.export` toast |
-| Settings | Profile Save, session Sign out, Roll keys, Billing upgrade/downgrade/sales | `h.note` |
-| Employee detail | Payslip Download | `h.note` “Download queued” |
-| Header | Sign out | `h.signOut` toast |
-
-**No handler at all**
+**Unbound display (not silent: they are read-only values)**
 
 | Location | Control |
 | --- | --- |
-| Payment page builder | Logo tile |
-| Tally Export | From / To date fields (`value` only) |
-| Tax & e-invoicing | Tax registration, Default tax rate (`value` only) |
-| Settings → Profile | All profile fields (`value` only) |
-| Shopify | Store URL, Checkout maps to, Currency (`defaultValue`) |
-| Recurring invoices | Every, Ends (`defaultValue` / placeholder) |
-| Accountant pack | Period, Format inputs (`value` / `defaultValue`) |
-| Home period | Active 24h/7d/30d button has no `onClick` (correct; it is the selected state) |
+| Settings → Profile | Business name, legal entity, tax registration, industry, address, currency |
+| Tax tab | Not registered copy; no Peppol, no VAT rate editor |
+| Accountant pack | Period / format inputs |
 
-**Missing**
-
-| Location | Control |
-| --- | --- |
-| Payment link detail | Simulate payment (success / decline / timeout / partial) |
-| Settings → Account | Reset demo data |
-| Scan a Bill | File input for image/PDF; processing wait; per-field confidence |
-| Checkout | Public shareable pay route |
-| Subscriptions | Upcoming charges list, cancel that stops simulated billing |
-| Shopify | OAuth-style connect that can start from disconnected |
-| Bank | Onboarding that can start from disconnected |
-
-**Opens empty state (legitimate)**
+**Legitimate empty (nothing in the seed)**
 
 | Location | Why empty |
 | --- | --- |
-| Payment Links list | `reports`/`links` not in seed |
-| Subscription plans list | plans not in seed |
-| Saved reports | packs not in seed |
-| Tally export history | not stored |
-| Recurring “Running now” | no schedules in seed |
-| Team approvals | no pending caps in seed |
-| Needs Your Attention / Matching Status | empty after all confirms (correct) |
-
-**Navigates wrong**
-
-None found. Hub Manage buttons land on the matching Get Paid / Sync tab. Home Review lands on Match My Payments.
-
-**Console errors**
-
-Not verified in a browser session in this stage. Known Next noise: requests for `/{{ chart.src }}` before the SVG data URI binds (404 in `next dev` logs). Not classified as a user-facing control failure.
+| Recurring “Running now” / next three | No schedules stored until Start schedule |
+| Team approvals “Waiting on you” | No approval requests in the seed |
+| Subscription plans | Not in the seed |
+| Saved reports | Packs not in the seed |
+| Checkout pages | Not in the seed |
+| Needs Your Attention | Empty after every confirm |
 
 ---
 
-## Route map (for later stages)
+## Simulated surfaces
+
+Every simulated path is labelled in the UI:
+
+- SANDBOX chip + tooltip (gateway, Qatar CR pending)
+- SkipCash / bank / Zoho / Shopify “Simulated” or “Simulated connection”
+- Smart Checkout sample analytics note
+- Sample bank copy (“Sample data. Live bank feeds…”)
+- Shopify “Simulated OAuth”
+- Live mode note: still simulated
+- Help modal: “Simulated: SkipCash, Ahli Bank, Zoho Books, Shopify”
+- Coming soon gateways stay “Coming soon”
+
+---
+
+## Invariants (runtime)
+
+`assertPhase1Invariants()` runs from `dashboardState()` and after every store `persist()`:
+
+- Home 30-day Net = Reports net profit
+- Who owes me = Outstanding
+- Hub “N unpaid” = Outstanding count
+- matched + open = total
+- Payroll net = linked ledger row
+- Cash on hand = opening + non-pending signed movement
+- Invoice status vs linked transactions
+
+No VAT / Peppol strings in `app/dashboard` or `app/pay` sources.
+
+---
+
+## Route map
 
 | Section | Tabs |
 | --- | --- |
 | Home | (single) |
-| Get Paid | Overview hub, Payment Links, Payment Page, Subscriptions, Payment Setup, Connect Your Bank, Shopify Store |
-| Money In & Out | Overview hub, All Transactions, Match My Payments, Scan a Bill, Bank Activity |
-| Invoices | Overview hub, All Invoices, New Invoice, Reminders, Recurring, Clients |
-| Sync to Books | Tally Export, Zoho Sync, Tax & e-invoicing |
+| Get Paid | Overview, Payment Links, Payment Page, Subscriptions, Payment Setup, Connect Your Bank, Shopify Store |
+| Money In & Out | Overview, All Transactions, Match My Payments, Scan a Bill, Bank Activity |
+| Invoices | Overview, All Invoices, New Invoice, Reminders, Recurring, Clients |
+| Sync to Books | Tally Export, Zoho Sync, Tax |
 | Connected Apps | Payment Gateways, Banks, Accounting & Platforms |
 | Reports | P&L, Spend, Cash, Who owes me, Branches, Accountant pack |
 | Your Team | Members, Approval Limits, Permissions, Activity |
 | Payroll | Payslips, Employees, Deductions |
 | Settings | Business Profile, Account, Manage Tags, Billing, Security |
 
-Mobile Home / Activity / Invoices duplicate a subset of the same handlers.
+---
+
+## Could not verify
+
+- Light and dark appearance in a real browser
+- Clipboard write in a real browser
+- Cross-tab store updates (focus/storage listeners are out of scope)

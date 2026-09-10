@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2025",
     "lib": [
-      "ES2022",
+      "ES2025",
       "DOM"
     ],
     "module": "ESNext",
@@ -13,7 +13,6 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"

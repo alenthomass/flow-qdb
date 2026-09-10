@@ -155,6 +155,12 @@ export function createMockSkipCash(): PaymentGateway {
     },
 
     async simulatePayment(id: string, outcome: PaymentOutcome): Promise<SkipCashWebhookPayload> {
+      // Hosted sandbox checkouts have no outcome picker in their customer UI.
+      // A URL scenario exercises failures through the same webhook/spine path.
+      if (outcome === "success" && typeof location !== "undefined" && /^\/pay(?:\/|$)/.test(location.pathname)) {
+        const scenario = new URLSearchParams(location.search).get("outcome");
+        if (scenario === "decline" || scenario === "timeout") outcome = scenario;
+      }
       const record = payments.get(id);
       if (!record) throw new Error("SkipCash payment not found: " + id);
       let statusId: SkipCashStatusId = 2;
