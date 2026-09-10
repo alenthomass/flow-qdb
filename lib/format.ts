@@ -4,6 +4,11 @@ import type { CurrencyCode } from "./data/types";
 const EXPONENT: Record<string, number> = { QAR: 2, AED: 2 };
 const PREFIX: Record<string, string> = { QAR: "QR ", AED: "AED " };
 
+export function parseMoneyInput(raw: string): number {
+  const n = Math.abs(parseFloat(String(raw || "").replace(/[^0-9.]/g, "")) || 0);
+  return Math.round(n * 100);
+}
+
 export function formatMoney(amount: number, currency: CurrencyCode, options: { trimWhole?: boolean } = {}): string {
   const exp = EXPONENT[currency] ?? 2;
   const abs = Math.abs(Math.trunc(amount));

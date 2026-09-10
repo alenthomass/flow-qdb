@@ -225,6 +225,11 @@ export interface SmartCheckoutConfig {
   retryOnDecline: boolean;
 }
 
+export interface PaymentLinkNote {
+  key: string;
+  value: string;
+}
+
 export interface PaymentLink {
   id: string;
   payUrl: string;
@@ -237,6 +242,14 @@ export interface PaymentLink {
   uses: number;
   expiry: string;
   txnId: string | null;
+  customerEmail?: string | null;
+  notifyEmail?: boolean;
+  customerPhone?: string | null;
+  phoneDial?: string;
+  notifySms?: boolean;
+  referenceId?: string | null;
+  partialPayment?: boolean;
+  notes?: PaymentLinkNote[];
 }
 
 export interface ExportRecord {

@@ -40,6 +40,7 @@ import type {
   Invoice,
   InvoiceLine,
   PaymentLink,
+  PaymentLinkNote,
   PlanInterval,
   RecurringInterval,
   RecurringInvoice,
@@ -57,6 +58,37 @@ export interface CreateLinkInput {
   clientId?: string | null;
   invoiceId?: string | null;
   expiry?: string;
+  customerEmail?: string | null;
+  notifyEmail?: boolean;
+  customerPhone?: string | null;
+  phoneDial?: string;
+  notifySms?: boolean;
+  referenceId?: string | null;
+  partialPayment?: boolean;
+  notes?: PaymentLinkNote[];
+}
+
+function invoiceByReference(referenceId: string | null | undefined): Invoice | undefined {
+  const ref = String(referenceId || "").trim().toLowerCase();
+  if (!ref) return undefined;
+  return getStore().invoices.find(row => row.number.toLowerCase() === ref || row.id.toLowerCase() === ref);
+}
+
+function uniqueLinkId(seedId: string): string {
+  const compact = seedId.replace(/-/g, "");
+  const ids = new Set(getStore().paymentLinks.map(row => row.id));
+  let id = "pl_" + compact.slice(0, 10);
+  let n = 2;
+  while (ids.has(id)) {
+    id = "pl_" + compact.slice(0, 8) + n.toString(16);
+    n += 1;
+  }
+  return id;
+}
+
+function hostedLinkUrl(id: string): string {
+  const origin = typeof location !== "undefined" && location.origin ? location.origin : "";
+  return origin + "/pay/" + id;
 }
 
 function ownerContact(): { firstName: string; lastName: string; email: string } {
@@ -72,25 +104,32 @@ function ownerContact(): { firstName: string; lastName: string; email: string } 
 
 export async function createPaymentLink(input: CreateLinkInput): Promise<PaymentLink> {
   const store = getStore();
-  const invoice = input.invoiceId ? store.invoices.find(row => row.id === input.invoiceId) : undefined;
+  const invoice = (input.invoiceId ? store.invoices.find(row => row.id === input.invoiceId) : undefined)
+    || invoiceByReference(input.referenceId);
   const clientId = input.clientId || invoice?.clientId || null;
   const client = clientId ? store.clients.find(row => row.id === clientId) : undefined;
   const owner = ownerContact();
   const names = (client?.name || store.merchant.ownerName).split(" ").filter(Boolean);
+  const email = (input.customerEmail || "").trim() || client?.email || owner.email;
+  const phone = (input.customerPhone || "").trim() || undefined;
+  const referenceId = (input.referenceId || "").trim() || null;
+  const notes = (input.notes || []).filter(note => note.key.trim() || note.value.trim());
   const record = await getGateway().createPaymentLink({
     amountMinor: input.amountMinor,
     currency: store.merchant.currency,
     description: input.description,
-    merchantTransactionId: invoice?.number,
+    merchantTransactionId: referenceId || invoice?.number,
     customer: {
       firstName: names[0] || owner.firstName,
       lastName: names.slice(1).join(" ") || owner.lastName,
-      email: client?.email || owner.email
+      email,
+      phone
     }
   });
+  const id = uniqueLinkId(record.id);
   const link: PaymentLink = {
-    id: record.id,
-    payUrl: record.payUrl,
+    id,
+    payUrl: hostedLinkUrl(id),
     amountMinor: input.amountMinor,
     description: input.description || "Payment",
     clientId,
@@ -99,7 +138,15 @@ export async function createPaymentLink(input: CreateLinkInput): Promise<Payment
     createdOffset: 0,
     uses: 0,
     expiry: input.expiry || "-",
-    txnId: null
+    txnId: null,
+    customerEmail: (input.customerEmail || "").trim() || null,
+    notifyEmail: !!input.notifyEmail,
+    customerPhone: phone || null,
+    phoneDial: input.phoneDial || undefined,
+    notifySms: !!input.notifySms,
+    referenceId,
+    partialPayment: !!input.partialPayment,
+    notes
   };
   appendPaymentLink(link);
   return link;
@@ -117,18 +164,23 @@ function ensureGatewayPayment(link: PaymentLink): void {
     currency: getStore().merchant.currency,
     statusId: 0,
     status: "new",
-    merchantTransactionId: link.invoiceId,
+    merchantTransactionId: link.referenceId || link.invoiceId,
     createdDayOffset: link.createdOffset
   });
 }
 
-export async function simulatePayment(linkId: string, outcome: PaymentOutcome) {
+export async function simulatePayment(linkId: string, outcome: PaymentOutcome, paidMinor?: number) {
   const link = getStore().paymentLinks.find(row => row.id === linkId);
   if (!link) throw new Error("Payment link not found: " + linkId);
   ensureGatewayPayment(link);
   const gateway = getGateway();
   const payload = await gateway.simulatePayment(linkId, outcome);
-  const result = await gateway.handleWebhook(payload);
+  let charged = payload.amount;
+  if (link.partialPayment && paidMinor && paidMinor > 0) {
+    const cap = Math.min(paidMinor, link.amountMinor);
+    charged = (cap / 100).toFixed(2);
+  }
+  const result = await gateway.handleWebhook({ ...payload, amount: charged });
 
   if (result.statusId !== 2) {
     replacePaymentLink(linkId, { status: result.statusId === 5 ? "rejected" : "failed" });
@@ -136,7 +188,9 @@ export async function simulatePayment(linkId: string, outcome: PaymentOutcome) {
   }
 
   const client = link.clientId ? getStore().clients.find(row => row.id === link.clientId) : undefined;
-  const invoice = link.invoiceId ? getStore().invoices.find(row => row.id === link.invoiceId) : undefined;
+  const invoice = (link.invoiceId ? getStore().invoices.find(row => row.id === link.invoiceId) : undefined)
+    || invoiceByReference(link.referenceId);
+  const invoiceId = invoice?.id || link.invoiceId;
   const txnId = "txn_link_" + link.id.replace(/-/g, "").slice(0, 10);
   appendTransaction({
     id: txnId,
@@ -149,7 +203,7 @@ export async function simulatePayment(linkId: string, outcome: PaymentOutcome) {
     status: "pending",
     amountMinor: result.amountMinor,
     branchId: invoice?.branchId || "br_01",
-    invoiceId: link.invoiceId
+    invoiceId
   });
   appendActivity({
     id: "act_" + txnId,
@@ -161,15 +215,19 @@ export async function simulatePayment(linkId: string, outcome: PaymentOutcome) {
   appendMatchProposal({
     id: "mp_" + txnId,
     transactionId: txnId,
-    invoiceId: link.invoiceId,
+    invoiceId,
     confidence: invoice ? 0.93 : 0.52,
     reason: invoice
-      ? "Payment link amount matches " + invoice.number + (client ? " for " + client.name : "") + "."
-      : "Payment link with no matching invoice. Log as a direct sale?",
+      ? (link.referenceId
+        ? "Payment link reference " + link.referenceId + " matches " + invoice.number + (client ? " for " + client.name : "") + "."
+        : "Payment link amount matches " + invoice.number + (client ? " for " + client.name : "") + ".")
+      : (link.referenceId
+        ? "Payment link reference " + link.referenceId + " has no matching invoice. Log as a direct sale?"
+        : "Payment link with no matching invoice. Log as a direct sale?"),
     status: "open"
   });
   replacePaymentLink(linkId, { status: "pending", txnId, uses: 1 });
-  return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS, reference: payload.visaId || txnId, amountMinor: result.amountMinor };
+  return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS, reference: payload.visaId || txnId || link.referenceId, amountMinor: result.amountMinor };
 }
 
 export function settlePayment(linkId: string): void {

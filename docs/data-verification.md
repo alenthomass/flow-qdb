@@ -6,27 +6,27 @@ All identity checks passed.
 
 - PASS Home defaults to 30 days: Last 30 days
 - PASS Home period toggle uses rolling labels: Day / Week / Month
-- PASS Matching status open equals Needs Your Attention: 9 of 12 · 3 open · attention 3
-- PASS Matching status zero copy: Everything is matched; 12 of 12; kpi 0 open
+- PASS Matching status open equals Needs Your Attention: 11 of 14 · 3 open · attention 3
+- PASS Matching status zero copy: Everything is matched; 14 of 14; kpi 0 open
 - PASS Matching status singular copy: 1 still needs a look; header 1 open; kpi 1 open
 - PASS Money formatting normalizes negative zero: zero QR 0; negative minor unit -QR 0.01
 - PASS Zero P&L expenses have no negative sign: day expenses QR 0, QR 0, QR 0, QR 0
-- PASS Reports independent of Home day: Last 30 days; revenue QR 46,510.00
+- PASS Reports independent of Home day: Last 30 days; revenue QR 56,010.00
 - PASS day chart auto-scales with 10% padding and includes zero: domain -QR 0.01 to QR 0.01
 - PASS day chart shows the full balance range: all 2 points inside plot; minimum QR 0, maximum QR 0
-- PASS Reports independent of Home week: Last 30 days; revenue QR 46,510.00
+- PASS Reports independent of Home week: Last 30 days; revenue QR 56,010.00
 - PASS week chart auto-scales with 10% padding and includes zero: domain -QR 1,999.00 to QR 21,989.00
 - PASS week chart shows the full balance range: all 7 points inside plot; minimum QR 1,870.00, maximum QR 19,990.00
-- PASS Reports independent of Home month: Last 30 days; revenue QR 46,510.00
-- PASS month chart auto-scales with 10% padding and includes zero: domain -QR 8,850.50 to QR 15,215.50
-- PASS month chart shows the full balance range: all 30 points inside plot; minimum -QR 6,845.00, maximum QR 13,210.00
+- PASS Reports independent of Home month: Last 30 days; revenue QR 56,010.00
+- PASS month chart auto-scales with 10% padding and includes zero: domain -QR 9,365.00 to QR 25,555.00
+- PASS month chart shows the full balance range: all 30 points inside plot; minimum -QR 6,455.00, maximum QR 22,645.00
 - PASS Runtime assertion rejects Home/Reports drift: unclassified completed expense triggers an error
 - PASS Pending outflow excluded from realised money: pending refund excluded from Money Out and P&L
 - PASS day Money In vs completed inflow rows: QR 0 vs ledger QR 0
 - PASS day Money Out vs completed outflow rows: QR 0 vs ledger QR 0
 - PASS day Net equals Money In minus Money Out: QR 0 = QR 0 - QR 0
 - PASS day Money In/Out share of movement: 0% in · 0% out
-- PASS day Money In/Out vs prior equivalent window: In -100% · Out n/a
+- PASS day Money In/Out vs prior equivalent window: In n/a · Out n/a
 - PASS day chart last point equals Net: last QR 0, points 2
 - PASS day pending excluded from Money In: pending QR 0 sits outside Money In QR 0
 - PASS day refunds line sits under revenue: revenue QR 0, refunds QR 0, net QR 0
@@ -34,54 +34,54 @@ All identity checks passed.
 - PASS week Money Out vs completed outflow rows: QR 1,250.00 vs ledger QR 1,250.00
 - PASS week Net equals Money In minus Money Out: QR 19,990.00 = QR 21,240.00 - QR 1,250.00
 - PASS week Money In/Out share of movement: 94% in · 6% out
-- PASS week Money In/Out vs prior equivalent window: In +418% · Out -72%
+- PASS week Money In/Out vs prior equivalent window: In +56% · Out -72%
 - PASS week chart last point equals Net: last QR 19,990.00, points 7
 - PASS week chart includes every completed transaction on its day: 7 cumulative points checked, including refunds
 - PASS week pending excluded from Money In: pending QR 6,300.00 sits outside Money In QR 21,240.00
 - PASS week refunds line sits under revenue: revenue QR 21,240.00, refunds QR 0, net QR 19,990.00
 - PASS Month chart thins labels only: 30 data points; ticks 12 Aug, 17 Aug, 22 Aug, 27 Aug, 1 Sept, 6 Sept
-- PASS month Money In vs completed inflow rows: QR 46,510.00 vs ledger QR 46,510.00
+- PASS month Money In vs completed inflow rows: QR 56,010.00 vs ledger QR 56,010.00
 - PASS month Money Out vs completed outflow rows: QR 33,365.00 vs ledger QR 33,365.00
-- PASS month Net equals Money In minus Money Out: QR 13,145.00 = QR 46,510.00 - QR 33,365.00
-- PASS month Money In/Out share of movement: 58% in · 42% out
-- PASS month Money In/Out vs prior equivalent window: In +16% · Out -2%
-- PASS month chart last point equals Net: last QR 13,145.00, points 30
+- PASS month Net equals Money In minus Money Out: QR 22,645.00 = QR 56,010.00 - QR 33,365.00
+- PASS month Money In/Out share of movement: 63% in · 37% out
+- PASS month Money In/Out vs prior equivalent window: In +40% · Out -2%
+- PASS month chart last point equals Net: last QR 22,645.00, points 30
 - PASS month chart includes every completed transaction on its day: 30 cumulative points checked, including refunds
-- PASS month pending excluded from Money In: pending QR 6,300.00 sits outside Money In QR 46,510.00
-- PASS month refunds line sits under revenue: revenue QR 46,510.00, refunds QR 1,540.00, net QR 13,145.00
+- PASS month pending excluded from Money In: pending QR 6,300.00 sits outside Money In QR 56,010.00
+- PASS month refunds line sits under revenue: revenue QR 56,010.00, refunds QR 1,540.00, net QR 22,645.00
 - PASS Payroll net equals payroll transaction: QR 19,665.00 vs txn_09 QR 19,665.00
 - PASS Invoice status matches linked transactions: INV-0142 awaiting settlement linked txn_13/sale/pending; INV-0143 paid linked txn_05/sale/settled; INV-0144 paid linked txn_17/sale/settled; INV-0145 refunded linked txn_01/sale/settled, txn_02/refund/refunded; INV-0146 paid linked txn_14/sale/settled; INV-0147 overdue linked none; INV-0148 viewed linked none; INV-0149 paid linked txn_19/sale/settled; INV-0150 paid linked txn_20/sale/settled
 - PASS Outstanding equals unpaid invoice rows: QR 20,900.00 across 3 invoices
 - PASS Who owes me equals Outstanding: QR 20,900.00 across 3 invoices
 - PASS Zero ageing buckets use default colour: NOT DUE YET QR 5,400 var(--ink); 1–14 DAYS QR 15,500 var(--ink); 15–30 DAYS QR 0 var(--ink); OVER 30 DAYS QR 0 var(--ink)
-- PASS Unconfirmed invoice links excluded from matched: excluded txn_02, txn_13; 9 of 12 over 30 days
-- PASS matched + open equals total: 9 matched + 3 open = 12 (75%)
+- PASS Unconfirmed invoice links excluded from matched: excluded txn_02, txn_13; 11 of 14 over 30 days
+- PASS matched + open equals total: 11 matched + 3 open = 14 (79%)
 - PASS No VAT line for this merchant: vat rate 0, country QA
 
 Computed figures (month window, minor units stored, displayed as QR):
 - PASS All requested figures match: Home, Reports, matching, branches, invoices and plan usage
-- PASS Home Net equals Reports net profit (30 days): QR 13,145.00 = QR 13,145.00
-- 30-day P&L: Revenue 46,510; Refunds -1,540; Cost of sales -5,130; Salaries -19,665; Overheads -7,030; Net profit 13,145; margin 28%
-- matched + open = total: 9 + 3 = 12
-- Money In: QR 46,510.00
+- PASS Home Net equals Reports net profit (30 days): QR 22,645.00 = QR 22,645.00
+- 30-day P&L: Revenue 56,010; Refunds -1,540; Cost of sales -5,130; Salaries -19,665; Overheads -7,030; Net profit 22,645; margin 40%
+- matched + open = total: 11 + 3 = 14
+- Money In: QR 56,010.00
 - Money Out: QR 33,365.00
-- Net: QR 13,145.00
+- Net: QR 22,645.00
 - Pending settlement: QR 6,300.00 (txn_13)
-- Cash on hand: QR 98,145.00 = opening QR 85,000.00 + completed net QR 13,145.00
+- Cash on hand: QR 107,645.00 = opening QR 85,000.00 + completed net QR 22,645.00
 - Who owes me equals Outstanding: QR 20,900.00 across 3 invoices
 - Overdue: QR 9,200.00
 - Total invoiced: QR 43,300.00 (9)
 - PASS All Invoices row count equals Total Invoiced count: 9 non-draft rows · 9 invoiced · list 9
 - PASS Invoices hub badge equals Outstanding count: 3 unpaid vs Outstanding 3
 - Hub All Invoices badge equals All Invoices unpaid / Outstanding: 3 unpaid = 3 unpaid
-- PASS Bank Activity equals cash on hand: QR 98,145.00 = opening QR 85,000.00 + QR 13,145.00
-- Bank Activity is cash on hand: opening QR 85,000.00 on bank_01 as of offset -30 + signed completed transactions with dayOffset > -30 (QR 13,145.00) = QR 98,145.00
-- Verified Stage B clean-seed baseline: cash on hand = opening 85,000 + inflows 46,510 - outflows 33,365 = 98,145, pending 6,300 excluded.
+- PASS Bank Activity equals cash on hand: QR 107,645.00 = opening QR 85,000.00 + QR 22,645.00
+- Bank Activity is cash on hand: opening QR 85,000.00 on bank_01 as of offset -30 + signed completed transactions with dayOffset > -30 (QR 22,645.00) = QR 107,645.00
+- Verified Stage B clean-seed baseline: cash on hand = opening 85,000 + inflows 56,010 - outflows 33,365 = 107,645, pending 6,300 excluded.
 - The previously reported QR 96,965 was measured against a dirty store after saving a scanned bill (Money Out QR 34,545), not the clean seed.
-- PASS Bank Activity ignores a stale display snapshot: QR 98,145.00 · Cash on hand
-- PASS Pending cash movement is excluded: QR 98,145.00
-- PASS Completed refunded outflow reduces live cash: QR 96,965.00
-- PASS Matched automatically list equals getMatchRate().matched: 9 listed · 9 matched
+- PASS Bank Activity ignores a stale display snapshot: QR 107,645.00 · Cash on hand
+- PASS Pending cash movement is excluded: QR 107,645.00
+- PASS Completed refunded outflow reduces live cash: QR 106,465.00
+- PASS Matched automatically list equals getMatchRate().matched: 11 listed · 11 matched
 - PASS Reminders list is sent, viewed, overdue or awaiting settlement: 3 remindable · INV-0142, INV-0147, INV-0148
 - PASS INV-0147 timeline dates follow invoice offsets: created 21 Aug 2026 · sent 21 Aug 2026 · viewed 25 Aug 2026
 - PASS Invoice detail timeline binds derived dates: 21 Aug 2026 / 21 Aug 2026 / 25 Aug 2026
@@ -96,8 +96,8 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Seed payroll is already posted for the payslip period: August 2026
 - PASS Post to Transactions is labelled already posted for the seed period: Already posted for August 2026
 - PASS Posting the seed period does not append another salaries row: August 2026
-- Plan usage: 40 of 5000
-- Branches: Doha inflow QR 28,310.00 (61%); Al Wakrah inflow QR 18,200.00 (39%)
+- Plan usage: 42 of 5000
+- Branches: Doha inflow QR 32,610.00 (58%); Al Wakrah inflow QR 23,400.00 (42%)
 - PASS Seeded payment links match the four paid counterparties: Noor Interiors, Mohammed Rashid, Fatima Al-Kuwari, Msheireb Boutiques
 - PASS Collected via links is QR 6,540 across 4 payments: QR 6,540.00 · times paid 4
 - PASS Page settings slug is derived, not a leftover default: empty slug · Fleet Deposit → fleet-deposit
@@ -106,60 +106,61 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Extraction returns vendor, date, total, tax, lines and tag: Barzan Water / Al Maha Stationery
 - PASS Scan accepts an image or PDF: file input accept image/*,application/pdf
 - PASS Extraction delay is 1.5-2.5s: 1800ms
-- PASS Scan shows extraction in progress: 1705ms
+- PASS Scan shows extraction in progress: 2041ms
 - PASS Extracted fields are correctable with confidence: Barzan Water tax QR 0 · vendor 96%
 - PASS Scan save recomputes Money Out: Money Out QR 34,545 (was QR 33,365.00)
-- PASS Scan save drops Reports net profit: net profit QR 11,965 (was QR 13,145.00)
+- PASS Scan save drops Reports net profit: net profit QR 21,465 (was QR 22,645.00)
 - PASS Scanned bill sorts to top of Recent Activity: Barzan Water offset 0
-- PASS Tally after Barzan scan is 20 settled rows: 20 items (21 would include pending txn_13)
+- PASS Tally after Barzan scan is 22 settled rows: 22 items (23 would include pending txn_13)
 - PASS Second sample bill saves through selectors: Money Out QR 33,705.00 · Al Maha Stationery
 - PASS Payment link copies to clipboard: submitModal writes the pay URL
-- PASS Payment link URL stays on Flow, not SkipCash test: /pay/4e61ec21-8b47-4d2b-ae2b-f480ee343c9b
+- PASS Payment link URL stays on Flow, not SkipCash test: /pay/pl_f6b9518134
 - PASS Copied payment links open Flow checkout: React /pay handles payment links
-- PASS Spine create leaves Money In unchanged: Money In QR 46,510.00
-- PASS Home Net equals Reports after creating a link: QR 13,145.00
+- PASS Spine create leaves Money In unchanged: Money In QR 56,010.00
+- PASS Home Net equals Reports after creating a link: QR 22,645.00
 - PASS Who owes me equals Outstanding after creating a link: QR 20,900.00 across 3
-- PASS Spine success appends a pending ledger row: txn_link_4e61ec218b pending
-- PASS Pending payment is excluded from Money In: Money In QR 46,510.00; pending QR 11,700.00
+- PASS Spine success appends a pending ledger row: txn_link_pl_f6b9518 pending
+- PASS Pending payment is excluded from Money In: Money In QR 56,010.00; pending QR 11,700.00
 - PASS Linked invoice awaits settlement while pending: awaiting settlement
 - PASS Needs Your Attention includes the new proposal: 4 open
-- PASS matched + open after pending payment: 9 + 4 = 13
+- PASS matched + open after pending payment: 11 + 4 = 15
 - PASS Who owes me equals Outstanding while payment is pending: QR 20,900.00
-- PASS Home Net equals Reports while payment is pending: QR 13,145.00
+- PASS Home Net equals Reports while payment is pending: QR 22,645.00
 - PASS Pending payment is at the top of Recent Activity: Lusail Hospitality Pending
-- PASS Spine settle increases Money In by the bill amount: Money In QR 51,910.00 (was QR 46,510.00)
-- PASS Spine settle lifts Home Net and Reports net profit: Net QR 18,545.00
+- PASS Spine settle increases Money In by the bill amount: Money In QR 61,410.00 (was QR 56,010.00)
+- PASS Spine settle lifts Home Net and Reports net profit: Net QR 28,045.00
 - PASS Invoice is paid after settlement: paid
 - PASS Outstanding drops by the paid invoice: QR 15,500.00 across 2
 - PASS Who owes me equals Outstanding after settlement: QR 15,500.00
 - PASS Settled payment stays at the top of Recent Activity: Lusail Hospitality Settled
-- PASS Confirming the new match updates the match rate: 10 of 13 · 3 open
-- PASS Home Net equals Reports after confirm: QR 18,545.00
+- PASS Confirming the new match updates the match rate: 12 of 15 · 3 open
+- PASS Home Net equals Reports after confirm: QR 28,045.00
 - PASS Simulate decline marks the link rejected without a ledger row: rejected
 - PASS Simulate timeout marks the link failed without a ledger row: failed
-- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_d5ddc2d054
-- PASS simulatePayment still works after gateway reset: txn_link_95504e860c
+- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_pl_8d34802
+- PASS Reference ID matches an outstanding invoice for reconciliation: inv_0144
+- PASS simulatePayment still works after gateway reset: txn_link_pl_4c06401
 - PASS Tally export uses ENVELOPE / HEADER / BODY: envelope present
-- PASS Tally export is one voucher per settled transaction in the last 30 days: 19 vouchers; pending txn_13 omitted
+- PASS Tally export is one voucher per settled transaction in the last 30 days: 21 vouchers; pending txn_13 omitted
 - PASS Tally vouchers tag the cost centre: COSTCENTREALLOCATIONS.LIST NAME = transaction tag
 - PASS Tally amounts are major units: txn_01 1540.00
 - PASS Tally filename uses from and to stamps: flow-tally-export-20260812-20260910.xml
 - PASS Tally range is editable: 5 vouchers from 4 Sept 2026 to 10 Sept 2026
 - PASS Tally export is recorded in history: 1 tally row(s)
-- PASS Zoho sync is labelled simulated and recorded: Zoho Books (simulated) · 19 items
+- PASS Zoho sync is labelled simulated and recorded: Zoho Books (simulated) · 21 items
 - PASS From and To inputs are bound: periodFrom / periodTo onChange
 - PASS Export XML downloads a file: runTallyExport writes XML
 - PASS Tally export history appears in the UI: 2 history row(s)
-- PASS Zoho sync success is visible: Last push simulated · 19 items · 10 Sept 2026
+- PASS Zoho sync success is visible: Last push simulated · 21 items · 10 Sept 2026
 - PASS Hosted checkout publishes a shareable /pay/ slug: React route + UI URL
 - PASS Public payment page matches the builder without edit chrome: customer checkout chrome
 - PASS Public pay page validates email and shows a receipt: email + success card
 - PASS Published checkout stores product name, QAR price and slug: eid-hamper QR 250.00
-- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_c740f5de4e
-- PASS Hosted checkout pending is excluded from Money In: QR 46,510.00
-- PASS Hosted checkout settle lifts Money In by the page price: Money In QR 46,760.00
-- PASS Home Net equals Reports after hosted checkout: QR 13,395.00
-- PASS matched + open after hosted checkout: 9 + 4 = 13
+- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_6410f9184b
+- PASS Hosted checkout pending is excluded from Money In: QR 56,010.00
+- PASS Hosted checkout settle lifts Money In by the page price: Money In QR 56,260.00
+- PASS Home Net equals Reports after hosted checkout: QR 22,895.00
+- PASS matched + open after hosted checkout: 11 + 4 = 15
 - PASS Publish derives slug from the title: fleet-deposit
 - PASS Duplicate title gets a uniqueness suffix: fleet-deposit-2
 - PASS Publish with no amount names the missing field: Amount is required
@@ -167,35 +168,35 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Payment link deactivate updates status: Deactivated
 - PASS Payment links expose expiry, uses and copy URL: 17 Sept 2026 · uses 0
 - PASS Subscription plan creates a customer and upcoming charge: 1 upcoming · QR 400.00
-- PASS Simulated billing appends a pending ledger row: txn_sub_799b0220ef
-- PASS Simulated billing settle lifts Money In: QR 46,910.00
+- PASS Simulated billing appends a pending ledger row: txn_sub_ad2f942360
+- PASS Simulated billing settle lifts Money In: QR 56,410.00
 - PASS Cancel stops further upcoming charges: 0 upcoming
 - PASS Smart Checkout lives on Get Paid overview: overview toggle card
 - PASS Smart Checkout on shows labelled sample analytics: Sample analytics. Checkout drop-off is not stored for this merchant.
 - PASS Shopify starts disconnected: disconnected
 - PASS Connected Shopify tags the new sample order: Shopify sample order #1042
-- PASS Shopify sample order lifts Money In: QR 46,695.00
-- PASS matched + open after Shopify sample: 10 + 3 = 13
-- PASS Seed Shopify rows were not rewritten: 6 seed shopify rows
-- PASS Sample bank connect is labelled and does not change cash: QR 98,145.00
+- PASS Shopify sample order lifts Money In: QR 56,195.00
+- PASS matched + open after Shopify sample: 12 + 3 = 15
+- PASS Seed Shopify rows were not rewritten: 8 seed shopify rows
+- PASS Sample bank connect is labelled and does not change cash: QR 107,645.00
 - PASS Bank onboarding is wired in the UI: onboarding steps
 - PASS Phase 1 invariants hold on the seed: Home Net / Outstanding / match / payroll / cash / invoice status
 - PASS applyStore copies team and employees from the ledger: 4 members · 3 employees
 - PASS Recurring invoice next three offsets: 0, 30, 60
 - PASS Sending a recurring invoice appends an invoice: INV-0151 · sentCount 1
-- PASS Recurring Start schedule writes the store: rec_mtvectiq · 0, 30, 60
+- PASS Recurring Start schedule writes the store: rec_mtvgjpzv · 0, 30, 60
 - PASS Recurring UI shows the next three sends: 10 Sept 2026 / 10 Oct 2026 / 9 Nov 2026
-- PASS Tag rename updates ledger rows: 24 rows
-- PASS Tag list counts come from the ledger: 24 items
-- PASS Removing a used tag fails loudly: Can't remove Sales renamed: 24 items still use it
+- PASS Tag rename updates ledger rows: 26 rows
+- PASS Tag list counts come from the ledger: 26 items
+- PASS Removing a used tag fails loudly: Can't remove Sales renamed: 26 items still use it
 - PASS Permission write persists: view
 - PASS Approval limit write persists: QR 5,000.00
-- PASS Approval request waits on the owner: apv_mtvecuaz
+- PASS Approval request waits on the owner: apv_mtvgjqrf
 - PASS Approval resolve writes the store: approved
 - PASS Recurring / tags / approvals are bound in the view: start + rename + limits
-- PASS Reset demo data asks for confirm: modal open, Money In still QR 51,910.00
-- PASS Reset restores Money In: In QR 46,510.00 · Out QR 33,365.00 · Net QR 13,145.00
-- PASS Reset restores match identity: 9 of 12 · 3 open
+- PASS Reset demo data asks for confirm: modal open, Money In still QR 61,410.00
+- PASS Reset restores Money In: In QR 56,010.00 · Out QR 33,365.00 · Net QR 22,645.00
+- PASS Reset restores match identity: 11 of 14 · 3 open
 - PASS Reset restores seeded links and clears created pages: 4 seeded links · QR 6,540 · pages/plans empty
 - PASS Reset disconnects Shopify: disconnected
 - PASS Reset keeps the Tally date range: 3 Sept 2026 → 9 Sept 2026

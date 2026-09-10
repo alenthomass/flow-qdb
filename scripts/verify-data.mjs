@@ -300,8 +300,8 @@ for (const period of periods) {
     .reduce((sum, txn) => sum + txn.amountMinor, 0);
   const inPrev = getMoneyInPrevious(period);
   const outPrev = getMoneyOutPrevious(period);
-  const inTrend = inPrev === 0 ? null : Math.round(((moneyIn - inPrev) / inPrev) * 100);
-  const outTrend = outPrev === 0 ? null : Math.round(((moneyOut - outPrev) / outPrev) * 100);
+  const inTrend = inPrev === 0 || moneyIn === 0 ? null : Math.round(((moneyIn - inPrev) / inPrev) * 100);
+  const outTrend = outPrev === 0 || moneyOut === 0 ? null : Math.round(((moneyOut - outPrev) / outPrev) * 100);
   const block = data.periods[period];
   check(
     period + " Money In/Out vs prior equivalent window",
@@ -422,12 +422,12 @@ lines.push("");
 lines.push("Computed figures (month window, minor units stored, displayed as QR):");
 const monthPnl = getProfitAndLoss("month");
 const expected = {
-  revenue: 4651000,
+  revenue: 5601000,
   refunds: 154000,
   costOfSales: 513000,
   salaries: 1966500,
   overheads: 703000,
-  netProfit: 1314500
+  netProfit: 2264500
 };
 const qr0 = minor => Math.round(minor / 100).toLocaleString("en-US");
 const grouping = [
@@ -460,13 +460,13 @@ const observed = {
   inv0149: getInvoiceStatus("inv_0149"), inv0150: getInvoiceStatus("inv_0150")
 };
 Object.assign(expected, {
-  moneyIn: 4651000, moneyOut: 3336500, net: 1314500, pending: 630000, marginPercent: 28,
-  matched: 9, totalMatches: 12, matchPercent: 75, openMatches: 3,
+  moneyIn: 5601000, moneyOut: 3336500, net: 2264500, pending: 630000, marginPercent: 40,
+  matched: 11, totalMatches: 14, matchPercent: 79, openMatches: 3,
   invoiced: 4330000, invoiceCount: 9, outstanding: 2090000, outstandingCount: 3, overdue: 920000,
-  cashOnHand: 9814500, opening: 8500000,
+  cashOnHand: 10764500, opening: 8500000,
   spendTotal: 3182500, spendRefunds: 154000, spendHasSales: false, spendHasRefundVendor: false,
   runwayProfitable: true, accountantName: "Priya Menon", ownerOnTeam: true,
-  transactions: 40, planLimit: 5000, doha: 2831000, wakrah: 1820000, dohaShare: 61, wakrahShare: 39,
+  transactions: 42, planLimit: 5000, doha: 3261000, wakrah: 2340000, dohaShare: 58, wakrahShare: 42,
   inv0149: "paid", inv0150: "paid"
 });
 const mismatch = Object.keys(expected).filter(key => observed[key] !== expected[key]);
@@ -521,7 +521,7 @@ check(
   dashboardState().bank.activity + " = opening " + money(getOpeningBalance()) + " + " + money(bankMovement)
 );
 lines.push("- Bank Activity is cash on hand: opening " + money(getOpeningBalance()) + " on bank_01 as of offset " + asOf + " + signed completed transactions with dayOffset > " + asOf + " (" + money(bankMovement) + ") = " + money(getCashOnHand()));
-lines.push("- Verified Stage B clean-seed baseline: cash on hand = opening 85,000 + inflows 46,510 - outflows 33,365 = 98,145, pending 6,300 excluded.");
+lines.push("- Verified Stage B clean-seed baseline: cash on hand = opening 85,000 + inflows 56,010 - outflows 33,365 = 107,645, pending 6,300 excluded.");
 lines.push("- The previously reported QR 96,965 was measured against a dirty store after saving a scanned bill (Money Out QR 34,545), not the clean seed.");
 root.setState({ bank: { activity: "-QR 31,475.00", activityCaption: "Settled bank rows only" } });
 check("Bank Activity ignores a stale display snapshot",
@@ -767,17 +767,17 @@ check("Scan save recomputes Money Out",
   monthAfter.moneyOut === 34545 && getMoneyOut("month") === 3454500,
   "Money Out " + monthAfter.moneyOutText + " (was QR 33,365.00)");
 check("Scan save drops Reports net profit",
-  monthAfter.pnl.netProfit === 11965 && getProfitAndLoss("month").netProfit === 1196500,
-  "net profit " + monthAfter.pnl.formatted.netProfit + " (was QR 13,145.00)");
+  monthAfter.pnl.netProfit === 21465 && getProfitAndLoss("month").netProfit === 2146500,
+  "net profit " + monthAfter.pnl.formatted.netProfit + " (was QR 22,645.00)");
 check("Scanned bill sorts to top of Recent Activity",
   recentTop && recentTop.party === "Barzan Water" && recentTop.offset === SAMPLE_BILL.dayOffset,
   recentTop ? recentTop.party + " offset " + recentTop.offset : "missing");
 const tallyAfterBarzan = buildTallyExport();
-check("Tally after Barzan scan is 20 settled rows",
-  tallyAfterBarzan.items === 20 &&
-    transactionsInTallyRange(-29, 0).length === 20 &&
+check("Tally after Barzan scan is 22 settled rows",
+  tallyAfterBarzan.items === 22 &&
+    transactionsInTallyRange(-29, 0).length === 22 &&
     !transactionsInTallyRange(-29, 0).some(txn => txn.id === "txn_13"),
-  tallyAfterBarzan.items + " items (21 would include pending txn_13)");
+  tallyAfterBarzan.items + " items (23 would include pending txn_13)");
 resetStore();
 root.applyStore({ modal: "scan" });
 pendingExtract = null;
@@ -786,7 +786,7 @@ pendingExtract.fn();
 root.submitModal();
 check("Second sample bill saves through selectors",
   getMoneyOut("month") === 3336500 + 34000 &&
-    getProfitAndLoss("month").netProfit === 1314500 - 34000 &&
+    getProfitAndLoss("month").netProfit === 2264500 - 34000 &&
     live().transactions.some(txn => txn.counterparty === "Al Maha Stationery" && txn.amountMinor === 34000 && txn.tag === "Supplies" && txn.dayOffset === -1),
   "Money Out " + money(getMoneyOut("month")) + " · Al Maha Stationery");
 check("Payment link copies to clipboard",
@@ -915,6 +915,17 @@ check("Simulate partial posts half the amount and a match proposal",
 resetStore();
 resetGateway();
 
+const refLink = await createPaymentLink({
+  amountMinor: 482000,
+  description: "Reference match",
+  referenceId: "INV-0144"
+});
+check("Reference ID matches an outstanding invoice for reconciliation",
+  refLink.invoiceId === "inv_0144" && refLink.referenceId === "INV-0144",
+  refLink.invoiceId || "missing");
+resetStore();
+resetGateway();
+
 const persistLink = await createPaymentLink({ amountMinor: 15000, description: "Gateway persist" });
 resetGateway();
 const persistSim = await simulatePayment(persistLink.id, "success");
@@ -945,7 +956,7 @@ check("Tally export uses ENVELOPE / HEADER / BODY",
     tallyXml.includes("<TALLYREQUEST>Import</TALLYREQUEST>") && tallyXml.includes("<ID>Vouchers</ID>"),
   "envelope present");
 check("Tally export is one voucher per settled transaction in the last 30 days",
-  tallyFile.items === 19 && voucherCount === 19 && tallyRows.length === 19 && !pendingInXml,
+  tallyFile.items === 21 && voucherCount === 21 && tallyRows.length === 21 && !pendingInXml,
   voucherCount + " vouchers; pending txn_13 " + (pendingInXml ? "included" : "omitted"));
 check("Tally vouchers tag the cost centre",
   costCentreOk,
@@ -970,7 +981,7 @@ check("Tally export is recorded in history",
   history.filter(row => row.kind === "tally").length + " tally row(s)");
 check("Zoho sync is labelled simulated and recorded",
   zoho.simulated && zoho.status === "Simulated" && zoho.target.includes("simulated") &&
-    history.some(row => row.id === zoho.id && row.kind === "zoho" && row.items === 19),
+    history.some(row => row.id === zoho.id && row.kind === "zoho" && row.items === 21),
   zoho.target + " · " + zoho.items + " items");
 check("From and To inputs are bound",
   /onChange=\{v\.F\.periodFrom\}/.test(html) && /onChange=\{v\.F\.periodTo\}/.test(html),
@@ -1000,7 +1011,7 @@ check("Hosted checkout publishes a shareable /pay/ slug",
     /\/pay\//.test(html),
   "React route + UI URL");
 check("Public payment page matches the builder without edit chrome",
-  /Payment details/.test(payPage) &&
+  /Payment Details/.test(payPage) &&
     /Share this on/.test(payPage) &&
     /Secured by SkipCash · SANDBOX/.test(payPage) &&
     /Contact us/.test(payPage) &&
@@ -1299,10 +1310,10 @@ root.submitModal();
 const rateReset = getMatchRate();
 const openReset = getOpenMatches();
 check("Reset restores Money In",
-  getMoneyIn("month") === 4651000 && getMoneyOut("month") === 3336500 && getNet("month") === 1314500,
+  getMoneyIn("month") === 5601000 && getMoneyOut("month") === 3336500 && getNet("month") === 2264500,
   "In " + money(getMoneyIn("month")) + " · Out " + money(getMoneyOut("month")) + " · Net " + money(getNet("month")));
 check("Reset restores match identity",
-  rateReset.matched === 9 && rateReset.total === 12 && openReset.length === 3 &&
+  rateReset.matched === 11 && rateReset.total === 14 && openReset.length === 3 &&
     rateReset.matched + openReset.length === rateReset.total,
   rateReset.matched + " of " + rateReset.total + " · " + openReset.length + " open");
 check("Reset restores seeded links and clears created pages",
