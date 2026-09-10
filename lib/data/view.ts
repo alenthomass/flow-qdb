@@ -13,7 +13,9 @@ import {
   getMatchedTransactions,
   getMatchRate,
   getMoneyIn,
+  getMoneyInPrevious,
   getMoneyOut,
+  getMoneyOutPrevious,
   getNet,
   getNetSeries,
   getOpenMatches,
@@ -31,7 +33,8 @@ import {
   getTotalInvoiced,
   periodLabel,
   getVatRate,
-  signedAmount
+  signedAmount,
+  assertPhase1Invariants
 } from "./selectors";
 import type { CurrencyCode } from "./types";
 
@@ -173,18 +176,42 @@ function ageingView() {
   };
 }
 
+function trendPct(current: number, previous: number): number | null {
+  if (previous === 0 || current === 0) return null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
+function trendShare(pct: number | null): string {
+  if (pct == null) return "";
+  return (pct > 0 ? "+" : "") + pct + "%";
+}
+
 function periodBlock(period: Period) {
   const series = getNetSeries(period);
   const scale = chartScale(series.values, currency);
   const pnl = getProfitAndLoss(period);
+  const moneyInMinor = getMoneyIn(period);
+  const moneyOutMinor = getMoneyOut(period);
+  const moneyInTrendPct = trendPct(moneyInMinor, getMoneyInPrevious(period));
+  const moneyOutTrendPct = trendPct(moneyOutMinor, getMoneyOutPrevious(period));
+  const netMinor = getNet(period);
+  const netPreviousMinor = getMoneyInPrevious(period) - getMoneyOutPrevious(period);
+  const netTrendPct = trendPct(netMinor, netPreviousMinor);
+  const netTrendAgainst = period === "day" ? "yesterday" : period === "week" ? "last week" : "last month";
+  const netTrendText = netTrendPct == null ? "" : (netTrendPct > 0 ? "+" : "") + netTrendPct + "% vs " + netTrendAgainst;
   return {
-    moneyIn: major(getMoneyIn(period)),
-    moneyOut: major(getMoneyOut(period)),
+    moneyIn: major(moneyInMinor),
+    moneyOut: major(moneyOutMinor),
     pending: major(getPendingSettlement(period)),
     net: major(getNet(period)),
-    moneyInText: formatMoney(getMoneyIn(period), currency),
-    moneyOutText: formatMoney(getMoneyOut(period), currency),
-    pendingText: formatMoney(getPendingSettlement(period), currency),
+    moneyInText: formatMoney(moneyInMinor, currency, { trimWhole: true }),
+    moneyOutText: formatMoney(moneyOutMinor, currency, { trimWhole: true }),
+    moneyInShare: trendShare(moneyInTrendPct),
+    moneyOutShare: trendShare(moneyOutTrendPct),
+    moneyInTrendPct,
+    moneyOutTrendPct,
+    netTrendText,
+    pendingText: formatMoney(getPendingSettlement(period), currency, { trimWhole: true }),
     netText: formatMoney(getNet(period), currency),
     label: periodLabel(period),
     series: {
@@ -231,6 +258,7 @@ function periodBlock(period: Period) {
 }
 
 export function dashboardState() {
+  assertPhase1Invariants();
   const owner = seed.merchant.ownerName;
   const open = getOpenMatches();
   const matchRate = getMatchRate();
@@ -520,14 +548,14 @@ export function dashboardState() {
         total: major(rows.reduce((sum, invoice) => sum + invoice.amountMinor, 0))
       };
     }),
-    team: seed.teamMembers.map(member => ({
+    team: db().teamMembers.map(member => ({
       id: member.id,
       name: member.name,
       email: member.email,
       role: member.role,
       last: member.lastSeenOffset === 0 ? "Today" : formatDate(member.lastSeenOffset)
     })),
-    employees: seed.employees.map(employee => ({
+    employees: db().employees.map(employee => ({
       id: employee.id,
       name: employee.name,
       role: employee.role,
@@ -598,7 +626,35 @@ export function dashboardState() {
       payrollDeductions: major(payrollDed),
       payrollCount: seed.employees.length,
       deductionRate: seed.payrollRuns[0]?.deductionRate ?? 0
-    }
+    },
+    recurringInvoices: db().recurringInvoices.map(row => {
+      const client = clientName(row.clientId);
+      return {
+        id: row.id,
+        clientId: row.clientId,
+        client,
+        amount: major(row.amountMinor),
+        interval: row.interval,
+        nextOffset: row.nextOffset,
+        endsAfter: row.endsAfter,
+        sentCount: row.sentCount,
+        status: titleStatus(row.status),
+        running: row.status === "active"
+      };
+    }),
+    rolePermissions: db().rolePermissions,
+    approvalLimits: db().approvalLimits,
+    approvalRequests: db().approvalRequests.filter(row => row.status === "open").map(row => {
+      const member = db().teamMembers.find(item => item.id === row.memberId);
+      return {
+        id: row.id,
+        amt: major(row.amountMinor),
+        what: row.what,
+        who: member?.name || "",
+        when: formatDate(row.dayOffset)
+      };
+    }),
+    ledgerTags: [...new Set(db().transactions.map(txn => txn.tag))].sort()
   };
 }
 

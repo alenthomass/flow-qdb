@@ -40,7 +40,29 @@ const transactions: Transaction[] = [
   { id: "txn_17", dayOffset: -1, counterparty: "Al Meera Trading", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 482000, branchId: "br_01", invoiceId: "inv_0144" },
   { id: "txn_18", dayOffset: -19, counterparty: "Online orders (9)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 428000, branchId: "br_01", invoiceId: null },
   { id: "txn_19", dayOffset: -11, counterparty: "West Bay Catering", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 312000, branchId: "br_01", invoiceId: "inv_0149" },
-  { id: "txn_20", dayOffset: -6, counterparty: "Msheireb Boutiques", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 187000, branchId: "br_02", invoiceId: "inv_0150" }
+  { id: "txn_20", dayOffset: -6, counterparty: "Msheireb Boutiques", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 187000, branchId: "br_02", invoiceId: "inv_0150" },
+  { id: "txn_41", dayOffset: -13, counterparty: "Online orders (5)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 430000, branchId: "br_01", invoiceId: null },
+  { id: "txn_42", dayOffset: -8, counterparty: "Online orders (7)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 520000, branchId: "br_02", invoiceId: null },
+  { id: "txn_21", dayOffset: -59, counterparty: "Pearl Interiors", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 138000, branchId: "br_01", invoiceId: null },
+  { id: "txn_22", dayOffset: -58, counterparty: "Pearl Interiors refund", source: "link", direction: "out", type: "refund", tag: "Sales", status: "refunded", amountMinor: 138000, branchId: "br_01", invoiceId: null },
+  { id: "txn_23", dayOffset: -57, counterparty: "Ahli Bank fees", source: "bank", direction: "out", type: "expense", tag: "Fees", status: "settled", amountMinor: 235000, branchId: "br_01", invoiceId: null },
+  { id: "txn_24", dayOffset: -56, counterparty: "Kahramaa", source: "bank", direction: "out", type: "expense", tag: "Utilities", status: "settled", amountMinor: 132000, branchId: "br_01", invoiceId: null },
+  { id: "txn_25", dayOffset: -54, counterparty: "Katara Events", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 760000, branchId: "br_02", invoiceId: null },
+  { id: "txn_26", dayOffset: -52, counterparty: "Karak & Co", source: "cash", direction: "out", type: "expense", tag: "Supplies", status: "settled", amountMinor: 72000, branchId: "br_02", invoiceId: null },
+  { id: "txn_27", dayOffset: -50, counterparty: "Meta Ads", source: "bank", direction: "out", type: "expense", tag: "Marketing", status: "settled", amountMinor: 260000, branchId: "br_01", invoiceId: null },
+  { id: "txn_28", dayOffset: -48, counterparty: "Online orders (5)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 580000, branchId: "br_02", invoiceId: null },
+  { id: "txn_29", dayOffset: -45, counterparty: "Monthly payroll", source: "bank", direction: "out", type: "payroll", tag: "Salaries", status: "settled", amountMinor: 1966500, branchId: "br_01", invoiceId: null },
+  { id: "txn_30", dayOffset: -42, counterparty: "Nasser Al-Emadi", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 85000, branchId: "br_02", invoiceId: null },
+  { id: "txn_31", dayOffset: -39, counterparty: "Souq Waqif Supplies", source: "cash", direction: "out", type: "expense", tag: "Supplies", status: "settled", amountMinor: 95000, branchId: "br_02", invoiceId: null },
+  { id: "txn_32", dayOffset: -37, counterparty: "Gulf Warehousing", source: "bank", direction: "out", type: "expense", tag: "Rent", status: "settled", amountMinor: 360000, branchId: "br_02", invoiceId: null },
+  { id: "txn_33", dayOffset: -35, counterparty: "The Pearl Collective", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "pending", amountMinor: 540000, branchId: "br_01", invoiceId: null },
+  { id: "txn_34", dayOffset: -34, counterparty: "Layla Al-Suwaidi", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 190000, branchId: "br_01", invoiceId: null },
+  { id: "txn_35", dayOffset: -33, counterparty: "Online orders (11)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 1050000, branchId: "br_01", invoiceId: null },
+  { id: "txn_36", dayOffset: -32, counterparty: "Ooredoo Business", source: "bank", direction: "out", type: "expense", tag: "Utilities", status: "settled", amountMinor: 140000, branchId: "br_02", invoiceId: null },
+  { id: "txn_37", dayOffset: -31, counterparty: "Al Maha Trading", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 410000, branchId: "br_01", invoiceId: null },
+  { id: "txn_38", dayOffset: -49, counterparty: "Online orders (7)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 360000, branchId: "br_01", invoiceId: null },
+  { id: "txn_39", dayOffset: -41, counterparty: "West Bay Kitchen", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 270000, branchId: "br_01", invoiceId: null },
+  { id: "txn_40", dayOffset: -36, counterparty: "Msheireb Atelier", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 165000, branchId: "br_02", invoiceId: null }
 ];
 
 const invoiceClients = [
@@ -163,5 +185,9 @@ export const seed: Seed = {
     { id: "tm_02", employeeId: "emp_02", name: accountantName, email: emailFor(accountantName), role: "Staff", lastSeenOffset: -2 },
     { id: "tm_03", employeeId: "emp_03", name: "Samir Haddad", email: emailFor("Samir Haddad"), role: "Staff", lastSeenOffset: -3 }
   ],
-  activityLog
+  activityLog,
+  recurringInvoices: [],
+  approvalRequests: [],
+  rolePermissions: [],
+  approvalLimits: {}
 };

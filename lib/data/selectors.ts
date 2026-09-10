@@ -1,5 +1,5 @@
 import { dateFor } from "./seed";
-import { getStore } from "./store";
+import { getStore, setAfterPersist } from "./store";
 import type { Invoice, InvoiceStatus, MoneyTotal, Period, Transaction } from "./types";
 
 function db() {
@@ -17,6 +17,11 @@ function inPeriod(dayOffset: number, period: Period): boolean {
   return dayOffset <= 0 && dayOffset >= -(days - 1);
 }
 
+function inPreviousPeriod(dayOffset: number, period: Period): boolean {
+  const days = PERIOD_DAYS[period];
+  return dayOffset <= -days && dayOffset >= -(2 * days - 1);
+}
+
 function completedInPeriod(period: Period): Transaction[] {
   return db().transactions.filter(txn => txn.status !== "pending" && inPeriod(txn.dayOffset, period));
 }
@@ -31,6 +36,27 @@ export function getMoneyOut(period: Period): number {
   return db().transactions
     .filter(txn => txn.direction === "out" && txn.status !== "pending" && inPeriod(txn.dayOffset, period))
     .reduce((sum, txn) => sum + txn.amountMinor, 0);
+}
+
+export function getMoneyInPrevious(period: Period): number {
+  return db().transactions
+    .filter(txn => txn.direction === "in" && txn.status !== "pending" && inPreviousPeriod(txn.dayOffset, period))
+    .reduce((sum, txn) => sum + txn.amountMinor, 0);
+}
+
+export function getMoneyOutPrevious(period: Period): number {
+  return db().transactions
+    .filter(txn => txn.direction === "out" && txn.status !== "pending" && inPreviousPeriod(txn.dayOffset, period))
+    .reduce((sum, txn) => sum + txn.amountMinor, 0);
+}
+
+export function getMoneyShare(period: Period): { inPct: number; outPct: number } {
+  const moneyIn = getMoneyIn(period);
+  const moneyOut = getMoneyOut(period);
+  const total = moneyIn + moneyOut;
+  if (total <= 0) return { inPct: 0, outPct: 0 };
+  const inPct = Math.round((moneyIn / total) * 100);
+  return { inPct, outPct: 100 - inPct };
 }
 
 export function getPendingSettlement(period: Period): number {
@@ -264,7 +290,15 @@ export function getCashOnHand(): number {
   const movement = db().transactions
     .filter(txn => txn.status !== "pending" && txn.dayOffset > asOf)
     .reduce((sum, txn) => sum + signedAmount(txn), 0);
-  return getOpeningBalance() + movement;
+  const cashOnHand = getOpeningBalance() + movement;
+  const realised = db().transactions.filter(txn => txn.status !== "pending" && txn.dayOffset > asOf);
+  const inflows = realised.filter(txn => txn.direction === "in").reduce((sum, txn) => sum + txn.amountMinor, 0);
+  const outflows = realised.filter(txn => txn.direction === "out").reduce((sum, txn) => sum + txn.amountMinor, 0);
+  const expected = getOpeningBalance() + inflows - outflows;
+  if (!Number.isSafeInteger(cashOnHand) || cashOnHand !== expected) {
+    throw new Error("Cash on hand invariant failed: " + cashOnHand + " !== opening " + getOpeningBalance() + " + inflows " + inflows + " - outflows " + outflows);
+  }
+  return cashOnHand;
 }
 
 export function getRunway(period: Period) {
@@ -327,3 +361,37 @@ export function getCashForecast(period: Period) {
 export function invoiceById(invoiceId: string): Invoice | undefined {
   return db().invoices.find(row => row.id === invoiceId);
 }
+
+export function assertInvoiceStatuses(): void {
+  for (const invoice of db().invoices) {
+    const status = getInvoiceStatus(invoice.id);
+    const linked = db().transactions.filter(txn => txn.invoiceId === invoice.id);
+    if (linked.some(txn => txn.type === "refund") && status !== "refunded") {
+      throw new Error(invoice.number + " should be refunded");
+    }
+    const settledIn = linked.filter(txn => txn.direction === "in" && txn.status !== "pending").reduce((sum, txn) => sum + txn.amountMinor, 0);
+    if (settledIn >= invoice.amountMinor && !linked.some(txn => txn.type === "refund") && status !== "paid") {
+      throw new Error(invoice.number + " should be paid");
+    }
+    if (linked.some(txn => txn.status === "pending") && settledIn < invoice.amountMinor && status !== "awaiting settlement") {
+      throw new Error(invoice.number + " should be awaiting settlement");
+    }
+  }
+}
+
+export function assertPhase1Invariants(): void {
+  getNet("month");
+  getOutstanding();
+  getMatchRate();
+  getCashOnHand();
+  assertPayrollLink();
+  assertInvoiceStatuses();
+  const unpaid = getOutstanding();
+  const whoOwes = getOutstandingInvoices().reduce((sum, invoice) => sum + invoice.amountMinor, 0);
+  if (whoOwes !== unpaid.amountMinor || getOutstandingInvoices().length !== unpaid.count) {
+    throw new Error("Hub unpaid count does not equal Outstanding");
+  }
+}
+
+assertInvoiceStatuses();
+setAfterPersist(assertPhase1Invariants);

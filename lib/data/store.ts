@@ -1,6 +1,7 @@
 import { seed } from "./seed";
 import type {
   ActivityLog,
+  ApprovalRequest,
   BankAccount,
   CheckoutPage,
   Client,
@@ -8,6 +9,8 @@ import type {
   Invoice,
   MatchProposal,
   PaymentLink,
+  RecurringInvoice,
+  RolePermissionRow,
   Seed,
   ShopifyConnection,
   SmartCheckoutConfig,
@@ -19,13 +22,27 @@ import type {
 
 const STORAGE_KEY = "flow-live-v1";
 
+export const DEFAULT_ROLE_PERMISSIONS: RolePermissionRow[] = [
+  { area: "Dashboard", owner: "full", accountant: "full", staff: "full" },
+  { area: "Transactions", owner: "full", accountant: "full", staff: "view" },
+  { area: "Invoicing", owner: "full", accountant: "full", staff: "full" },
+  { area: "Payments & gateways", owner: "full", accountant: "view", staff: "none" },
+  { area: "Accounting sync", owner: "full", accountant: "full", staff: "none" },
+  { area: "Payroll", owner: "full", accountant: "view", staff: "none" },
+  { area: "Team & billing", owner: "full", accountant: "none", staff: "none" }
+];
+
 function cloneSeed(): Seed {
-  return structuredClone(seed);
+  const next = structuredClone(seed);
+  if (!next.rolePermissions.length) {
+    next.rolePermissions = DEFAULT_ROLE_PERMISSIONS.map(row => ({ ...row }));
+  }
+  return next;
 }
 
 function emptyExtras(): Pick<
   Seed,
-  "checkoutPages" | "subscriptionPlans" | "subscribers" | "upcomingCharges" | "shopify" | "smartCheckout"
+  "checkoutPages" | "subscriptionPlans" | "subscribers" | "upcomingCharges" | "shopify" | "smartCheckout" | "recurringInvoices" | "approvalRequests" | "rolePermissions" | "approvalLimits"
 > {
   return {
     checkoutPages: [],
@@ -33,7 +50,11 @@ function emptyExtras(): Pick<
     subscribers: [],
     upcomingCharges: [],
     shopify: { connected: false, shopDomain: "" },
-    smartCheckout: { on: false, walletDetect: true, retryOnDecline: true }
+    smartCheckout: { on: false, walletDetect: true, retryOnDecline: true },
+    recurringInvoices: [],
+    approvalRequests: [],
+    rolePermissions: DEFAULT_ROLE_PERMISSIONS.map(row => ({ ...row })),
+    approvalLimits: {}
   };
 }
 
@@ -51,19 +72,40 @@ function withDefaults(row: Seed): Seed {
     upcomingCharges: row.upcomingCharges || [],
     shopify: row.shopify || emptyExtras().shopify,
     smartCheckout: row.smartCheckout || emptyExtras().smartCheckout,
-    bankAccounts: row.bankAccounts || base.bankAccounts
+    bankAccounts: row.bankAccounts || base.bankAccounts,
+    recurringInvoices: row.recurringInvoices || [],
+    approvalRequests: row.approvalRequests || [],
+    rolePermissions: (row.rolePermissions && row.rolePermissions.length) ? row.rolePermissions : emptyExtras().rolePermissions,
+    approvalLimits: row.approvalLimits || {}
   };
 }
 
 let live: Seed = cloneSeed();
 
+let afterPersist: (() => void) | null = null;
+let persistAssertQueued = false;
+
+export function setAfterPersist(fn: (() => void) | null): void {
+  afterPersist = fn;
+}
+
 function persist(): void {
-  if (typeof localStorage === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(live));
-  } catch {
-    /* sandbox quota */
+  if (typeof localStorage !== "undefined") {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(live));
+    } catch {
+      /* sandbox quota */
+    }
   }
+  if (!afterPersist || persistAssertQueued) return;
+  persistAssertQueued = true;
+  const defer = typeof queueMicrotask === "function"
+    ? queueMicrotask
+    : (fn: () => void) => { Promise.resolve().then(fn); };
+  defer(() => {
+    persistAssertQueued = false;
+    if (afterPersist) afterPersist();
+  });
 }
 
 export function hydrateFromStorage(): Seed | null {
@@ -292,4 +334,50 @@ export function appendBankAccount(account: BankAccount): BankAccount {
   live.bankAccounts = [...live.bankAccounts, account];
   persist();
   return account;
+}
+
+export function appendRecurringInvoice(row: RecurringInvoice): RecurringInvoice {
+  live.recurringInvoices = [row, ...live.recurringInvoices];
+  persist();
+  return row;
+}
+
+export function replaceRecurringInvoice(id: string, patch: Partial<RecurringInvoice>): RecurringInvoice | undefined {
+  let next: RecurringInvoice | undefined;
+  live.recurringInvoices = live.recurringInvoices.map(row => {
+    if (row.id !== id) return row;
+    next = Object.assign({}, row, patch, { id: row.id });
+    return next;
+  });
+  persist();
+  return next;
+}
+
+export function replaceRolePermissions(rows: RolePermissionRow[]): RolePermissionRow[] {
+  live.rolePermissions = rows.map(row => ({ ...row }));
+  persist();
+  return live.rolePermissions;
+}
+
+export function replaceApprovalLimits(limits: Record<string, number | null>): Record<string, number | null> {
+  live.approvalLimits = { ...limits };
+  persist();
+  return live.approvalLimits;
+}
+
+export function appendApprovalRequest(row: ApprovalRequest): ApprovalRequest {
+  live.approvalRequests = [row, ...live.approvalRequests];
+  persist();
+  return row;
+}
+
+export function replaceApprovalRequest(id: string, patch: Partial<ApprovalRequest>): ApprovalRequest | undefined {
+  let next: ApprovalRequest | undefined;
+  live.approvalRequests = live.approvalRequests.map(row => {
+    if (row.id !== id) return row;
+    next = Object.assign({}, row, patch, { id: row.id });
+    return next;
+  });
+  persist();
+  return next;
 }

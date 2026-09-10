@@ -2,13 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
-    return {
-      beforeFiles: [
-        { source: "/", destination: "/flow.dc.html" },
-        { source: "/pay/:slug", destination: "/pay.html" },
-        { source: "/pay/:slug/receipt", destination: "/pay.html" }
-      ]
-    };
+    return { beforeFiles: [] };
+  },
+  async redirects() {
+    return [{ source: "/pay.html", destination: "/pay", permanent: false }];
   }
 };
 

@@ -1,0 +1,6 @@
+.tmp-verify
+.DS_Store
+**/.DS_Store
+tsconfig.tsbuildinfo
+node_modules
+.next

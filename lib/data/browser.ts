@@ -1,7 +1,8 @@
-import { hydrateFromStorage } from "./store";
+import { hydrateStore as hydrateFromStorage } from "./hydrate";
 import { dashboardState } from "./view";
 
-export { appendTransaction, hydrateFromStorage, persistStore, resetStore } from "./store";
+export { appendTransaction, persistStore, resetStore } from "./store";
+export { hydrateStore as hydrateFromStorage } from "./hydrate";
 export { dashboardSnapshot, dashboardState } from "./view";
 export {
   EXTRACT_DELAY_MS,

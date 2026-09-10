@@ -16,6 +16,6 @@ buildSync({
   globalName: "FlowStore",
   outfile: "public/flow-store.js",
   platform: "browser",
-  target: ["es2022"],
+  target: ["es2025"],
   logLevel: "warning"
 });

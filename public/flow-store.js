@@ -50,7 +50,7 @@ var FlowStore = (() => {
     extractBill: () => extractBill,
     extractDelayMs: () => extractDelayMs,
     extractedBillForm: () => extractedBillForm,
-    hydrateFromStorage: () => hydrateFromStorage,
+    hydrateFromStorage: () => hydrateStore,
     ingestShopifyOrder: () => ingestShopifyOrder,
     offsetFromLabel: () => offsetFromLabel,
     pauseSubscriber: () => pauseSubscriber,
@@ -108,7 +108,29 @@ var FlowStore = (() => {
     { id: "txn_17", dayOffset: -1, counterparty: "Al Meera Trading", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 482e3, branchId: "br_01", invoiceId: "inv_0144" },
     { id: "txn_18", dayOffset: -19, counterparty: "Online orders (9)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 428e3, branchId: "br_01", invoiceId: null },
     { id: "txn_19", dayOffset: -11, counterparty: "West Bay Catering", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 312e3, branchId: "br_01", invoiceId: "inv_0149" },
-    { id: "txn_20", dayOffset: -6, counterparty: "Msheireb Boutiques", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 187e3, branchId: "br_02", invoiceId: "inv_0150" }
+    { id: "txn_20", dayOffset: -6, counterparty: "Msheireb Boutiques", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 187e3, branchId: "br_02", invoiceId: "inv_0150" },
+    { id: "txn_41", dayOffset: -13, counterparty: "Online orders (5)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 43e4, branchId: "br_01", invoiceId: null },
+    { id: "txn_42", dayOffset: -8, counterparty: "Online orders (7)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 52e4, branchId: "br_02", invoiceId: null },
+    { id: "txn_21", dayOffset: -59, counterparty: "Pearl Interiors", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 138e3, branchId: "br_01", invoiceId: null },
+    { id: "txn_22", dayOffset: -58, counterparty: "Pearl Interiors refund", source: "link", direction: "out", type: "refund", tag: "Sales", status: "refunded", amountMinor: 138e3, branchId: "br_01", invoiceId: null },
+    { id: "txn_23", dayOffset: -57, counterparty: "Ahli Bank fees", source: "bank", direction: "out", type: "expense", tag: "Fees", status: "settled", amountMinor: 235e3, branchId: "br_01", invoiceId: null },
+    { id: "txn_24", dayOffset: -56, counterparty: "Kahramaa", source: "bank", direction: "out", type: "expense", tag: "Utilities", status: "settled", amountMinor: 132e3, branchId: "br_01", invoiceId: null },
+    { id: "txn_25", dayOffset: -54, counterparty: "Katara Events", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 76e4, branchId: "br_02", invoiceId: null },
+    { id: "txn_26", dayOffset: -52, counterparty: "Karak & Co", source: "cash", direction: "out", type: "expense", tag: "Supplies", status: "settled", amountMinor: 72e3, branchId: "br_02", invoiceId: null },
+    { id: "txn_27", dayOffset: -50, counterparty: "Meta Ads", source: "bank", direction: "out", type: "expense", tag: "Marketing", status: "settled", amountMinor: 26e4, branchId: "br_01", invoiceId: null },
+    { id: "txn_28", dayOffset: -48, counterparty: "Online orders (5)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 58e4, branchId: "br_02", invoiceId: null },
+    { id: "txn_29", dayOffset: -45, counterparty: "Monthly payroll", source: "bank", direction: "out", type: "payroll", tag: "Salaries", status: "settled", amountMinor: 1966500, branchId: "br_01", invoiceId: null },
+    { id: "txn_30", dayOffset: -42, counterparty: "Nasser Al-Emadi", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 85e3, branchId: "br_02", invoiceId: null },
+    { id: "txn_31", dayOffset: -39, counterparty: "Souq Waqif Supplies", source: "cash", direction: "out", type: "expense", tag: "Supplies", status: "settled", amountMinor: 95e3, branchId: "br_02", invoiceId: null },
+    { id: "txn_32", dayOffset: -37, counterparty: "Gulf Warehousing", source: "bank", direction: "out", type: "expense", tag: "Rent", status: "settled", amountMinor: 36e4, branchId: "br_02", invoiceId: null },
+    { id: "txn_33", dayOffset: -35, counterparty: "The Pearl Collective", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "pending", amountMinor: 54e4, branchId: "br_01", invoiceId: null },
+    { id: "txn_34", dayOffset: -34, counterparty: "Layla Al-Suwaidi", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 19e4, branchId: "br_01", invoiceId: null },
+    { id: "txn_35", dayOffset: -33, counterparty: "Online orders (11)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 105e4, branchId: "br_01", invoiceId: null },
+    { id: "txn_36", dayOffset: -32, counterparty: "Ooredoo Business", source: "bank", direction: "out", type: "expense", tag: "Utilities", status: "settled", amountMinor: 14e4, branchId: "br_02", invoiceId: null },
+    { id: "txn_37", dayOffset: -31, counterparty: "Al Maha Trading", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 41e4, branchId: "br_01", invoiceId: null },
+    { id: "txn_38", dayOffset: -49, counterparty: "Online orders (7)", source: "shopify", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 36e4, branchId: "br_01", invoiceId: null },
+    { id: "txn_39", dayOffset: -41, counterparty: "West Bay Kitchen", source: "skipcash", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 27e4, branchId: "br_01", invoiceId: null },
+    { id: "txn_40", dayOffset: -36, counterparty: "Msheireb Atelier", source: "link", direction: "in", type: "sale", tag: "Sales", status: "settled", amountMinor: 165e3, branchId: "br_02", invoiceId: null }
   ];
   var invoiceClients = [
     { id: "cli_01", name: "Qatar Retail Group", branchId: "br_01" },
@@ -223,13 +245,30 @@ var FlowStore = (() => {
       { id: "tm_02", employeeId: "emp_02", name: accountantName, email: emailFor(accountantName), role: "Staff", lastSeenOffset: -2 },
       { id: "tm_03", employeeId: "emp_03", name: "Samir Haddad", email: emailFor("Samir Haddad"), role: "Staff", lastSeenOffset: -3 }
     ],
-    activityLog
+    activityLog,
+    recurringInvoices: [],
+    approvalRequests: [],
+    rolePermissions: [],
+    approvalLimits: {}
   };
 
   // lib/data/store.ts
   var STORAGE_KEY = "flow-live-v1";
+  var DEFAULT_ROLE_PERMISSIONS = [
+    { area: "Dashboard", owner: "full", accountant: "full", staff: "full" },
+    { area: "Transactions", owner: "full", accountant: "full", staff: "view" },
+    { area: "Invoicing", owner: "full", accountant: "full", staff: "full" },
+    { area: "Payments & gateways", owner: "full", accountant: "view", staff: "none" },
+    { area: "Accounting sync", owner: "full", accountant: "full", staff: "none" },
+    { area: "Payroll", owner: "full", accountant: "view", staff: "none" },
+    { area: "Team & billing", owner: "full", accountant: "none", staff: "none" }
+  ];
   function cloneSeed() {
-    return structuredClone(seed);
+    const next = structuredClone(seed);
+    if (!next.rolePermissions.length) {
+      next.rolePermissions = DEFAULT_ROLE_PERMISSIONS.map((row) => ({ ...row }));
+    }
+    return next;
   }
   function emptyExtras() {
     return {
@@ -238,7 +277,11 @@ var FlowStore = (() => {
       subscribers: [],
       upcomingCharges: [],
       shopify: { connected: false, shopDomain: "" },
-      smartCheckout: { on: false, walletDetect: true, retryOnDecline: true }
+      smartCheckout: { on: false, walletDetect: true, retryOnDecline: true },
+      recurringInvoices: [],
+      approvalRequests: [],
+      rolePermissions: DEFAULT_ROLE_PERMISSIONS.map((row) => ({ ...row })),
+      approvalLimits: {}
     };
   }
   function withDefaults(row) {
@@ -255,16 +298,35 @@ var FlowStore = (() => {
       upcomingCharges: row.upcomingCharges || [],
       shopify: row.shopify || emptyExtras().shopify,
       smartCheckout: row.smartCheckout || emptyExtras().smartCheckout,
-      bankAccounts: row.bankAccounts || base.bankAccounts
+      bankAccounts: row.bankAccounts || base.bankAccounts,
+      recurringInvoices: row.recurringInvoices || [],
+      approvalRequests: row.approvalRequests || [],
+      rolePermissions: row.rolePermissions && row.rolePermissions.length ? row.rolePermissions : emptyExtras().rolePermissions,
+      approvalLimits: row.approvalLimits || {}
     };
   }
   var live = cloneSeed();
+  var afterPersist = null;
+  var persistAssertQueued = false;
+  function setAfterPersist(fn) {
+    afterPersist = fn;
+  }
   function persist() {
-    if (typeof localStorage === "undefined") return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(live));
-    } catch {
+    if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(live));
+      } catch {
+      }
     }
+    if (!afterPersist || persistAssertQueued) return;
+    persistAssertQueued = true;
+    const defer = typeof queueMicrotask === "function" ? queueMicrotask : (fn) => {
+      Promise.resolve().then(fn);
+    };
+    defer(() => {
+      persistAssertQueued = false;
+      if (afterPersist) afterPersist();
+    });
   }
   function hydrateFromStorage() {
     if (typeof localStorage === "undefined") return null;
@@ -432,6 +494,16 @@ var FlowStore = (() => {
     live.bankAccounts = [...live.bankAccounts, account];
     persist();
     return account;
+  }
+
+  // lib/data/hydrate.ts
+  function hydrateStore() {
+    const hydrated = hydrateFromStorage();
+    const store = getStore();
+    const ids = new Set(store.paymentLinks.map((link) => link.id));
+    const missing = seed.paymentLinks.filter((link) => !ids.has(link.id) && store.transactions.some((txn) => txn.id === link.txnId));
+    for (const link of missing.toReversed()) appendPaymentLink(structuredClone(link));
+    return hydrated;
   }
 
   // lib/format.ts
@@ -655,6 +727,10 @@ var FlowStore = (() => {
     const days = PERIOD_DAYS[period];
     return dayOffset <= 0 && dayOffset >= -(days - 1);
   }
+  function inPreviousPeriod(dayOffset, period) {
+    const days = PERIOD_DAYS[period];
+    return dayOffset <= -days && dayOffset >= -(2 * days - 1);
+  }
   function completedInPeriod(period) {
     return db().transactions.filter((txn) => txn.status !== "pending" && inPeriod(txn.dayOffset, period));
   }
@@ -663,6 +739,12 @@ var FlowStore = (() => {
   }
   function getMoneyOut(period) {
     return db().transactions.filter((txn) => txn.direction === "out" && txn.status !== "pending" && inPeriod(txn.dayOffset, period)).reduce((sum, txn) => sum + txn.amountMinor, 0);
+  }
+  function getMoneyInPrevious(period) {
+    return db().transactions.filter((txn) => txn.direction === "in" && txn.status !== "pending" && inPreviousPeriod(txn.dayOffset, period)).reduce((sum, txn) => sum + txn.amountMinor, 0);
+  }
+  function getMoneyOutPrevious(period) {
+    return db().transactions.filter((txn) => txn.direction === "out" && txn.status !== "pending" && inPreviousPeriod(txn.dayOffset, period)).reduce((sum, txn) => sum + txn.amountMinor, 0);
   }
   function getPendingSettlement(period) {
     return db().transactions.filter((txn) => txn.status === "pending" && inPeriod(txn.dayOffset, period)).reduce((sum, txn) => sum + txn.amountMinor, 0);
@@ -844,7 +926,15 @@ var FlowStore = (() => {
   function getCashOnHand() {
     const asOf = db().bankAccounts.reduce((min, account) => Math.min(min, account.asOfOffset), 0);
     const movement = db().transactions.filter((txn) => txn.status !== "pending" && txn.dayOffset > asOf).reduce((sum, txn) => sum + signedAmount(txn), 0);
-    return getOpeningBalance() + movement;
+    const cashOnHand = getOpeningBalance() + movement;
+    const realised = db().transactions.filter((txn) => txn.status !== "pending" && txn.dayOffset > asOf);
+    const inflows = realised.filter((txn) => txn.direction === "in").reduce((sum, txn) => sum + txn.amountMinor, 0);
+    const outflows = realised.filter((txn) => txn.direction === "out").reduce((sum, txn) => sum + txn.amountMinor, 0);
+    const expected = getOpeningBalance() + inflows - outflows;
+    if (!Number.isSafeInteger(cashOnHand) || cashOnHand !== expected) {
+      throw new Error("Cash on hand invariant failed: " + cashOnHand + " !== opening " + getOpeningBalance() + " + inflows " + inflows + " - outflows " + outflows);
+    }
+    return cashOnHand;
   }
   function getRunway(period) {
     const cashOnHand = getCashOnHand();
@@ -890,6 +980,37 @@ var FlowStore = (() => {
     buckets.push({ label: "Next", start: 1, end: 1, inflow: 0, outflow: 0, projected: true });
     return buckets;
   }
+  function assertInvoiceStatuses() {
+    for (const invoice of db().invoices) {
+      const status = getInvoiceStatus(invoice.id);
+      const linked = db().transactions.filter((txn) => txn.invoiceId === invoice.id);
+      if (linked.some((txn) => txn.type === "refund") && status !== "refunded") {
+        throw new Error(invoice.number + " should be refunded");
+      }
+      const settledIn = linked.filter((txn) => txn.direction === "in" && txn.status !== "pending").reduce((sum, txn) => sum + txn.amountMinor, 0);
+      if (settledIn >= invoice.amountMinor && !linked.some((txn) => txn.type === "refund") && status !== "paid") {
+        throw new Error(invoice.number + " should be paid");
+      }
+      if (linked.some((txn) => txn.status === "pending") && settledIn < invoice.amountMinor && status !== "awaiting settlement") {
+        throw new Error(invoice.number + " should be awaiting settlement");
+      }
+    }
+  }
+  function assertPhase1Invariants() {
+    getNet("month");
+    getOutstanding();
+    getMatchRate();
+    getCashOnHand();
+    assertPayrollLink();
+    assertInvoiceStatuses();
+    const unpaid = getOutstanding();
+    const whoOwes = getOutstandingInvoices().reduce((sum, invoice) => sum + invoice.amountMinor, 0);
+    if (whoOwes !== unpaid.amountMinor || getOutstandingInvoices().length !== unpaid.count) {
+      throw new Error("Hub unpaid count does not equal Outstanding");
+    }
+  }
+  assertInvoiceStatuses();
+  setAfterPersist(assertPhase1Invariants);
 
   // lib/data/view.ts
   var currency = seed.merchant.currency;
@@ -1017,18 +1138,40 @@ var FlowStore = (() => {
       })
     };
   }
+  function trendPct(current, previous) {
+    if (previous === 0 || current === 0) return null;
+    return Math.round((current - previous) / previous * 100);
+  }
+  function trendShare(pct2) {
+    if (pct2 == null) return "";
+    return (pct2 > 0 ? "+" : "") + pct2 + "%";
+  }
   function periodBlock(period) {
     const series = getNetSeries(period);
     const scale = chartScale(series.values, currency);
     const pnl = getProfitAndLoss(period);
+    const moneyInMinor = getMoneyIn(period);
+    const moneyOutMinor = getMoneyOut(period);
+    const moneyInTrendPct = trendPct(moneyInMinor, getMoneyInPrevious(period));
+    const moneyOutTrendPct = trendPct(moneyOutMinor, getMoneyOutPrevious(period));
+    const netMinor = getNet(period);
+    const netPreviousMinor = getMoneyInPrevious(period) - getMoneyOutPrevious(period);
+    const netTrendPct = trendPct(netMinor, netPreviousMinor);
+    const netTrendAgainst = period === "day" ? "yesterday" : period === "week" ? "last week" : "last month";
+    const netTrendText = netTrendPct == null ? "" : (netTrendPct > 0 ? "+" : "") + netTrendPct + "% vs " + netTrendAgainst;
     return {
-      moneyIn: major(getMoneyIn(period)),
-      moneyOut: major(getMoneyOut(period)),
+      moneyIn: major(moneyInMinor),
+      moneyOut: major(moneyOutMinor),
       pending: major(getPendingSettlement(period)),
       net: major(getNet(period)),
-      moneyInText: formatMoney(getMoneyIn(period), currency),
-      moneyOutText: formatMoney(getMoneyOut(period), currency),
-      pendingText: formatMoney(getPendingSettlement(period), currency),
+      moneyInText: formatMoney(moneyInMinor, currency, { trimWhole: true }),
+      moneyOutText: formatMoney(moneyOutMinor, currency, { trimWhole: true }),
+      moneyInShare: trendShare(moneyInTrendPct),
+      moneyOutShare: trendShare(moneyOutTrendPct),
+      moneyInTrendPct,
+      moneyOutTrendPct,
+      netTrendText,
+      pendingText: formatMoney(getPendingSettlement(period), currency, { trimWhole: true }),
       netText: formatMoney(getNet(period), currency),
       label: periodLabel(period),
       series: {
@@ -1075,6 +1218,7 @@ var FlowStore = (() => {
     };
   }
   function dashboardState() {
+    assertPhase1Invariants();
     const owner = seed.merchant.ownerName;
     const open = getOpenMatches();
     const matchRate = getMatchRate();
@@ -1344,14 +1488,14 @@ var FlowStore = (() => {
           total: major(rows.reduce((sum, invoice) => sum + invoice.amountMinor, 0))
         };
       }),
-      team: seed.teamMembers.map((member) => ({
+      team: db2().teamMembers.map((member) => ({
         id: member.id,
         name: member.name,
         email: member.email,
         role: member.role,
         last: member.lastSeenOffset === 0 ? "Today" : formatDate(member.lastSeenOffset)
       })),
-      employees: seed.employees.map((employee) => ({
+      employees: db2().employees.map((employee) => ({
         id: employee.id,
         name: employee.name,
         role: employee.role,
@@ -1420,7 +1564,35 @@ var FlowStore = (() => {
         payrollDeductions: major(payrollDed),
         payrollCount: seed.employees.length,
         deductionRate: seed.payrollRuns[0]?.deductionRate ?? 0
-      }
+      },
+      recurringInvoices: db2().recurringInvoices.map((row) => {
+        const client = clientName(row.clientId);
+        return {
+          id: row.id,
+          clientId: row.clientId,
+          client,
+          amount: major(row.amountMinor),
+          interval: row.interval,
+          nextOffset: row.nextOffset,
+          endsAfter: row.endsAfter,
+          sentCount: row.sentCount,
+          status: titleStatus(row.status),
+          running: row.status === "active"
+        };
+      }),
+      rolePermissions: db2().rolePermissions,
+      approvalLimits: db2().approvalLimits,
+      approvalRequests: db2().approvalRequests.filter((row) => row.status === "open").map((row) => {
+        const member = db2().teamMembers.find((item) => item.id === row.memberId);
+        return {
+          id: row.id,
+          amt: major(row.amountMinor),
+          what: row.what,
+          who: member?.name || "",
+          when: formatDate(row.dayOffset)
+        };
+      }),
+      ledgerTags: [...new Set(db2().transactions.map((txn) => txn.tag))].sort()
     };
   }
   function appPayUrl(pathId) {
@@ -1665,6 +1837,10 @@ var FlowStore = (() => {
         return { ...next };
       },
       async simulatePayment(id, outcome) {
+        if (outcome === "success" && typeof location !== "undefined" && /^\/pay(?:\/|$)/.test(location.pathname)) {
+          const scenario = new URLSearchParams(location.search).get("outcome");
+          if (scenario === "decline" || scenario === "timeout") outcome = scenario;
+        }
         const record = payments.get(id);
         if (!record) throw new Error("SkipCash payment not found: " + id);
         let statusId = 2;
@@ -2468,7 +2644,7 @@ var FlowStore = (() => {
 
   // lib/data/browser.ts
   if (typeof window !== "undefined") {
-    hydrateFromStorage();
+    hydrateStore();
     window.FLOW_DATA = dashboardState();
   }
   return __toCommonJS(browser_exports);

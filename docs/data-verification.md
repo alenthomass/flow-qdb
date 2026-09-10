@@ -5,7 +5,7 @@ Computed by `scripts/verify-data.mjs` from `lib/data/selectors.ts` at runtime. F
 All identity checks passed.
 
 - PASS Home defaults to 30 days: Last 30 days
-- PASS Home period toggle uses rolling labels: 24h / 7 days / 30 days
+- PASS Home period toggle uses rolling labels: Day / Week / Month
 - PASS Matching status open equals Needs Your Attention: 9 of 12 · 3 open · attention 3
 - PASS Matching status zero copy: Everything is matched; 12 of 12; kpi 0 open
 - PASS Matching status singular copy: 1 still needs a look; header 1 open; kpi 1 open
@@ -25,20 +25,26 @@ All identity checks passed.
 - PASS day Money In vs completed inflow rows: QR 0 vs ledger QR 0
 - PASS day Money Out vs completed outflow rows: QR 0 vs ledger QR 0
 - PASS day Net equals Money In minus Money Out: QR 0 = QR 0 - QR 0
+- PASS day Money In/Out share of movement: 0% in · 0% out
+- PASS day Money In/Out vs prior equivalent window: In -100% · Out n/a
 - PASS day chart last point equals Net: last QR 0, points 2
 - PASS day pending excluded from Money In: pending QR 0 sits outside Money In QR 0
 - PASS day refunds line sits under revenue: revenue QR 0, refunds QR 0, net QR 0
 - PASS week Money In vs completed inflow rows: QR 21,240.00 vs ledger QR 21,240.00
 - PASS week Money Out vs completed outflow rows: QR 1,250.00 vs ledger QR 1,250.00
 - PASS week Net equals Money In minus Money Out: QR 19,990.00 = QR 21,240.00 - QR 1,250.00
+- PASS week Money In/Out share of movement: 94% in · 6% out
+- PASS week Money In/Out vs prior equivalent window: In +418% · Out -72%
 - PASS week chart last point equals Net: last QR 19,990.00, points 7
 - PASS week chart includes every completed transaction on its day: 7 cumulative points checked, including refunds
 - PASS week pending excluded from Money In: pending QR 6,300.00 sits outside Money In QR 21,240.00
 - PASS week refunds line sits under revenue: revenue QR 21,240.00, refunds QR 0, net QR 19,990.00
-- PASS Month chart thins labels only: 30 data points; ticks 11 Aug, 16 Aug, 21 Aug, 26 Aug, 31 Aug, 5 Sept
+- PASS Month chart thins labels only: 30 data points; ticks 12 Aug, 17 Aug, 22 Aug, 27 Aug, 1 Sept, 6 Sept
 - PASS month Money In vs completed inflow rows: QR 46,510.00 vs ledger QR 46,510.00
 - PASS month Money Out vs completed outflow rows: QR 33,365.00 vs ledger QR 33,365.00
 - PASS month Net equals Money In minus Money Out: QR 13,145.00 = QR 46,510.00 - QR 33,365.00
+- PASS month Money In/Out share of movement: 58% in · 42% out
+- PASS month Money In/Out vs prior equivalent window: In +16% · Out -2%
 - PASS month chart last point equals Net: last QR 13,145.00, points 30
 - PASS month chart includes every completed transaction on its day: 30 cumulative points checked, including refunds
 - PASS month pending excluded from Money In: pending QR 6,300.00 sits outside Money In QR 46,510.00
@@ -70,10 +76,15 @@ Computed figures (month window, minor units stored, displayed as QR):
 - Hub All Invoices badge equals All Invoices unpaid / Outstanding: 3 unpaid = 3 unpaid
 - PASS Bank Activity equals cash on hand: QR 98,145.00 = opening QR 85,000.00 + QR 13,145.00
 - Bank Activity is cash on hand: opening QR 85,000.00 on bank_01 as of offset -30 + signed completed transactions with dayOffset > -30 (QR 13,145.00) = QR 98,145.00
+- Verified Stage B clean-seed baseline: cash on hand = opening 85,000 + inflows 46,510 - outflows 33,365 = 98,145, pending 6,300 excluded.
+- The previously reported QR 96,965 was measured against a dirty store after saving a scanned bill (Money Out QR 34,545), not the clean seed.
+- PASS Bank Activity ignores a stale display snapshot: QR 98,145.00 · Cash on hand
+- PASS Pending cash movement is excluded: QR 98,145.00
+- PASS Completed refunded outflow reduces live cash: QR 96,965.00
 - PASS Matched automatically list equals getMatchRate().matched: 9 listed · 9 matched
 - PASS Reminders list is sent, viewed, overdue or awaiting settlement: 3 remindable · INV-0142, INV-0147, INV-0148
-- PASS INV-0147 timeline dates follow invoice offsets: created 20 Aug 2026 · sent 20 Aug 2026 · viewed 24 Aug 2026
-- PASS Invoice detail timeline binds derived dates: 20 Aug 2026 / 20 Aug 2026 / 24 Aug 2026
+- PASS INV-0147 timeline dates follow invoice offsets: created 21 Aug 2026 · sent 21 Aug 2026 · viewed 25 Aug 2026
+- PASS Invoice detail timeline binds derived dates: 21 Aug 2026 / 21 Aug 2026 / 25 Aug 2026
 - PASS Send reminder toasts the client, not the clipboard: Reminder sent to Lusail Hospitality
 - PASS Creating INV-0151 updates invoiced totals from the store: invoiced QR 46,700.00 / 10 · outstanding QR 24,300.00 / 4
 - After creating INV-0151 (Lusail Hospitality, QR 3,400): Total Invoiced QR 46,700.00 / 10 invoices; Outstanding QR 24,300.00 / 4 unpaid
@@ -85,30 +96,30 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Seed payroll is already posted for the payslip period: August 2026
 - PASS Post to Transactions is labelled already posted for the seed period: Already posted for August 2026
 - PASS Posting the seed period does not append another salaries row: August 2026
-- Plan usage: 20 of 5000
+- Plan usage: 40 of 5000
 - Branches: Doha inflow QR 28,310.00 (61%); Al Wakrah inflow QR 18,200.00 (39%)
 - PASS Seeded payment links match the four paid counterparties: Noor Interiors, Mohammed Rashid, Fatima Al-Kuwari, Msheireb Boutiques
 - PASS Collected via links is QR 6,540 across 4 payments: QR 6,540.00 · times paid 4
 - PASS Page settings slug is derived, not a leftover default: empty slug · Fleet Deposit → fleet-deposit
-- PASS Sample bill is distinct from seed Kahramaa: Barzan Water 9 Sept 2026 offset 0
+- PASS Sample bill is distinct from seed Kahramaa: Barzan Water 10 Sept 2026 offset 0
 - PASS Two sample bills ship in the repo: barzan-water.pdf, al-maha-stationery.svg
 - PASS Extraction returns vendor, date, total, tax, lines and tag: Barzan Water / Al Maha Stationery
 - PASS Scan accepts an image or PDF: file input accept image/*,application/pdf
 - PASS Extraction delay is 1.5-2.5s: 1800ms
-- PASS Scan shows extraction in progress: 2291ms
+- PASS Scan shows extraction in progress: 1705ms
 - PASS Extracted fields are correctable with confidence: Barzan Water tax QR 0 · vendor 96%
-- PASS Scan save recomputes Money Out: Money Out QR 34,545.00 (was QR 33,365.00)
+- PASS Scan save recomputes Money Out: Money Out QR 34,545 (was QR 33,365.00)
 - PASS Scan save drops Reports net profit: net profit QR 11,965 (was QR 13,145.00)
 - PASS Scanned bill sorts to top of Recent Activity: Barzan Water offset 0
 - PASS Tally after Barzan scan is 20 settled rows: 20 items (21 would include pending txn_13)
 - PASS Second sample bill saves through selectors: Money Out QR 33,705.00 · Al Maha Stationery
 - PASS Payment link copies to clipboard: submitModal writes the pay URL
-- PASS Payment link URL stays on Flow, not SkipCash test: /pay/53311a40-ff10-45a0-adbe-67d1def8d8b4
-- PASS Copied payment links open Flow checkout: pay.html handles payment links
+- PASS Payment link URL stays on Flow, not SkipCash test: /pay/4e61ec21-8b47-4d2b-ae2b-f480ee343c9b
+- PASS Copied payment links open Flow checkout: React /pay handles payment links
 - PASS Spine create leaves Money In unchanged: Money In QR 46,510.00
 - PASS Home Net equals Reports after creating a link: QR 13,145.00
 - PASS Who owes me equals Outstanding after creating a link: QR 20,900.00 across 3
-- PASS Spine success appends a pending ledger row: txn_link_53311a40ff pending
+- PASS Spine success appends a pending ledger row: txn_link_4e61ec218b pending
 - PASS Pending payment is excluded from Money In: Money In QR 46,510.00; pending QR 11,700.00
 - PASS Linked invoice awaits settlement while pending: awaiting settlement
 - PASS Needs Your Attention includes the new proposal: 4 open
@@ -126,25 +137,25 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Home Net equals Reports after confirm: QR 18,545.00
 - PASS Simulate decline marks the link rejected without a ledger row: rejected
 - PASS Simulate timeout marks the link failed without a ledger row: failed
-- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_cf71719f3d
-- PASS simulatePayment still works after gateway reset: txn_link_7b125e35b6
+- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_d5ddc2d054
+- PASS simulatePayment still works after gateway reset: txn_link_95504e860c
 - PASS Tally export uses ENVELOPE / HEADER / BODY: envelope present
 - PASS Tally export is one voucher per settled transaction in the last 30 days: 19 vouchers; pending txn_13 omitted
 - PASS Tally vouchers tag the cost centre: COSTCENTREALLOCATIONS.LIST NAME = transaction tag
 - PASS Tally amounts are major units: txn_01 1540.00
-- PASS Tally filename uses from and to stamps: flow-tally-export-20260811-20260909.xml
-- PASS Tally range is editable: 5 vouchers from 3 Sept 2026 to 9 Sept 2026
+- PASS Tally filename uses from and to stamps: flow-tally-export-20260812-20260910.xml
+- PASS Tally range is editable: 5 vouchers from 4 Sept 2026 to 10 Sept 2026
 - PASS Tally export is recorded in history: 1 tally row(s)
 - PASS Zoho sync is labelled simulated and recorded: Zoho Books (simulated) · 19 items
 - PASS From and To inputs are bound: periodFrom / periodTo onChange
 - PASS Export XML downloads a file: runTallyExport writes XML
 - PASS Tally export history appears in the UI: 2 history row(s)
-- PASS Zoho sync success is visible: Last push simulated · 19 items · 9 Sept 2026
-- PASS Hosted checkout publishes a shareable /pay/ slug: pay.html + rewrite + UI URL
+- PASS Zoho sync success is visible: Last push simulated · 19 items · 10 Sept 2026
+- PASS Hosted checkout publishes a shareable /pay/ slug: React route + UI URL
 - PASS Public payment page matches the builder without edit chrome: customer checkout chrome
 - PASS Public pay page validates email and shows a receipt: email + success card
 - PASS Published checkout stores product name, QAR price and slug: eid-hamper QR 250.00
-- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_813e06a529
+- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_c740f5de4e
 - PASS Hosted checkout pending is excluded from Money In: QR 46,510.00
 - PASS Hosted checkout settle lifts Money In by the page price: Money In QR 46,760.00
 - PASS Home Net equals Reports after hosted checkout: QR 13,395.00
@@ -154,9 +165,9 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Publish with no amount names the missing field: Amount is required
 - PASS Publish with no title names the missing field: Page title is required
 - PASS Payment link deactivate updates status: Deactivated
-- PASS Payment links expose expiry, uses and copy URL: 16 Sept 2026 · uses 0
+- PASS Payment links expose expiry, uses and copy URL: 17 Sept 2026 · uses 0
 - PASS Subscription plan creates a customer and upcoming charge: 1 upcoming · QR 400.00
-- PASS Simulated billing appends a pending ledger row: txn_sub_32c601499a
+- PASS Simulated billing appends a pending ledger row: txn_sub_799b0220ef
 - PASS Simulated billing settle lifts Money In: QR 46,910.00
 - PASS Cancel stops further upcoming charges: 0 upcoming
 - PASS Smart Checkout lives on Get Paid overview: overview toggle card
@@ -165,9 +176,23 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Connected Shopify tags the new sample order: Shopify sample order #1042
 - PASS Shopify sample order lifts Money In: QR 46,695.00
 - PASS matched + open after Shopify sample: 10 + 3 = 13
-- PASS Seed Shopify rows were not rewritten: 3 seed shopify rows
+- PASS Seed Shopify rows were not rewritten: 6 seed shopify rows
 - PASS Sample bank connect is labelled and does not change cash: QR 98,145.00
 - PASS Bank onboarding is wired in the UI: onboarding steps
+- PASS Phase 1 invariants hold on the seed: Home Net / Outstanding / match / payroll / cash / invoice status
+- PASS applyStore copies team and employees from the ledger: 4 members · 3 employees
+- PASS Recurring invoice next three offsets: 0, 30, 60
+- PASS Sending a recurring invoice appends an invoice: INV-0151 · sentCount 1
+- PASS Recurring Start schedule writes the store: rec_mtvectiq · 0, 30, 60
+- PASS Recurring UI shows the next three sends: 10 Sept 2026 / 10 Oct 2026 / 9 Nov 2026
+- PASS Tag rename updates ledger rows: 24 rows
+- PASS Tag list counts come from the ledger: 24 items
+- PASS Removing a used tag fails loudly: Can't remove Sales renamed: 24 items still use it
+- PASS Permission write persists: view
+- PASS Approval limit write persists: QR 5,000.00
+- PASS Approval request waits on the owner: apv_mtvecuaz
+- PASS Approval resolve writes the store: approved
+- PASS Recurring / tags / approvals are bound in the view: start + rename + limits
 - PASS Reset demo data asks for confirm: modal open, Money In still QR 51,910.00
 - PASS Reset restores Money In: In QR 46,510.00 · Out QR 33,365.00 · Net QR 13,145.00
 - PASS Reset restores match identity: 9 of 12 · 3 open
@@ -176,7 +201,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Reset keeps the Tally date range: 3 Sept 2026 → 9 Sept 2026
 - PASS HTML has Reset demo data and confirm modal: button + confirm modal
 - PASS SANDBOX tooltip string present: SANDBOX hover tooltip
-- PASS No Peppol or VAT in public HTML: flow.dc.html and pay.html
+- PASS No Peppol or VAT in public HTML: React dashboard and pay route
 - PASS Simulated labels on Payment Setup and Connected Apps: Payment Setup / Connected Apps
 - PASS getVatRate still 0 after Stage 6: 0
 
@@ -189,3 +214,16 @@ Computed figures (month window, minor units stored, displayed as QR):
 - Recurring invoice schedules, sync payloads and approval caps are not in the seed.
 - Other Flow billing tiers besides the current Starter plan are not in the seed.
 - Reports profit and loss, the four stat cards and the branch table use their own 30-day period. They do not follow the Home 24h / 7 days / 30 days toggle.
+
+## Stage A React checkout verification
+
+- PASS Saved-store migration restores 4 paid seed links: QR 6,540 collected, 4 times paid; created link retained; ledger unchanged; migration idempotent
+- PASS Generated data/store assets expose QR 6,540 and 4 paid links for fresh and older saved sessions (no deployed-browser verification)
+- PASS Actual React onClick displays a field-level error for empty and malformed email, without calling the payment spine
+- PASS Actual React Pay handler processes once, settles through the existing spine, displays amount/merchant/reference, and notifies subscribers at pending and settled transitions
+- PASS Payment updates Money In, Home Net, chart, P&L and match denominator consistently; duplicate submissions do not duplicate the transaction
+- PASS Decline and timeout have distinct React states, permit retry, and create no ledger inflow
+- PASS Published checkout uses the existing checkout spine for success and the mock gateway URL scenarios for decline/timeout
+- PASS Pay route uses React handlers and useSyncExternalStore; no legacy HTML runtime, unpkg dependency, or focus/storage listeners
+
+No browser, visual-parity, or deployed-environment verification was attempted. External logo/font availability was not verified.

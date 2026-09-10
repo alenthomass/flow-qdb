@@ -251,6 +251,36 @@ export interface ExportRecord {
   errors: number;
 }
 
+export type AccessLevel = "full" | "view" | "none";
+export type RecurringInterval = "Week" | "Month" | "Quarter";
+
+export interface RecurringInvoice {
+  id: string;
+  clientId: string;
+  amountMinor: number;
+  interval: RecurringInterval;
+  nextOffset: number;
+  endsAfter: number | null;
+  sentCount: number;
+  status: "active" | "paused" | "canceled";
+}
+
+export interface ApprovalRequest {
+  id: string;
+  memberId: string;
+  amountMinor: number;
+  what: string;
+  dayOffset: number;
+  status: "open" | "approved" | "declined";
+}
+
+export interface RolePermissionRow {
+  area: string;
+  owner: AccessLevel;
+  accountant: AccessLevel;
+  staff: AccessLevel;
+}
+
 export interface Seed {
   merchant: Merchant;
   branches: Branch[];
@@ -272,6 +302,10 @@ export interface Seed {
   gatewayAccounts: GatewayAccount[];
   teamMembers: TeamMember[];
   activityLog: ActivityLog[];
+  recurringInvoices: RecurringInvoice[];
+  approvalRequests: ApprovalRequest[];
+  rolePermissions: RolePermissionRow[];
+  approvalLimits: Record<string, number | null>;
 }
 
 export interface MoneyTotal {

@@ -2,37 +2,47 @@ import { getGateway } from "../gateway/index";
 import type { PaymentOutcome } from "../gateway/index";
 import {
   appendActivity,
+  appendApprovalRequest,
   appendBankAccount,
   appendCheckoutPage,
   appendClient,
   appendInvoice,
   appendMatchProposal,
   appendPaymentLink,
+  appendRecurringInvoice,
   appendSubscriber,
   appendSubscriptionPlan,
   appendTransaction,
   appendUpcomingCharge,
   getStore,
+  replaceApprovalLimits,
+  replaceApprovalRequest,
   replaceCheckoutPage,
   replaceMatchProposal,
   replacePaymentLink,
+  replaceRecurringInvoice,
+  replaceRolePermissions,
   replaceShopify,
   replaceSmartCheckout,
   replaceSubscriber,
   replaceSubscriptionPlan,
   replaceTransaction,
-  replaceUpcomingCharge
+  replaceUpcomingCharge,
+  DEFAULT_ROLE_PERMISSIONS
 } from "./store";
 import { SAMPLE_BANKS, SAMPLE_SHOPIFY_ORDER } from "./sample-checkout";
 import { getPayrollNet } from "./selectors";
 import { monthYearLabel } from "../format";
 import type {
+  AccessLevel,
   CheckoutPage,
   Client,
   Invoice,
   InvoiceLine,
   PaymentLink,
   PlanInterval,
+  RecurringInterval,
+  RecurringInvoice,
   Subscriber,
   SubscriptionPlan,
   TxnSource,
@@ -694,4 +704,163 @@ export function connectSampleBank(bankId: string) {
 }
 
 export type { UpcomingCharge };
+
+const INTERVAL_DAYS: Record<RecurringInterval, number> = { Week: 7, Month: 30, Quarter: 90 };
+
+export function createRecurringInvoice(input: {
+  clientId?: string;
+  clientName?: string;
+  amountMinor: number;
+  interval?: RecurringInterval;
+  endsAfter?: number | null;
+}): RecurringInvoice {
+  if (!Number.isFinite(input.amountMinor) || input.amountMinor <= 0) throw new Error("Amount is required");
+  const client = resolveInvoiceClient(input);
+  const interval = input.interval || "Month";
+  const row = appendRecurringInvoice({
+    id: "rec_" + Date.now().toString(36),
+    clientId: client.id,
+    amountMinor: Math.round(input.amountMinor),
+    interval,
+    nextOffset: 0,
+    endsAfter: input.endsAfter != null && Number.isFinite(input.endsAfter) ? Math.round(input.endsAfter) : null,
+    sentCount: 0,
+    status: "active"
+  });
+  appendActivity({
+    id: "act_" + row.id,
+    kind: "edits",
+    dayOffset: 0,
+    actor: getStore().merchant.ownerName,
+    what: "Recurring invoice scheduled for " + client.name
+  });
+  return row;
+}
+
+export function recurringNextOffsets(row: RecurringInvoice): number[] {
+  const step = INTERVAL_DAYS[row.interval] || 30;
+  const remaining = row.endsAfter == null ? 3 : Math.max(0, row.endsAfter - row.sentCount);
+  const count = Math.min(3, remaining);
+  const offsets: number[] = [];
+  for (let i = 0; i < count; i++) offsets.push(row.nextOffset + i * step);
+  return offsets;
+}
+
+export function sendRecurringInvoice(id: string): Invoice {
+  const row = getStore().recurringInvoices.find(item => item.id === id);
+  if (!row) throw new Error("Recurring invoice not found");
+  if (row.status !== "active") throw new Error("Schedule is not running");
+  if (row.endsAfter != null && row.sentCount >= row.endsAfter) throw new Error("Schedule has ended");
+  const invoice = createInvoice({
+    clientId: row.clientId,
+    amountMinor: row.amountMinor,
+    dueOffset: 14
+  });
+  const step = INTERVAL_DAYS[row.interval] || 30;
+  const sentCount = row.sentCount + 1;
+  const ended = row.endsAfter != null && sentCount >= row.endsAfter;
+  replaceRecurringInvoice(id, {
+    sentCount,
+    nextOffset: row.nextOffset + step,
+    status: ended ? "canceled" : "active"
+  });
+  return invoice;
+}
+
+export function pauseRecurringInvoice(id: string): RecurringInvoice {
+  const next = replaceRecurringInvoice(id, { status: "paused" });
+  if (!next) throw new Error("Recurring invoice not found");
+  return next;
+}
+
+export function cancelRecurringInvoice(id: string): RecurringInvoice {
+  const next = replaceRecurringInvoice(id, { status: "canceled" });
+  if (!next) throw new Error("Recurring invoice not found");
+  return next;
+}
+
+export function setRolePermission(area: string, role: "owner" | "accountant" | "staff", level: AccessLevel) {
+  const current = getStore().rolePermissions.length
+    ? getStore().rolePermissions
+    : DEFAULT_ROLE_PERMISSIONS.map(row => ({ ...row }));
+  const rows = current.map(row => row.area === area ? { ...row, [role]: level } : row);
+  replaceRolePermissions(rows);
+  appendActivity({
+    id: "act_perm_" + Date.now().toString(36),
+    kind: "access",
+    dayOffset: 0,
+    actor: getStore().merchant.ownerName,
+    what: "Updated " + role + " access for " + area + " to " + level
+  });
+  return rows;
+}
+
+export function setApprovalLimit(memberId: string, amountMinor: number | null) {
+  const next = { ...getStore().approvalLimits, [memberId]: amountMinor };
+  replaceApprovalLimits(next);
+  const member = getStore().teamMembers.find(row => row.id === memberId);
+  appendActivity({
+    id: "act_lim_" + Date.now().toString(36),
+    kind: "access",
+    dayOffset: 0,
+    actor: getStore().merchant.ownerName,
+    what: member
+      ? (amountMinor == null ? "Cleared approval limit for " + member.name : "Set approval limit for " + member.name)
+      : "Updated an approval limit"
+  });
+  return next;
+}
+
+export function resolveApproval(id: string, action: "approved" | "declined") {
+  const next = replaceApprovalRequest(id, { status: action });
+  if (!next) throw new Error("Approval request not found");
+  appendActivity({
+    id: "act_apv_" + id,
+    kind: "access",
+    dayOffset: 0,
+    actor: getStore().merchant.ownerName,
+    what: (action === "approved" ? "Approved" : "Declined") + " a request"
+  });
+  return next;
+}
+
+export function requestApproval(input: { memberId: string; amountMinor: number; what: string }): ReturnType<typeof appendApprovalRequest> {
+  return appendApprovalRequest({
+    id: "apv_" + Date.now().toString(36),
+    memberId: input.memberId,
+    amountMinor: input.amountMinor,
+    what: input.what,
+    dayOffset: 0,
+    status: "open"
+  });
+}
+
+export function renameTag(from: string, to: string) {
+  const next = String(to || "").trim();
+  if (!next) throw new Error("Tag name is required");
+  if (from === next) return { from, to: next, count: 0 };
+  let count = 0;
+  getStore().transactions.forEach(txn => {
+    if (txn.tag === from) {
+      replaceTransaction(txn.id, { tag: next });
+      count += 1;
+    }
+  });
+  appendActivity({
+    id: "act_tag_" + Date.now().toString(36),
+    kind: "edits",
+    dayOffset: 0,
+    actor: getStore().merchant.ownerName,
+    what: "Renamed tag " + from + " to " + next
+  });
+  return { from, to: next, count };
+}
+
+export function removeTag(tag: string) {
+  const count = getStore().transactions.filter(txn => txn.tag === tag).length;
+  if (count > 0) {
+    throw new Error("Can't remove " + tag + ": " + count + (count === 1 ? " item still uses it" : " items still use it"));
+  }
+  return { tag, count: 0 };
+}
 
