@@ -3,6 +3,7 @@
 
 import { Fragment } from "react";
 import { Hoverable, sx } from "./chrome";
+import { LinkCreateForm } from "./link-create";
 
 export function DashboardView({ v }: { v: Record<string, any> }) {
   return (
@@ -3038,7 +3039,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
 
   {!!(v.modal.on) && (<>
         <div style={sx("position:fixed; inset:0; background:var(--scrim); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:32px; z-index:60")} data-flow-modal="1">
-      <div style={sx("background:var(--modal); backdrop-filter:blur(34px) saturate(165%); -webkit-backdrop-filter:blur(34px) saturate(165%); border:1px solid var(--glass-edge); border-radius:11px; box-shadow:inset 0 1px 0 var(--glass-top), 0 40px 90px -40px rgba(0,0,0,.6); width:100%; max-width:520px; max-height:86vh; overflow-y:auto; box-shadow:0 40px 90px -20px rgba(0,0,0,.6); animation:flowPop .22s ease both")}>
+      <div style={sx("background:var(--modal); backdrop-filter:blur(34px) saturate(165%); -webkit-backdrop-filter:blur(34px) saturate(165%); border:1px solid var(--glass-edge); border-radius:11px; box-shadow:inset 0 1px 0 var(--glass-top), 0 40px 90px -40px rgba(0,0,0,.6); width:100%; max-width:" + (v.modal.wide ? "640px" : "520px") + "; max-height:86vh; overflow-y:auto; box-shadow:0 40px 90px -20px rgba(0,0,0,.6); animation:flowPop .22s ease both")}>
         <div style={sx("display:flex; align-items:center; gap:12px; padding:20px 22px 14px; border-bottom:1px solid var(--divider)")}>
           <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; letter-spacing:-.025em")}>{v.modal.title}</div>
           <div style={sx("flex:1")} />
@@ -3209,27 +3210,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               </>)}
 
           {!!(v.modal.link) && (<>
-                <div style={sx("display:flex; flex-direction:column; gap:14px")}>
-              <label style={sx("display:block")}><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Amount (QR)</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif")} value={v.f.linkAmount} onChange={v.F.linkAmount} placeholder="0.00" /></label>
-              <label style={sx("display:block")}><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Description</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px")} value={v.f.linkDesc} onChange={v.F.linkDesc} placeholder="What is this for?" /></label>
-              <label style={sx("display:block")}><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Client (optional)</div>
-                <select style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel)")} value={v.f.linkClient} onChange={v.F.linkClient}>
-                  <option value="">None</option>
-                  {((v.linkClients) || []).map((lc: any, lcIdx: any) => <Fragment key={lc?.id || lc?.key || 'lc-' + lcIdx}>
-                        <option value={lc.id}>{lc.name}</option>
-                      </Fragment>)}
-                </select>
-              </label>
-              <label style={sx("display:block")}><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Invoice (optional)</div>
-                <select style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel)")} value={v.f.linkInvoice} onChange={v.F.linkInvoice}>
-                  <option value="">None</option>
-                  {((v.linkInvoices) || []).map((li: any, liIdx: any) => <Fragment key={li?.id || li?.key || 'li-' + liIdx}>
-                        <option value={li.id}>{li.label}</option>
-                      </Fragment>)}
-                </select>
-              </label>
-              <label style={sx("display:block")}><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Expires (optional)</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px")} value={v.f.linkExpiry} onChange={v.F.linkExpiry} placeholder="e.g. 30 Aug 2026" /></label>
-            </div>
+            <LinkCreateForm onClose={v.h.closeModal} />
               </>)}
           {!!(v.modal.scan) && (<>
                 <div>
@@ -3372,11 +3353,13 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                 <div style={sx("font-size:13px; color:var(--ink-2); line-height:1.65")}>This restores the seed and clears simulated payments, confirmed matches, scanned bills, created links and subscriptions.</div>
               </>)}
         </div>
+        {!(v.modal.hideFoot) && (<>
         <div style={sx("display:flex; align-items:center; gap:10px; padding:16px 22px; border-top:1px solid var(--divider); background:var(--modal-foot); border-radius:0 0 26px 26px")}>
           <div style={sx("flex:1")} />
           <button style={sx("font-size:13px; font-weight:600; color:var(--ink-3); padding:10px 16px; border-radius:10px; border:1px solid var(--line); background:var(--surface)")} onClick={v.h.closeModal}>Cancel</button>
           <button style={sx("font-size:13px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 20px; border-radius:9px")} onClick={v.h.submitModal}>{v.modal.cta}</button>
         </div>
+        </>)}
       </div>
     </div>
       </>)}

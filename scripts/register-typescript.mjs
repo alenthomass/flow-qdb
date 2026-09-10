@@ -18,7 +18,12 @@ registerHooks({
       return nextResolve(specifier, context);
     } catch (error) {
       if (error.code === "ERR_MODULE_NOT_FOUND" && specifier.startsWith(".") && !/\.[a-z]+$/i.test(specifier)) {
-        return nextResolve(specifier + ".ts", context);
+        try {
+          return nextResolve(specifier + ".ts", context);
+        } catch (tsError) {
+          if (tsError.code === "ERR_MODULE_NOT_FOUND") return nextResolve(specifier + ".tsx", context);
+          throw tsError;
+        }
       }
       throw error;
     }

@@ -58,16 +58,16 @@ export function sandboxOutcome(value: string | null): PaymentOutcome {
 }
 
 const inFlight = new Map<string, Promise<PayResult>>();
-export function submitPayment(slug: string, email: string, outcome: PaymentOutcome = "success"): Promise<PayResult> {
+export function submitPayment(slug: string, email: string, outcome: PaymentOutcome = "success", paidMinor?: number): Promise<PayResult> {
   if (emailError(email)) return Promise.resolve({ status: "error", message: emailError(email) });
   const running = inFlight.get(slug);
   if (running) return running;
-  const work = runPayment(slug, outcome).finally(() => { inFlight.delete(slug); });
+  const work = runPayment(slug, outcome, paidMinor).finally(() => { inFlight.delete(slug); });
   inFlight.set(slug, work);
   return work;
 }
 
-async function runPayment(slug: string, outcome: PaymentOutcome): Promise<PayResult> {
+async function runPayment(slug: string, outcome: PaymentOutcome, paidMinor?: number): Promise<PayResult> {
   try {
     const { page, link } = checkoutBySlug(slug);
     if (!page && !link) return { status: "error", message: "Checkout is not available." };
@@ -75,7 +75,7 @@ async function runPayment(slug: string, outcome: PaymentOutcome): Promise<PayRes
       const message = linkUnavailable(link.id);
       if (message) return { status: "error", message };
     }
-    const result = page ? await payPublishedCheckout(page.slug) : await simulatePayment(link!.id, outcome);
+    const result = page ? await payPublishedCheckout(page.slug) : await simulatePayment(link!.id, outcome, paidMinor);
     publish();
     if (!result.pending || !result.txnId) {
       const status = link ? paymentLinkById(link.id)?.status : null;
