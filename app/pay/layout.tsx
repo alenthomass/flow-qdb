@@ -8,6 +8,6 @@ export default function PayLayout({ children }: { children: ReactNode }) {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <div className="shell"><div className="wash" /><div className="pattern" /><div className="page"><div className="stage">{children}</div></div></div>
+    <div className="shell"><div className="pattern-rail" aria-hidden="true" /><div className="page"><div className="stage">{children}</div></div></div>
   </>;
 }

@@ -58,29 +58,34 @@ pass('Generated data/store assets expose QR 6,540 and 4 paid links for fresh and
 
 resetStore();
 resetGateway();
-const link = await createPaymentLink({ amountMinor: seed.invoices[6].amountMinor, description: 'React handler fixture', invoiceId: seed.invoices[6].id });
-at(link.id);
+const pageForEmail = publishCheckoutPage({ productName: 'Email validation fixture', description: '', amountMinor: seed.invoices[0].amountMinor });
+at(pageForEmail.slug);
 let renderer;
-await act(async () => { renderer = create(createElement(PayCheckout, { slug: link.id })); });
+await act(async () => { renderer = create(createElement(PayCheckout, { slug: pageForEmail.slug })); });
 const treeText = () => JSON.stringify(renderer.toJSON());
 const payButton = () => renderer.root.findByProps({ className: 'pay' });
 const emailInput = () => renderer.root.findByProps({ type: 'email' });
-const before = { moneyIn: getMoneyIn('month'), net: getNet('month'), total: getMatchRate().total, count: getStore().transactions.length };
-const phoneInput = () => renderer.root.findByProps({ type: 'tel' });
-const continueButton = () => renderer.root.findByProps({ className: 'pay-continue' });
 assert.ok(emailError('') && emailError('broken@') && !emailError('payer@example.com'));
 await act(async () => { payButton().props.onClick(); });
 assert.ok(treeText().includes('Enter a valid email'));
 assert.equal(emailInput().props['aria-invalid'], true);
-assert.equal(getStore().transactions.length, before.count);
+const pageTxnCount = getStore().transactions.length;
 await act(async () => { emailInput().props.onChange({ target: { value: 'broken@' } }); });
 await act(async () => { payButton().props.onClick(); });
 assert.ok(treeText().includes('Enter a valid email'));
+assert.equal(getStore().transactions.length, pageTxnCount);
 pass('Actual React onClick displays a field-level error for empty and malformed email, without calling the payment spine');
-await act(async () => { emailInput().props.onChange({ target: { value: 'payer@example.com' } }); });
-await act(async () => { phoneInput().props.onChange({ target: { value: '55551234' } }); });
-await act(async () => { payButton().props.onClick(); });
+await act(async () => { renderer.unmount(); });
+
+resetStore();
+resetGateway();
+const link = await createPaymentLink({ amountMinor: seed.invoices[6].amountMinor, description: 'React handler fixture', invoiceId: seed.invoices[6].id });
+at(link.id);
+await act(async () => { renderer = create(createElement(PayCheckout, { slug: link.id })); });
+const continueButton = () => renderer.root.findByProps({ className: 'pay-continue' });
+const before = { moneyIn: getMoneyIn('month'), net: getNet('month'), total: getMatchRate().total, count: getStore().transactions.length };
 assert.ok(treeText().includes('Price Summary') && treeText().includes('Payment Options'));
+assert.ok(!treeText().includes('Payment Details'));
 let notifications = 0;
 const unsubscribe = subscribePayStore(() => notifications++);
 const revisionBefore = getPayRevision();
@@ -105,6 +110,7 @@ assert.equal(getMatchRate().matched + getOpenMatches().length, getMatchRate().to
 assert.ok(notifications >= 2 && getPayRevision() > revisionBefore);
 unsubscribe();
 await act(async () => { renderer.unmount(); });
+pass('Payment links open the gateway checkout directly, without a hosted payment page');
 pass('Actual React Pay handler processes once, settles through the existing spine, displays amount/merchant/reference, and notifies subscribers at pending and settled transitions');
 pass('Payment updates Money In, Home Net, chart, P&L and match denominator consistently; duplicate submissions do not duplicate the transaction');
 
@@ -114,14 +120,11 @@ for (const outcome of ['decline', 'timeout']) {
   const count = getStore().transactions.length;
   const moneyIn = getMoneyIn('month');
   await act(async () => { renderer = create(createElement(PayCheckout, { slug: failureLink.id, outcome })); });
-  await act(async () => { emailInput().props.onChange({ target: { value: 'payer@example.com' } }); });
-  await act(async () => { phoneInput().props.onChange({ target: { value: '55551234' } }); });
-  await act(async () => { payButton().props.onClick(); });
   await act(async () => { continueButton().props.onClick(); });
   assert.equal(renderer.root.findByProps({ 'data-payment-state': outcome === 'decline' ? 'declined' : 'timeout' }).props['data-payment-state'], outcome === 'decline' ? 'declined' : 'timeout');
   assert.equal(getStore().transactions.length, count);
   assert.equal(getMoneyIn('month'), moneyIn);
-  assert.equal(payButton().props.disabled, false);
+  assert.equal(continueButton().props.disabled, false);
   await act(async () => { renderer.unmount(); });
 }
 pass('Decline and timeout have distinct React states, permit retry, and create no ledger inflow');

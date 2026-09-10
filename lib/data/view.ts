@@ -449,6 +449,14 @@ export function dashboardState() {
       phone: page.supportPhone || "",
       terms: page.terms !== false,
       payLabel: page.payLabel || "Pay",
+      theme: page.theme === "dark" ? "dark" : "light",
+      closeMode: page.closeMode === "date" ? "date" : "none",
+      closeLabel: page.closeLabel || "",
+      afterPay: page.afterPay === "redirect" ? "redirect" : "message",
+      redirectUrl: page.redirectUrl || "",
+      receiptAuto: page.receiptAuto !== false,
+      receiptCustomer: !!page.receiptCustomer,
+      receiptRef: !!page.receiptRef,
       fields: (page.fields && page.fields.length ? page.fields : [
         { label: "Amount", kind: "price" },
         { label: "Email", kind: "mail" }

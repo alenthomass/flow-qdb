@@ -106,7 +106,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Extraction returns vendor, date, total, tax, lines and tag: Barzan Water / Al Maha Stationery
 - PASS Scan accepts an image or PDF: file input accept image/*,application/pdf
 - PASS Extraction delay is 1.5-2.5s: 1800ms
-- PASS Scan shows extraction in progress: 2041ms
+- PASS Scan shows extraction in progress: 2053ms
 - PASS Extracted fields are correctable with confidence: Barzan Water tax QR 0 · vendor 96%
 - PASS Scan save recomputes Money Out: Money Out QR 34,545 (was QR 33,365.00)
 - PASS Scan save drops Reports net profit: net profit QR 21,465 (was QR 22,645.00)
@@ -114,12 +114,12 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Tally after Barzan scan is 22 settled rows: 22 items (23 would include pending txn_13)
 - PASS Second sample bill saves through selectors: Money Out QR 33,705.00 · Al Maha Stationery
 - PASS Payment link copies to clipboard: submitModal writes the pay URL
-- PASS Payment link URL stays on Flow, not SkipCash test: /pay/pl_f6b9518134
+- PASS Payment link URL stays on Flow, not SkipCash test: /pay/pl_3d2643c935
 - PASS Copied payment links open Flow checkout: React /pay handles payment links
 - PASS Spine create leaves Money In unchanged: Money In QR 56,010.00
 - PASS Home Net equals Reports after creating a link: QR 22,645.00
 - PASS Who owes me equals Outstanding after creating a link: QR 20,900.00 across 3
-- PASS Spine success appends a pending ledger row: txn_link_pl_f6b9518 pending
+- PASS Spine success appends a pending ledger row: txn_link_pl_3d2643c pending
 - PASS Pending payment is excluded from Money In: Money In QR 56,010.00; pending QR 11,700.00
 - PASS Linked invoice awaits settlement while pending: awaiting settlement
 - PASS Needs Your Attention includes the new proposal: 4 open
@@ -137,9 +137,9 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Home Net equals Reports after confirm: QR 28,045.00
 - PASS Simulate decline marks the link rejected without a ledger row: rejected
 - PASS Simulate timeout marks the link failed without a ledger row: failed
-- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_pl_8d34802
+- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_pl_03089a7
 - PASS Reference ID matches an outstanding invoice for reconciliation: inv_0144
-- PASS simulatePayment still works after gateway reset: txn_link_pl_4c06401
+- PASS simulatePayment still works after gateway reset: txn_link_pl_86e7ff0
 - PASS Tally export uses ENVELOPE / HEADER / BODY: envelope present
 - PASS Tally export is one voucher per settled transaction in the last 30 days: 21 vouchers; pending txn_13 omitted
 - PASS Tally vouchers tag the cost centre: COSTCENTREALLOCATIONS.LIST NAME = transaction tag
@@ -156,11 +156,18 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Public payment page matches the builder without edit chrome: customer checkout chrome
 - PASS Public pay page validates email and shows a receipt: email + success card
 - PASS Published checkout stores product name, QAR price and slug: eid-hamper QR 250.00
-- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_6410f9184b
+- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_39acc7f506
 - PASS Hosted checkout pending is excluded from Money In: QR 56,010.00
 - PASS Hosted checkout settle lifts Money In by the page price: Money In QR 56,260.00
 - PASS Home Net equals Reports after hosted checkout: QR 22,895.00
 - PASS matched + open after hosted checkout: 11 + 4 = 15
+- PASS Published checkout stores page theme and receipt defaults: dark message
+- PASS Save checkout settings persists theme, close date, redirect and receipts: light date
+- PASS Closed checkout page is no longer accepting payments: This page is no longer accepting payments.
+- PASS Paying a closed checkout page is rejected: This page is no longer accepting payments.
+- PASS Page settings Save writes the store: dark
+- PASS Receipts Save writes the store: true
+- PASS Hoverable does not paint empty borderColor as black: no empty borderColor, no settings card hover outline
 - PASS Publish derives slug from the title: fleet-deposit
 - PASS Duplicate title gets a uniqueness suffix: fleet-deposit-2
 - PASS Publish with no amount names the missing field: Amount is required
@@ -168,7 +175,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Payment link deactivate updates status: Deactivated
 - PASS Payment links expose expiry, uses and copy URL: 17 Sept 2026 · uses 0
 - PASS Subscription plan creates a customer and upcoming charge: 1 upcoming · QR 400.00
-- PASS Simulated billing appends a pending ledger row: txn_sub_ad2f942360
+- PASS Simulated billing appends a pending ledger row: txn_sub_76a6ca192a
 - PASS Simulated billing settle lifts Money In: QR 56,410.00
 - PASS Cancel stops further upcoming charges: 0 upcoming
 - PASS Smart Checkout lives on Get Paid overview: overview toggle card
@@ -184,14 +191,14 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS applyStore copies team and employees from the ledger: 4 members · 3 employees
 - PASS Recurring invoice next three offsets: 0, 30, 60
 - PASS Sending a recurring invoice appends an invoice: INV-0151 · sentCount 1
-- PASS Recurring Start schedule writes the store: rec_mtvgjpzv · 0, 30, 60
+- PASS Recurring Start schedule writes the store: rec_mtvipb41 · 0, 30, 60
 - PASS Recurring UI shows the next three sends: 10 Sept 2026 / 10 Oct 2026 / 9 Nov 2026
 - PASS Tag rename updates ledger rows: 26 rows
 - PASS Tag list counts come from the ledger: 26 items
 - PASS Removing a used tag fails loudly: Can't remove Sales renamed: 26 items still use it
 - PASS Permission write persists: view
 - PASS Approval limit write persists: QR 5,000.00
-- PASS Approval request waits on the owner: apv_mtvgjqrf
+- PASS Approval request waits on the owner: apv_mtvipbvm
 - PASS Approval resolve writes the store: approved
 - PASS Recurring / tags / approvals are bound in the view: start + rename + limits
 - PASS Reset demo data asks for confirm: modal open, Money In still QR 61,410.00
@@ -221,6 +228,59 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Saved-store migration restores 4 paid seed links: QR 6,540 collected, 4 times paid; created link retained; ledger unchanged; migration idempotent
 - PASS Generated data/store assets expose QR 6,540 and 4 paid links for fresh and older saved sessions (no deployed-browser verification)
 - PASS Actual React onClick displays a field-level error for empty and malformed email, without calling the payment spine
+- PASS Actual React Pay handler processes once, settles through the existing spine, displays amount/merchant/reference, and notifies subscribers at pending and settled transitions
+- PASS Payment updates Money In, Home Net, chart, P&L and match denominator consistently; duplicate submissions do not duplicate the transaction
+- PASS Decline and timeout have distinct React states, permit retry, and create no ledger inflow
+- PASS Published checkout uses the existing checkout spine for success and the mock gateway URL scenarios for decline/timeout
+- PASS Pay route uses React handlers and useSyncExternalStore; no legacy HTML runtime, unpkg dependency, or focus/storage listeners
+
+No browser, visual-parity, or deployed-environment verification was attempted. External logo/font availability was not verified.
+
+## Stage A React checkout verification
+
+- PASS Saved-store migration restores 4 paid seed links: QR 6,540 collected, 4 times paid; created link retained; ledger unchanged; migration idempotent
+- PASS Generated data/store assets expose QR 6,540 and 4 paid links for fresh and older saved sessions (no deployed-browser verification)
+- PASS Actual React onClick displays a field-level error for empty and malformed email, without calling the payment spine
+- PASS Actual React Pay handler processes once, settles through the existing spine, displays amount/merchant/reference, and notifies subscribers at pending and settled transitions
+- PASS Payment updates Money In, Home Net, chart, P&L and match denominator consistently; duplicate submissions do not duplicate the transaction
+- PASS Decline and timeout have distinct React states, permit retry, and create no ledger inflow
+- PASS Published checkout uses the existing checkout spine for success and the mock gateway URL scenarios for decline/timeout
+- PASS Pay route uses React handlers and useSyncExternalStore; no legacy HTML runtime, unpkg dependency, or focus/storage listeners
+
+No browser, visual-parity, or deployed-environment verification was attempted. External logo/font availability was not verified.
+
+## Stage A React checkout verification
+
+- PASS Saved-store migration restores 4 paid seed links: QR 6,540 collected, 4 times paid; created link retained; ledger unchanged; migration idempotent
+- PASS Generated data/store assets expose QR 6,540 and 4 paid links for fresh and older saved sessions (no deployed-browser verification)
+- PASS Actual React onClick displays a field-level error for empty and malformed email, without calling the payment spine
+- PASS Actual React Pay handler processes once, settles through the existing spine, displays amount/merchant/reference, and notifies subscribers at pending and settled transitions
+- PASS Payment updates Money In, Home Net, chart, P&L and match denominator consistently; duplicate submissions do not duplicate the transaction
+- PASS Decline and timeout have distinct React states, permit retry, and create no ledger inflow
+- PASS Published checkout uses the existing checkout spine for success and the mock gateway URL scenarios for decline/timeout
+- PASS Pay route uses React handlers and useSyncExternalStore; no legacy HTML runtime, unpkg dependency, or focus/storage listeners
+
+No browser, visual-parity, or deployed-environment verification was attempted. External logo/font availability was not verified.
+
+## Stage A React checkout verification
+
+- PASS Saved-store migration restores 4 paid seed links: QR 6,540 collected, 4 times paid; created link retained; ledger unchanged; migration idempotent
+- PASS Generated data/store assets expose QR 6,540 and 4 paid links for fresh and older saved sessions (no deployed-browser verification)
+- PASS Actual React onClick displays a field-level error for empty and malformed email, without calling the payment spine
+- PASS Actual React Pay handler processes once, settles through the existing spine, displays amount/merchant/reference, and notifies subscribers at pending and settled transitions
+- PASS Payment updates Money In, Home Net, chart, P&L and match denominator consistently; duplicate submissions do not duplicate the transaction
+- PASS Decline and timeout have distinct React states, permit retry, and create no ledger inflow
+- PASS Published checkout uses the existing checkout spine for success and the mock gateway URL scenarios for decline/timeout
+- PASS Pay route uses React handlers and useSyncExternalStore; no legacy HTML runtime, unpkg dependency, or focus/storage listeners
+
+No browser, visual-parity, or deployed-environment verification was attempted. External logo/font availability was not verified.
+
+## Stage A React checkout verification
+
+- PASS Saved-store migration restores 4 paid seed links: QR 6,540 collected, 4 times paid; created link retained; ledger unchanged; migration idempotent
+- PASS Generated data/store assets expose QR 6,540 and 4 paid links for fresh and older saved sessions (no deployed-browser verification)
+- PASS Actual React onClick displays a field-level error for empty and malformed email, without calling the payment spine
+- PASS Payment links open the gateway checkout directly, without a hosted payment page
 - PASS Actual React Pay handler processes once, settles through the existing spine, displays amount/merchant/reference, and notifies subscribers at pending and settled transitions
 - PASS Payment updates Money In, Home Net, chart, P&L and match denominator consistently; duplicate submissions do not duplicate the transaction
 - PASS Decline and timeout have distinct React states, permit retry, and create no ledger inflow

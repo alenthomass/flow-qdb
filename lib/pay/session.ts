@@ -1,6 +1,6 @@
 import { getStore } from "../data/store";
 import { hydrateStore } from "../data/hydrate";
-import { checkoutPageBySlug, paymentLinkById, payPublishedCheckout, settleCheckoutPayment, settlePayment, simulatePayment } from "../data/spine";
+import { checkoutPageBySlug, checkoutPageUnavailable, paymentLinkById, payPublishedCheckout, settleCheckoutPayment, settlePayment, simulatePayment } from "../data/spine";
 import { offsetFromLabel } from "../format";
 import type { PaymentOutcome } from "../gateway/index";
 
@@ -73,6 +73,10 @@ async function runPayment(slug: string, outcome: PaymentOutcome, paidMinor?: num
     if (!page && !link) return { status: "error", message: "Checkout is not available." };
     if (link) {
       const message = linkUnavailable(link.id);
+      if (message) return { status: "error", message };
+    }
+    if (page) {
+      const message = checkoutPageUnavailable(page);
       if (message) return { status: "error", message };
     }
     const result = page ? await payPublishedCheckout(page.slug) : await simulatePayment(link!.id, outcome, paidMinor);

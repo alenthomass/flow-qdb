@@ -34,6 +34,7 @@ var FlowStore = (() => {
     cancelSubscriber: () => cancelSubscriber,
     cancelSubscriptionPlan: () => cancelSubscriptionPlan,
     checkoutPageBySlug: () => checkoutPageBySlug,
+    checkoutPageUnavailable: () => checkoutPageUnavailable,
     confirmMatch: () => confirmMatch,
     connectSampleBank: () => connectSampleBank,
     connectShopify: () => connectShopify,
@@ -64,6 +65,7 @@ var FlowStore = (() => {
     resetGateway: () => resetGateway,
     resetStore: () => resetStore,
     runSimulatedBilling: () => runSimulatedBilling,
+    saveCheckoutSettings: () => saveCheckoutSettings,
     setSmartCheckout: () => setSmartCheckout,
     settleBilling: () => settleBilling,
     settleCheckoutPayment: () => settleCheckoutPayment,
@@ -1399,6 +1401,14 @@ var FlowStore = (() => {
         phone: page.supportPhone || "",
         terms: page.terms !== false,
         payLabel: page.payLabel || "Pay",
+        theme: page.theme === "dark" ? "dark" : "light",
+        closeMode: page.closeMode === "date" ? "date" : "none",
+        closeLabel: page.closeLabel || "",
+        afterPay: page.afterPay === "redirect" ? "redirect" : "message",
+        redirectUrl: page.redirectUrl || "",
+        receiptAuto: page.receiptAuto !== false,
+        receiptCustomer: !!page.receiptCustomer,
+        receiptRef: !!page.receiptRef,
         fields: (page.fields && page.fields.length ? page.fields : [
           { label: "Amount", kind: "price" },
           { label: "Email", kind: "mail" }
@@ -1914,6 +1924,26 @@ var FlowStore = (() => {
 
   // lib/data/spine.ts
   var SETTLEMENT_DELAY_MS = 1200;
+  function invoiceByReference(referenceId) {
+    const ref = String(referenceId || "").trim().toLowerCase();
+    if (!ref) return void 0;
+    return getStore().invoices.find((row) => row.number.toLowerCase() === ref || row.id.toLowerCase() === ref);
+  }
+  function uniqueLinkId(seedId) {
+    const compact = seedId.replace(/-/g, "");
+    const ids = new Set(getStore().paymentLinks.map((row) => row.id));
+    let id = "pl_" + compact.slice(0, 10);
+    let n = 2;
+    while (ids.has(id)) {
+      id = "pl_" + compact.slice(0, 8) + n.toString(16);
+      n += 1;
+    }
+    return id;
+  }
+  function hostedLinkUrl(id) {
+    const origin = typeof location !== "undefined" && location.origin ? location.origin : "";
+    return origin + "/pay/" + id;
+  }
   function ownerContact() {
     const merchant = getStore().merchant;
     const owner = getStore().teamMembers.find((member) => member.role === "Owner");
@@ -1926,25 +1956,31 @@ var FlowStore = (() => {
   }
   async function createPaymentLink(input) {
     const store = getStore();
-    const invoice = input.invoiceId ? store.invoices.find((row) => row.id === input.invoiceId) : void 0;
+    const invoice = (input.invoiceId ? store.invoices.find((row) => row.id === input.invoiceId) : void 0) || invoiceByReference(input.referenceId);
     const clientId = input.clientId || invoice?.clientId || null;
     const client = clientId ? store.clients.find((row) => row.id === clientId) : void 0;
     const owner = ownerContact();
     const names = (client?.name || store.merchant.ownerName).split(" ").filter(Boolean);
+    const email = (input.customerEmail || "").trim() || client?.email || owner.email;
+    const phone = (input.customerPhone || "").trim() || void 0;
+    const referenceId = (input.referenceId || "").trim() || null;
+    const notes = (input.notes || []).filter((note) => note.key.trim() || note.value.trim());
     const record = await getGateway().createPaymentLink({
       amountMinor: input.amountMinor,
       currency: store.merchant.currency,
       description: input.description,
-      merchantTransactionId: invoice?.number,
+      merchantTransactionId: referenceId || invoice?.number,
       customer: {
         firstName: names[0] || owner.firstName,
         lastName: names.slice(1).join(" ") || owner.lastName,
-        email: client?.email || owner.email
+        email,
+        phone
       }
     });
+    const id = uniqueLinkId(record.id);
     const link = {
-      id: record.id,
-      payUrl: record.payUrl,
+      id,
+      payUrl: hostedLinkUrl(id),
       amountMinor: input.amountMinor,
       description: input.description || "Payment",
       clientId,
@@ -1953,7 +1989,15 @@ var FlowStore = (() => {
       createdOffset: 0,
       uses: 0,
       expiry: input.expiry || "-",
-      txnId: null
+      txnId: null,
+      customerEmail: (input.customerEmail || "").trim() || null,
+      notifyEmail: !!input.notifyEmail,
+      customerPhone: phone || null,
+      phoneDial: input.phoneDial || void 0,
+      notifySms: !!input.notifySms,
+      referenceId,
+      partialPayment: !!input.partialPayment,
+      notes
     };
     appendPaymentLink(link);
     return link;
@@ -1969,23 +2013,29 @@ var FlowStore = (() => {
       currency: getStore().merchant.currency,
       statusId: 0,
       status: "new",
-      merchantTransactionId: link.invoiceId,
+      merchantTransactionId: link.referenceId || link.invoiceId,
       createdDayOffset: link.createdOffset
     });
   }
-  async function simulatePayment(linkId, outcome) {
+  async function simulatePayment(linkId, outcome, paidMinor) {
     const link = getStore().paymentLinks.find((row) => row.id === linkId);
     if (!link) throw new Error("Payment link not found: " + linkId);
     ensureGatewayPayment(link);
     const gateway = getGateway();
     const payload = await gateway.simulatePayment(linkId, outcome);
-    const result = await gateway.handleWebhook(payload);
+    let charged = payload.amount;
+    if (link.partialPayment && paidMinor && paidMinor > 0) {
+      const cap = Math.min(paidMinor, link.amountMinor);
+      charged = (cap / 100).toFixed(2);
+    }
+    const result = await gateway.handleWebhook({ ...payload, amount: charged });
     if (result.statusId !== 2) {
       replacePaymentLink(linkId, { status: result.statusId === 5 ? "rejected" : "failed" });
       return { pending: false, txnId: null, delayMs: 0, reference: payload.visaId, amountMinor: result.amountMinor };
     }
     const client = link.clientId ? getStore().clients.find((row) => row.id === link.clientId) : void 0;
-    const invoice = link.invoiceId ? getStore().invoices.find((row) => row.id === link.invoiceId) : void 0;
+    const invoice = (link.invoiceId ? getStore().invoices.find((row) => row.id === link.invoiceId) : void 0) || invoiceByReference(link.referenceId);
+    const invoiceId = invoice?.id || link.invoiceId;
     const txnId = "txn_link_" + link.id.replace(/-/g, "").slice(0, 10);
     appendTransaction({
       id: txnId,
@@ -1998,7 +2048,7 @@ var FlowStore = (() => {
       status: "pending",
       amountMinor: result.amountMinor,
       branchId: invoice?.branchId || "br_01",
-      invoiceId: link.invoiceId
+      invoiceId
     });
     appendActivity({
       id: "act_" + txnId,
@@ -2010,13 +2060,13 @@ var FlowStore = (() => {
     appendMatchProposal({
       id: "mp_" + txnId,
       transactionId: txnId,
-      invoiceId: link.invoiceId,
+      invoiceId,
       confidence: invoice ? 0.93 : 0.52,
-      reason: invoice ? "Payment link amount matches " + invoice.number + (client ? " for " + client.name : "") + "." : "Payment link with no matching invoice. Log as a direct sale?",
+      reason: invoice ? link.referenceId ? "Payment link reference " + link.referenceId + " matches " + invoice.number + (client ? " for " + client.name : "") + "." : "Payment link amount matches " + invoice.number + (client ? " for " + client.name : "") + "." : link.referenceId ? "Payment link reference " + link.referenceId + " has no matching invoice. Log as a direct sale?" : "Payment link with no matching invoice. Log as a direct sale?",
       status: "open"
     });
     replacePaymentLink(linkId, { status: "pending", txnId, uses: 1 });
-    return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS, reference: payload.visaId || txnId, amountMinor: result.amountMinor };
+    return { pending: true, txnId, delayMs: SETTLEMENT_DELAY_MS, reference: payload.visaId || txnId || link.referenceId, amountMinor: result.amountMinor };
   }
   function settlePayment(linkId) {
     const link = getStore().paymentLinks.find((row) => row.id === linkId);
@@ -2087,6 +2137,33 @@ var FlowStore = (() => {
       { label: "Email", kind: "mail", optional: false }
     ];
   }
+  function asTheme(value) {
+    return value === "dark" ? "dark" : "light";
+  }
+  function asCloseMode(value) {
+    return value === "date" ? "date" : "none";
+  }
+  function asAfterPay(value) {
+    return value === "redirect" ? "redirect" : "message";
+  }
+  function withCheckoutSettings(input, existing) {
+    return {
+      theme: asTheme(input.theme ?? existing?.theme),
+      closeMode: asCloseMode(input.closeMode ?? existing?.closeMode),
+      closeLabel: String(input.closeLabel ?? existing?.closeLabel ?? ""),
+      afterPay: asAfterPay(input.afterPay ?? existing?.afterPay),
+      redirectUrl: String(input.redirectUrl ?? existing?.redirectUrl ?? "").trim(),
+      receiptAuto: input.receiptAuto ?? existing?.receiptAuto ?? true,
+      receiptCustomer: input.receiptCustomer ?? existing?.receiptCustomer ?? false,
+      receiptRef: input.receiptRef ?? existing?.receiptRef ?? false
+    };
+  }
+  function checkoutPageUnavailable(page) {
+    if (asCloseMode(page.closeMode) !== "date") return null;
+    const offset = offsetFromLabel(page.closeLabel || "");
+    if (offset !== null && offset < 0) return "This page is no longer accepting payments.";
+    return null;
+  }
   function publishCheckoutPage(input) {
     if (!input.productName || !String(input.productName).trim()) {
       throw new Error("Checkout page needs a product name");
@@ -2121,7 +2198,8 @@ var FlowStore = (() => {
       supportPhone: (input.supportPhone ?? existing?.supportPhone ?? "").trim(),
       terms: input.terms ?? existing?.terms ?? true,
       payLabel: String(input.payLabel ?? existing?.payLabel ?? "Pay").trim() || "Pay",
-      fields
+      fields,
+      ...withCheckoutSettings(input, existing)
     };
     if (existing) replaceCheckoutPage(existing.id, page);
     else appendCheckoutPage(page);
@@ -2130,9 +2208,22 @@ var FlowStore = (() => {
   function checkoutPageBySlug(slug) {
     return getStore().checkoutPages.find((page) => page.slug === slug && page.published);
   }
+  function saveCheckoutSettings(id, patch) {
+    const store = getStore();
+    const existing = store.checkoutPages.find((page) => page.id === id);
+    if (!existing) throw new Error("Checkout page not found");
+    const others = store.checkoutPages.filter((page) => page.id !== id).map((page) => page.slug);
+    const slug = patch.slug != null && String(patch.slug).trim() ? uniqueSlug(patch.slug, others) : existing.slug;
+    replaceCheckoutPage(id, { slug, ...withCheckoutSettings(patch, existing) });
+    const next = getStore().checkoutPages.find((page) => page.id === id);
+    if (!next) throw new Error("Checkout page not found");
+    return next;
+  }
   async function payPublishedCheckout(slug) {
     const page = checkoutPageBySlug(slug);
     if (!page) throw new Error("Checkout page not found: " + slug);
+    const closed = checkoutPageUnavailable(page);
+    if (closed) throw new Error(closed);
     replaceCheckoutPage(page.id, { views: page.views + 1 });
     const record = await getGateway().createPaymentLink({
       amountMinor: page.amountMinor,

@@ -110,7 +110,6 @@ export function CheckoutModal({
                 <button type="button" className="ck-phone" onClick={() => setEditingPhone(true)}>{phone || "add phone"}</button>
               )}
             </div>
-            <div className="ck-deco" aria-hidden="true" />
             <div className="ck-foot-left">Secured by Flow</div>
           </aside>
           <section className="ck-right">

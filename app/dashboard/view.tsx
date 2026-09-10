@@ -5,6 +5,11 @@ import { Fragment } from "react";
 import { Hoverable, sx } from "./chrome";
 import { LinkCreateForm } from "./link-create";
 
+function choiceCard(on: boolean) {
+  return sx("display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:none; outline:none; background:" + (on ? "var(--bar-solid)" : "var(--panel-2)") + "; box-shadow:none; transition:background .15s ease");
+}
+const choiceHover = sx("background:var(--bar-solid)");
+
 export function DashboardView({ v }: { v: Record<string, any> }) {
   return (
     <>
@@ -495,7 +500,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                 <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:15.5px; font-weight:600; letter-spacing:-.02em; letter-spacing:-.01em")}>Quick Actions</div>
                 <div style={sx("display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px")}>
                   {((v.quick) || []).map((q: any, qIdx: any) => <Fragment key={q?.id || q?.key || 'q-' + qIdx}>
-                        <Hoverable as="button" style={sx("text-align:left; padding:16px; border:1px solid var(--tile); border-radius:16px; background:linear-gradient(150deg,var(--surface),var(--panel-3)); transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={q.go} hoverStyle={sx("border:1px solid var(--accent); background:var(--surface)")}>
+                        <Hoverable as="button" style={sx("text-align:left; padding:16px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(150deg,var(--surface),var(--panel-3)); transition:background-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={q.go} hoverStyle={sx("background:var(--surface)")}>
                       <div style={sx("width:34px; height:34px; border-radius:10px; background:var(--ink-block); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 16px -8px rgba(0,0,0,.35)")}>
                         <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
                           <path d={q.d} stroke="var(--on-block)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -751,14 +756,14 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               </div>
 
               <div style={sx("position:relative; overflow:hidden")}>
-              <div style={sx("position:absolute; inset:0 0 0 44%; pointer-events:none; background:var(--page-pattern); background-size:96px 96px; mask-image:linear-gradient(to right, transparent 0%, #000 48%, #000 100%); -webkit-mask-image:linear-gradient(to right, transparent 0%, #000 48%, #000 100%)")} />
+              <div style={sx("position:absolute; inset:0; pointer-events:none; background:var(--page-pattern); background-size:96px 96px; mask-image:linear-gradient(to right, transparent 0%, transparent 34%, rgba(0,0,0,.18) 48%, rgba(0,0,0,.55) 62%, rgba(0,0,0,.88) 78%, #000 92%, #000 100%); -webkit-mask-image:linear-gradient(to right, transparent 0%, transparent 34%, rgba(0,0,0,.18) 48%, rgba(0,0,0,.55) 62%, rgba(0,0,0,.88) 78%, #000 92%, #000 100%)")} />
               <div style={sx("position:relative; max-width:900px; margin:0 auto; padding:36px 28px 64px")}>
                 <Hoverable as="button" style={sx("display:inline-flex; align-items:center; gap:7px; margin-bottom:20px; padding:2px 0; background:transparent; border:none; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-4); transition:color .16s ease")} onClick={v.ppList.reopen} hoverStyle={sx("color:var(--ink)")}>
                   <svg style={sx("flex:0 0 13px")} width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M11.2 7H3.2M6.6 3.4 3 7l3.6 3.6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   <span>Edit page</span>
                 </Hoverable>
 
-                <div style={sx("position:relative; overflow:hidden; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:30px")}>
+                <div style={sx("position:relative; overflow:hidden; background:var(--bar-solid); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:30px")}>
                   <div style={sx("display:inline-flex; align-items:center; gap:8px; font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-5)")}>
                     <span style={sx("width:6px; height:6px; border-radius:50%; background:var(--pos)")} />Live
                   </div>
@@ -780,7 +785,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                 <div style={sx("font-family:'Clash Display','Urbanist',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em; margin:34px 0 14px")}>What happens next</div>
 
                 <div style={sx("display:flex; flex-direction:column; gap:12px")}>
-                  <div style={sx("display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; padding:20px 22px")}>
+                  <div style={sx("display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:var(--bar-solid); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:20px 22px")}>
                     <span style={sx("width:38px; height:38px; flex:0 0 38px; border-radius:12px; background:var(--chip); display:flex; align-items:center; justify-content:center")}>
                       <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M6.1 2.8h7.8v14.4l-1.95-1.3-1.95 1.3-1.95-1.3L6.1 17.2ZM8.4 8h3.2M8.4 11h2.2" stroke="var(--ink-3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </span>
@@ -791,7 +796,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                     <Hoverable as="button" style={sx("flex:0 0 auto; font-size:12px; font-weight:650; padding:9px 14px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.h.openReceipts} hoverStyle={sx("filter:brightness(.97)")}>Receipt settings</Hoverable>
                   </div>
 
-                  <div style={sx("display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; padding:20px 22px")}>
+                  <div style={sx("display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:var(--bar-solid); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:20px 22px")}>
                     <span style={sx("width:38px; height:38px; flex:0 0 38px; border-radius:12px; background:var(--chip); display:flex; align-items:center; justify-content:center")}>
                       <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 2.3l1.3 2.2 2.5-.4.6 2.4 2.2 1.3-1.2 2.2 1.2 2.2-2.2 1.3-.6 2.4-2.5-.4L10 17.7l-1.3-2.2-2.5.4-.6-2.4-2.2-1.3 1.2-2.2-1.2-2.2 2.2-1.3.6-2.4 2.5.4ZM10 7.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z" stroke="var(--ink-3)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </span>
@@ -819,7 +824,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                   </Hoverable>
                   <div style={sx("min-width:0")}>
                     <div style={sx("display:flex; align-items:baseline; gap:9px; min-width:0")}>
-                      <span style={sx("font-family:'Clash Display','Urbanist',sans-serif; font-size:15px; font-weight:600; letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis")}>{v.pp.headline}</span>
+                      <span style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:15px; font-weight:600; letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis")}>{v.pp.headline}</span>
                       <span style={sx("font-size:11.5px; color:var(--ink-5); white-space:nowrap")}>{v.pp.ref}</span>
                     </div>
                     <div style={sx("font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-5); margin-top:2px")}>{v.pp.statusLabel}</div>
@@ -844,18 +849,18 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               <div style={sx("position:relative; background:var(--panel-2); padding:0; overflow:hidden")}>
                 <div style={sx("position:absolute; inset:0; pointer-events:none; background:var(--page-wash)")} />
                 <div style={sx("position:relative; margin:0; background:var(--bar-solid); overflow:hidden")}>
-                <div style={sx("position:absolute; inset:0; pointer-events:none; background:var(--page-pattern); background-size:120px 120px; mask-image:linear-gradient(115deg, transparent 18%, rgba(0,0,0,.55) 52%, #000 100%); -webkit-mask-image:linear-gradient(115deg, transparent 18%, rgba(0,0,0,.55) 52%, #000 100%)")} />
-                <div style={sx("position:relative; padding:40px 32px 48px")}>
+                <div style={sx("position:absolute; inset:0; pointer-events:none; background:var(--page-pattern); background-size:96px 96px; mask-image:linear-gradient(to right, transparent 0%, transparent 34%, rgba(0,0,0,.18) 48%, rgba(0,0,0,.55) 62%, rgba(0,0,0,.88) 78%, #000 92%, #000 100%); -webkit-mask-image:linear-gradient(to right, transparent 0%, transparent 34%, rgba(0,0,0,.18) 48%, rgba(0,0,0,.55) 62%, rgba(0,0,0,.88) 78%, #000 92%, #000 100%)")} />
+                <div style={sx("position:relative; padding:64px clamp(28px, 5vw, 72px) 48px")}>
                 <div style={sx(v.ppGrid)}>
 
-                  <div style={sx("min-width:0; position:relative")}>
+                  <div style={sx("min-width:0; position:relative; padding-left:max(0px, calc((100% - 400px) / 2))")}>
                     <div style={sx("display:inline-flex; align-items:center; gap:7px; margin-bottom:22px; font-size:10.5px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-5)")}>
                       <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M13.4 3.6l3 3L7.8 15.2l-3.8.8.8-3.8 8.6-8.6Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                       Click any text to edit
                     </div>
                     <div style={sx("display:flex; align-items:center; gap:13px")}>
                       <input style={sx("display:none")} id="flow-page-logo" type="file" accept="image/*" onChange={v.pp.onLogo} />
-                      <Hoverable as="button" style={sx("width:52px; height:52px; flex:0 0 52px; padding:0; border-radius:13px; border:1px dashed var(--dash); display:flex; align-items:center; justify-content:center; overflow:hidden; font-size:10px; font-weight:650; color:var(--ink-5); cursor:pointer; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.pp.pickLogo} hoverStyle={sx("border-color:var(--ink-5); color:var(--ink-3)")}>
+                      <Hoverable as="button" style={sx("width:52px; height:52px; flex:0 0 52px; padding:0; border-radius:13px; border:" + (v.pp.hasLogo ? "none" : "1px dashed var(--dash)") + "; display:flex; align-items:center; justify-content:center; overflow:hidden; font-size:10px; font-weight:650; color:var(--ink-5); cursor:pointer; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.pp.pickLogo} hoverStyle={sx(v.pp.hasLogo ? "filter:brightness(1.06)" : "border-color:var(--ink-5); color:var(--ink-3)")}>
                         {!!(v.pp.hasLogo) && (<>
                                     <img style={sx("width:100%; height:100%; object-fit:cover")} src={v.pp.logo} alt="" />
                                   </>)}
@@ -863,10 +868,10 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                                     Logo
                                   </>)}
                       </Hoverable>
-                      <div style={sx("font-family:'Clash Display','Urbanist',sans-serif; font-size:19px; font-weight:600; letter-spacing:-.025em")}>{v.me.business}</div>
+                      <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; letter-spacing:-.025em")}>{v.me.business}</div>
                     </div>
 
-                    <Hoverable as="input" style={sx("width:100%; margin-top:26px; padding:10px 12px; margin-left:-12px; border:1px solid transparent; border-radius:10px; outline:none; background:transparent; font-family:'Clash Display','Urbanist',sans-serif; font-size:32px; font-weight:600; letter-spacing:-.035em; color:var(--ink); transition:background .16s ease, border-color .16s ease")} value={v.pp.title} onChange={v.pp.setTitle} placeholder="Enter page title here" hoverStyle={sx("background:var(--panel-2); border-color:var(--line)")} focusStyle={sx("background:var(--panel-2); border-color:var(--ink-6)")} />
+                    <Hoverable as="input" style={sx("width:100%; margin-top:28px; padding:10px 12px; margin-left:-12px; border:1px solid transparent; border-radius:10px; outline:none; background:transparent; font-family:'Urbanist','Cairo',sans-serif; font-size:36px; font-weight:600; letter-spacing:-.035em; color:var(--ink); transition:background .16s ease, border-color .16s ease")} value={v.pp.title} onChange={v.pp.setTitle} placeholder="Enter page title here" hoverStyle={sx("background:var(--panel-2); border-color:var(--line)")} focusStyle={sx("background:var(--panel-2); border-color:var(--ink-6)")} />
 
                     {!!(v.pp.goalOff) && (<>
                                 <Hoverable as="button" style={sx("display:inline-flex; align-items:center; gap:8px; margin-top:14px; padding:0; background:transparent; border:none; font-size:13px; font-weight:650; color:var(--ink-2); transition:color .15s ease")} onClick={v.pp.toggleGoal} hoverStyle={sx("color:var(--ink)")}>
@@ -915,18 +920,18 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                       </div>
                     </div>
 
-                    <div style={sx("margin-top:30px")}>
+                    <div style={sx("margin-top:48px")}>
                       <div style={sx("font-size:13.5px; font-weight:650; letter-spacing:-.01em")}>Share this on</div>
                       <div style={sx("display:flex; gap:9px; margin-top:12px")}>
                         {((v.pp.share) || []).map((sh: any, shIdx: any) => <Fragment key={sh?.id || sh?.key || 'sh-' + shIdx}>
-                                    <Hoverable as="button" style={sx("width:34px; height:34px; border-radius:10px; border:1px solid var(--line); background:var(--btn-light); display:flex; align-items:center; justify-content:center; color:var(--ink-3); transition:color .15s ease, border-color .15s ease")} onClick={v.h.copy} hoverStyle={sx("color:var(--ink); border-color:var(--ink-6)")}>
+                                    <Hoverable as="button" style={sx("width:34px; height:34px; border-radius:10px; border:1px solid var(--line); background:var(--btn-light); display:flex; align-items:center; justify-content:center; color:var(--ink-3); transition:color .15s ease")} onClick={v.h.copy} hoverStyle={sx("color:var(--ink)")}>
                             <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d={sh.d} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                           </Hoverable>
                                   </Fragment>)}
                       </div>
                     </div>
 
-                    <div style={sx("margin-top:30px")}>
+                    <div style={sx("margin-top:32px")}>
                       <div style={sx("font-size:13.5px; font-weight:650; letter-spacing:-.01em")}>Contact us</div>
                       <div style={sx("display:flex; flex-direction:column; gap:11px; margin-top:12px")}>
                         <div style={sx("display:flex; align-items:center; gap:11px")}>
@@ -940,7 +945,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                       </div>
                     </div>
 
-                    <div style={sx("display:flex; align-items:center; gap:12px; margin-top:30px; padding-top:22px; border-top:1px solid var(--divider)")}>
+                    <div style={sx("display:flex; align-items:center; gap:12px; margin-top:32px; padding-top:22px; border-top:1px solid var(--divider)")}>
                       <div style={sx("flex:1")}>
                         <div style={sx("font-size:13px; font-weight:600")}>Terms and conditions</div>
                         <div style={sx("font-size:12px; color:var(--ink-4); margin-top:2px")}>A short note above the pay button</div>
@@ -955,15 +960,16 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                     <div style={sx("margin-top:34px; padding-top:22px; border-top:1px solid var(--divider)")}>
                       <div style={sx("display:inline-flex; align-items:center; gap:8px")}>
                         <svg width="17" height="17" viewBox="0 0 20 20" fill="none"><path d="M3 4.5h10M3 8h6.5M3 11.5h4" stroke="var(--accent)" strokeWidth="1.9" strokeLinecap="round" /></svg>
-                        <span style={sx("font-family:'Clash Display','Urbanist',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em; color:var(--ink)")}>Flow</span>
+                        <span style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em; color:var(--ink)")}>Flow</span>
                       </div>
                       <div style={sx("font-size:12px; color:var(--ink-4); margin-top:10px; line-height:1.6")}>Want a payment page like this for your business? <br />Visit <span style={sx("color: var(--accent); font-weight: 600;")}>Flow Payment Pages</span> to get started.</div>
                     </div>
                   </div>
 
-                  <div style={sx("position:relative; z-index:1; background:var(--bar-solid); border:1px solid var(--line); border-radius:11px; box-shadow:0 30px 60px -30px rgba(0,0,0,.55); overflow:hidden")}>
+                  <div style={sx("position:relative; z-index:1; display:flex; justify-content:center; padding-top:8px")}>
+                  <div style={sx("width:100%; max-width:400px; background:var(--bar-solid); border:1px solid var(--line); border-radius:12px; box-shadow:0 30px 60px -30px rgba(0,0,0,.55); overflow:hidden")}>
                     <div style={sx("padding:22px 22px 6px")}>
-                      <div style={sx("font-family:'Clash Display','Urbanist',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em")}>Payment details</div>
+                      <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em")}>Payment details</div>
                       <div style={sx("width:26px; height:3px; border-radius:2px; background:var(--ink); margin-top:10px")} />
                     </div>
 
@@ -985,12 +991,12 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                                     {v.pp.priceMenu.label}
                                   </Hoverable>
                                   {!!(v.pp.priceMenu.open) && (<>
-                                              <span style={sx("position:fixed; inset:0; z-index:40")} onClick={v.pp.priceMenu.close} />
+                                              <span style={sx("position:fixed; inset:0; z-index:40")} onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); v.pp.priceMenu.close(); }} />
                                     <span style={sx("position:absolute; top:calc(100% + 7px); left:0; z-index:41; display:block; width:250px; background:var(--bar-solid); border:1px solid var(--line); border-radius:12px; box-shadow:0 26px 52px -26px rgba(0,0,0,.45); overflow:hidden; animation:flowIn .15s ease both")}>
                                       <span style={sx("display:block; padding:12px 14px 9px; font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-5); border-bottom:1px solid var(--divider-2)")}>Select amount type</span>
                                       <span style={sx("display:block; padding:6px")}>
                                         {((v.pp.priceMenu.options) || []).map((po: any, poIdx: any) => <Fragment key={po?.id || po?.key || 'po-' + poIdx}>
-                                                    <Hoverable as="button" style={sx("width:100%; display:flex; align-items:flex-start; gap:10px; padding:9px 10px; border-radius:9px; text-align:left; transition:background .14s ease")} onClick={po.go} hoverStyle={sx("background:var(--panel-3)")}>
+                                                    <Hoverable as="button" type="button" style={sx("width:100%; display:flex; align-items:flex-start; gap:10px; padding:9px 10px; border-radius:9px; text-align:left; transition:background .14s ease")} onMouseDown={(e) => { e.stopPropagation(); }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); po.go(e); }} hoverStyle={sx("background:var(--panel-3)")}>
                                             <svg style={sx("flex:0 0 16px; margin-top:1px")} width="16" height="16" viewBox="0 0 20 20" fill="none"><path d={po.d} stroke="var(--ink-3)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                                             <span style={sx("min-width:0")}>
                                               <span style={sx("display:block; font-size:12.5px; font-weight:600; color:var(--ink)")}>{po.label}</span>
@@ -1014,40 +1020,48 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
 
                           {!!(fd.editing) && (<>
                                       <div style={sx("background:var(--bar-solid); border:1px solid var(--ink-6); border-radius:11px; box-shadow:0 20px 44px -22px rgba(0,0,0,.5); overflow:hidden")}>
-                              <div style={sx("display:flex; align-items:center; gap:10px; padding:14px")}>
+                              {!!(fd.notPrice) && (<>
+                                          <div style={sx("display:flex; align-items:center; gap:10px; padding:14px")}>
                                 <input style={sx("width:110px; flex:0 0 110px; padding:6px 0; border:none; border-bottom:2px solid var(--ink); outline:none; background:transparent; font-size:12.5px; font-weight:600; color:var(--ink)")} value={fd.draft} onChange={fd.setLabel} placeholder="Field label" />
-                                {!!(fd.qtyMode) && (<>
-                                            <span style={sx("flex:1; min-width:0; display:flex; align-items:center; gap:10px")}>
-                                    <span style={sx("flex:1; min-width:0; display:flex; align-items:center; gap:7px; border:1px solid var(--ink-6); border-radius:9px; padding:10px 12px; background:var(--panel-2)")}>
-                                      <span style={sx("font-size:11px; font-weight:700; color:var(--ink-4)")}>QR</span>
-                                      <input style={sx("flex:1; min-width:0; border:none; outline:none; background:transparent; font-size:12.5px; font-weight:600; color:var(--ink)")} value={fd.unitPrice} onChange={fd.setPrice} />
-                                    </span>
-                                    <span style={sx("display:flex; align-items:center; border:1px solid var(--line); border-radius:9px; overflow:hidden; flex:0 0 auto; background:var(--panel-2); opacity:.65")} title="Customers choose the quantity">
-                                      <span style={sx("width:30px; height:38px; display:flex; align-items:center; justify-content:center; color:var(--ink-5); font-size:15px; font-weight:600")}>–</span>
-                                      <span style={sx("width:34px; text-align:center; font-size:12.5px; font-weight:650; color:var(--ink-4)")}>1</span>
-                                      <span style={sx("width:30px; height:38px; display:flex; align-items:center; justify-content:center; color:var(--ink-5); font-size:15px; font-weight:600")}>+</span>
-                                    </span>
-                                  </span>
-                                          </>)}
-                                {!!(fd.fixedMode) && (<>
-                                            <span style={sx("flex:1; min-width:0; display:flex; align-items:center; gap:7px; border:1px solid var(--ink-6); border-radius:9px; padding:10px 12px; background:var(--panel-2)")}>
-                                    <span style={sx("font-size:11px; font-weight:700; color:var(--ink-4)")}>QR</span>
-                                    <input style={sx("flex:1; min-width:0; border:none; outline:none; background:transparent; font-size:12.5px; font-weight:600; color:var(--ink)")} value={fd.unitPrice} onChange={fd.setPrice} />
-                                  </span>
-                                          </>)}
-                                {!!(fd.openMode) && (<>
-                                            <span style={sx("flex:1; min-width:0; border:1px solid var(--ink-6); border-radius:9px; padding:10px 12px; font-size:12.5px; color:var(--ink-5); background:var(--panel-2)")}>To be filled by customer</span>
-                                          </>)}
-                                {!!(fd.notPrice) && (<>
-                                            <span style={sx("flex:1; min-width:0; border:1px solid var(--ink-6); border-radius:9px; padding:10px 12px; font-size:12.5px; color:var(--ink-5); background:var(--panel-2)")}>To be filled by customer</span>
-                                          </>)}
-                                <div style={sx("position:relative; flex:0 0 auto; display:flex; align-items:center; gap:8px")} />
+                                <span style={sx("flex:1; min-width:0; border:1px solid var(--ink-6); border-radius:9px; padding:10px 12px; font-size:12.5px; color:var(--ink-5); background:var(--panel-2)")}>To be filled by customer</span>
                               </div>
+                                        </>)}
+                              {!!(fd.isPrice) && (<>
+                                          <div style={sx("padding:14px 14px 8px")}>
+                                <div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-5); margin-bottom:6px")}>Name on checkout</div>
+                                <input style={sx("width:100%; padding:6px 0; border:none; border-bottom:2px solid var(--ink); outline:none; background:transparent; font-size:12.5px; font-weight:600; color:var(--ink)")} value={fd.draft} onChange={fd.setLabel} placeholder="Field label" />
+                              </div>
+                                {!!(fd.fixedMode || fd.qtyMode) && (<>
+                                              <div style={sx("padding:6px 14px 14px")}>
+                                    <div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-5); margin-bottom:8px")}>Amount<span style={sx("color:var(--neg); margin-left:3px")}>*</span></div>
+                                    <span style={sx("display:flex; align-items:center; gap:10px")}>
+                                      <span style={sx("flex:1; min-width:0; display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:var(--panel-2)")}>
+                                        <span style={sx("flex:0 0 auto; font-size:12px; font-weight:700; color:var(--ink-3); padding:4px 8px; border-radius:7px; background:var(--chip)")}>QR</span>
+                                        <input autoFocus inputMode="decimal" style={sx("flex:1; min-width:0; border:none; outline:none; background:transparent; font-size:22px; font-weight:600; letter-spacing:-.03em; color:var(--ink); font-variant-numeric:tabular-nums")} value={fd.unitPrice} onChange={fd.setPrice} placeholder="0.00" />
+                                      </span>
+                                      {!!(fd.qtyMode) && (<>
+                                                    <span style={sx("display:flex; align-items:center; border:1px solid var(--line); border-radius:9px; overflow:hidden; flex:0 0 auto; background:var(--panel-2); opacity:.65")} title="Customers choose the quantity">
+                                          <span style={sx("width:30px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink-5); font-size:15px; font-weight:600")}>–</span>
+                                          <span style={sx("width:34px; text-align:center; font-size:12.5px; font-weight:650; color:var(--ink-4)")}>1</span>
+                                          <span style={sx("width:30px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink-5); font-size:15px; font-weight:600")}>+</span>
+                                        </span>
+                                                  </>)}
+                                    </span>
+                                    <div style={sx("font-size:11.5px; color:var(--ink-4); margin-top:8px; line-height:1.45")}>{fd.amountNote}</div>
+                                  </div>
+                                            </>)}
+                                {!!(fd.openMode) && (<>
+                                              <div style={sx("padding:6px 14px 14px")}>
+                                    <div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-5); margin-bottom:8px")}>Amount</div>
+                                    <span style={sx("display:block; border:1px dashed var(--dash); border-radius:12px; padding:14px 16px; font-size:13px; color:var(--ink-4); background:var(--panel-2); line-height:1.45")}>Customers type any amount on the page.</span>
+                                  </div>
+                                            </>)}
+                                        </>)}
                               {!!(fd.optional) && (<>
                                           <div style={sx("padding:10px 14px; border-top:1px solid var(--divider-2); font-size:11.5px; color:var(--ink-3)")}>Customers can skip this field.</div>
                                         </>)}
                               {!!(fd.locked) && (<>
-                                          <div style={sx("padding:11px 14px; border-top:1px solid var(--divider-2); background:var(--panel-2); font-size:11.5px; color:var(--ink-3); line-height:1.5")}><strong style={sx("color:var(--ink)")}>Mandatory</strong> field. {fd.amountNote} It cannot be removed.</div>
+                                          <div style={sx("padding:11px 14px; border-top:1px solid var(--divider-2); background:var(--panel-2); font-size:11.5px; color:var(--ink-3); line-height:1.5")}><strong style={sx("color:var(--ink)")}>Mandatory</strong> field. {fd.notPrice ? fd.amountNote + ' ' : ''}It cannot be removed.</div>
                                         </>)}
                               <div style={sx("display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:11px 14px; border-top:1px solid var(--divider-2)")}>
                                 {!!(fd.removable) && (<>
@@ -1104,23 +1118,36 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                       </Hoverable>
                     </div>
                   </div>
+                  </div>
 
                   {!!(v.pp.payLabelEditing) && (<>
                               <div style={sx("position:fixed; inset:0; z-index:60; background:rgba(18,18,24,.5); display:flex; align-items:center; justify-content:center; padding:20px")} onClick={v.pp.cancelPayLabel}>
                       <div style={sx("width:100%; max-width:480px; background:var(--bar-solid); border-radius:16px; box-shadow:0 40px 90px -30px rgba(0,0,0,.5); overflow:hidden")} onClick={v.h.stop}>
-                        <div style={sx("display:flex; align-items:center; gap:16px; padding:26px")}>
-                          <span style={sx("font-size:14px; font-weight:650; color:var(--ink); white-space:nowrap")}>Payment button label<span style={sx("color:var(--neg); margin-left:3px")}>*</span></span>
-                          <input style={sx("flex:1; min-width:0; padding:10px 13px; border:1px solid var(--accent-line); border-radius:9px; outline:none; font-size:13.5px; color:var(--ink); background:var(--panel)")} value={v.pp.payLabelDraft} onChange={v.pp.setPayLabelDraft} />
+                        <div style={sx("padding:26px 26px 8px")}>
+                          {!!(v.pp.payAmountOpen) && (<>
+                                        <div style={sx("font-size:12px; font-weight:650; color:var(--ink-3); margin-bottom:8px")}>Amount</div>
+                            <div style={sx("border:1px dashed var(--dash); border-radius:12px; padding:14px 16px; font-size:13.5px; color:var(--ink-4); background:var(--panel-2); line-height:1.45")}>Customers type any amount on the page.</div>
+                                      </>)}
+                          {!!(!v.pp.payAmountOpen) && (<>
+                                        <div style={sx("font-size:12px; font-weight:650; color:var(--ink); margin-bottom:8px")}>Amount<span style={sx("color:var(--neg); margin-left:3px")}>*</span></div>
+                            <div style={sx("display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:var(--panel-2)")}>
+                              <span style={sx("flex:0 0 auto; font-size:13px; font-weight:700; color:var(--ink-3); padding:6px 10px; border-radius:8px; background:var(--chip)")}>QR</span>
+                              <input autoFocus inputMode="decimal" style={sx("flex:1; min-width:0; border:none; outline:none; background:transparent; font-size:28px; font-weight:600; letter-spacing:-.035em; color:var(--ink); font-variant-numeric:tabular-nums")} value={v.pp.payAmountDraft} onChange={v.pp.setPayAmountDraft} placeholder="0.00" />
+                            </div>
+                            <div style={sx("font-size:12px; color:var(--ink-4); margin-top:8px; line-height:1.45")}>{v.pp.payAmountHint}</div>
+                                      </>)}
+                          <div style={sx("font-size:12px; font-weight:650; color:var(--ink); margin:20px 0 8px")}>Payment button label<span style={sx("color:var(--neg); margin-left:3px")}>*</span></div>
+                          <input style={sx("width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:14px; font-weight:600; color:var(--ink); background:var(--panel-2)")} value={v.pp.payLabelDraft} onChange={v.pp.setPayLabelDraft} placeholder="Pay" />
                         </div>
                         <div style={sx("display:flex; align-items:center; gap:12px; padding:16px 26px; background:var(--panel-2)")}>
                           <span style={sx("flex:1; min-width:0; display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--ink-4)")}>UPI · VISA · MASTERCARD · NAPS</span>
                           <span style={sx("font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); padding:10px 16px; border-radius:8px; white-space:nowrap")}>{v.pp.payLabelDraft} {v.pp.total}</span>
                         </div>
                         <div style={sx("display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:16px 26px; border-top:1px solid var(--divider-2)")}>
-                          <Hoverable as="button" style={sx("width:38px; height:38px; border-radius:9px; border:1px solid var(--accent-line); color:var(--accent); display:flex; align-items:center; justify-content:center; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.pp.cancelPayLabel} hoverStyle={sx("background:var(--accent-soft)")}>
+                          <Hoverable as="button" type="button" style={sx("width:38px; height:38px; border-radius:9px; border:1px solid var(--accent-line); color:var(--accent); display:flex; align-items:center; justify-content:center; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.pp.cancelPayLabel} hoverStyle={sx("background:var(--accent-soft)")}>
                             <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
                           </Hoverable>
-                          <Hoverable as="button" style={sx("width:38px; height:38px; border-radius:9px; background:var(--btn-dark); color:var(--on-block); display:flex; align-items:center; justify-content:center; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.pp.savePayLabel} hoverStyle={sx("filter:brightness(1.12)")}>
+                          <Hoverable as="button" type="button" style={sx("width:38px; height:38px; border-radius:9px; background:var(--btn-dark); color:var(--on-block); display:flex; align-items:center; justify-content:center; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.pp.savePayLabel} hoverStyle={sx("filter:brightness(1.12)")}>
                             <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M4.4 10.4 8 14l7.6-8" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>
                           </Hoverable>
                         </div>
@@ -1745,7 +1772,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                       <span style={sx("display:block; font-size:11.5px; color:var(--ink-4); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis")}>{i.amt} · due {i.due}</span>
                     </span>
                     <span style={sx(i.chip)}>{i.status}</span>
-                    <Hoverable as="button" style={sx("justify-self:end; font-size:12px; font-weight:600; padding:8px 13px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:filter .15s ease, border-color .15s ease")} onClick={i.remind} hoverStyle={sx("filter:brightness(.97); border-color:var(--ink-6)")}>Remind</Hoverable>
+                    <Hoverable as="button" style={sx("justify-self:end; font-size:12px; font-weight:600; padding:8px 13px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:filter .15s ease")} onClick={i.remind} hoverStyle={sx("filter:brightness(.97)")}>Remind</Hoverable>
                   </Hoverable>
                       </Fragment>)}
                     </>)}
@@ -1756,7 +1783,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
           {!!(v.it.clients) && (<>
                 <div style={sx("display:grid; grid-template-columns:repeat(auto-fill,minmax(288px,1fr)); gap:14px")}>
               {((v.clients) || []).map((c: any, cIdx: any) => <Fragment key={c?.id || c?.key || 'c-' + cIdx}>
-                    <Hoverable as="button" style={sx("display:flex; flex-direction:column; text-align:left; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); overflow:hidden; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease")} onClick={c.open} hoverStyle={sx("transform:translateY(-2px); border-color:var(--ink-6); box-shadow:0 22px 40px -28px rgba(0,0,0,.35)")}>
+                    <Hoverable as="button" style={sx("display:flex; flex-direction:column; text-align:left; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); overflow:hidden; transition:transform .18s ease, box-shadow .18s ease")} onClick={c.open} hoverStyle={sx("transform:translateY(-2px); box-shadow:0 22px 40px -28px rgba(0,0,0,.35)")}>
                   <span style={sx("display:flex; align-items:center; gap:12px; padding:18px 20px 16px")}>
                     <span style={sx("width:40px; height:40px; flex:0 0 40px; border-radius:11px; background:var(--chip); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700; color:var(--ink-2)")}>{c.initials}</span>
                     <span style={sx("min-width:0; flex:1")}>
@@ -2118,7 +2145,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                 <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:24px")}>
                   <div style={sx("font-size:16.5px; font-weight:700; letter-spacing:-.02em")}>Send it monthly</div>
                   <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px")}>We can email the pack to {v.pack.accountant} on the 1st of every month.</div>
-                  <Hoverable as="button" style={sx("margin-top:14px; font-size:12.5px; font-weight:600; padding:9px 15px; border-radius:8px; border:1px solid var(--line); background:linear-gradient(170deg,var(--panel-3),var(--panel)); transition:background .15s ease, border-color .15s ease")} onClick={v.h.copy} hoverStyle={sx("background:var(--panel-3); border-color:var(--ink-6)")}>Turn on monthly send</Hoverable>
+                  <Hoverable as="button" style={sx("margin-top:14px; font-size:12.5px; font-weight:600; padding:9px 15px; border-radius:8px; border:1px solid var(--line); background:linear-gradient(170deg,var(--panel-3),var(--panel)); transition:background .15s ease")} onClick={v.h.copy} hoverStyle={sx("background:var(--panel-3)")}>Turn on monthly send</Hoverable>
                 </div>
               </div>
             </div>
@@ -2273,7 +2300,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               <div style={sx("display:flex; align-items:center; padding:18px 22px; border-bottom:1px solid var(--divider)")}>
                 <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>Activity</div>
                 <div style={sx("flex:1")} />
-                <Hoverable as="button" style={sx("font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:linear-gradient(170deg,var(--panel-3),var(--panel)); transition:background .15s ease, border-color .15s ease")} onClick={v.h.export} hoverStyle={sx("background:var(--panel-3); border-color:var(--ink-6)")}>Export</Hoverable>
+                <Hoverable as="button" style={sx("font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:linear-gradient(170deg,var(--panel-3),var(--panel)); transition:background .15s ease")} onClick={v.h.export} hoverStyle={sx("background:var(--panel-3)")}>Export</Hoverable>
               </div>
               <div style={sx("display:flex; align-items:center; gap:8px; padding:12px 22px; border-bottom:1px solid var(--divider); flex-wrap:wrap")}>
                 <span style={sx("font-size:10.5px; font-weight:700; color:var(--ink-5); letter-spacing:.09em; margin-right:4px")}>TYPE</span>
@@ -2534,7 +2561,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
 
           {!!(v.st.billing) && (<>
                 <div style={sx("display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px")}>
-              <div style={sx("background:var(--surface); border:1.5px solid var(--accent); border-radius:11px; padding:20px")}>
+              <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px")}>
                 <div style={sx("display:flex; align-items:center; gap:8px")}><span style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>{v.plan.tier}</span><span style={sx("font-size:10.5px; font-weight:650; color:var(--accent); background:var(--accent-soft); padding:3px 8px; border-radius:6px")}>CURRENT</span></div>
                 <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:24px; font-weight:600; margin-top:10px")}>{v.plan.price}<span style={sx("font-size:12px; color:var(--ink-4)")}>/mo</span></div>
                 <div style={sx("font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5")}>{v.plan.limitLabel}</div>
@@ -3061,7 +3088,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               <div>
                 <div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:9px")}>Page theme</div>
                 <div style={sx("display:grid; grid-template-columns:1fr 1fr; gap:10px")}>
-                <Hoverable as="button" style={sx("display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2); transition:border-color .15s ease, background .15s ease")} onClick={v.ps.themeLight.go} hoverStyle={sx("border-color:var(--ink-6)")}>
+                <Hoverable as="button" style={choiceCard(v.ps.themeLight.on)} onClick={v.ps.themeLight.go} hoverStyle={choiceHover}>
                   <span style={sx("width:17px; height:17px; flex:0 0 17px; margin-top:1px; border-radius:50%; border:1.5px solid var(--ink-6); display:flex; align-items:center; justify-content:center")}>
                     {!!(v.ps.themeLight.on) && (<>
                             <span style={sx("width:9px; height:9px; border-radius:50%; background:var(--ink)")} />
@@ -3072,7 +3099,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                     <span style={sx("display:block; font-size:12px; color:var(--ink-4); line-height:1.5; margin-top:2px")}>White page, dark pay button</span>
                   </span>
                 </Hoverable>
-                <Hoverable as="button" style={sx("display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2); transition:border-color .15s ease, background .15s ease")} onClick={v.ps.themeDark.go} hoverStyle={sx("border-color:var(--ink-6)")}>
+                <Hoverable as="button" style={choiceCard(v.ps.themeDark.on)} onClick={v.ps.themeDark.go} hoverStyle={choiceHover}>
                   <span style={sx("width:17px; height:17px; flex:0 0 17px; margin-top:1px; border-radius:50%; border:1.5px solid var(--ink-6); display:flex; align-items:center; justify-content:center")}>
                     {!!(v.ps.themeDark.on) && (<>
                             <span style={sx("width:9px; height:9px; border-radius:50%; background:var(--ink)")} />
@@ -3089,7 +3116,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               <div>
                 <div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:9px")}>When the page stops accepting payments</div>
                 <div style={sx("display:flex; flex-direction:column; gap:10px")}>
-                <Hoverable as="button" style={sx("display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2); transition:border-color .15s ease, background .15s ease")} onClick={v.ps.expNone.go} hoverStyle={sx("border-color:var(--ink-6)")}>
+                <Hoverable as="button" style={choiceCard(v.ps.expNone.on)} onClick={v.ps.expNone.go} hoverStyle={choiceHover}>
                   <span style={sx("width:17px; height:17px; flex:0 0 17px; margin-top:1px; border-radius:50%; border:1.5px solid var(--ink-6); display:flex; align-items:center; justify-content:center")}>
                     {!!(v.ps.expNone.on) && (<>
                             <span style={sx("width:9px; height:9px; border-radius:50%; background:var(--ink)")} />
@@ -3100,7 +3127,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                     <span style={sx("display:block; font-size:12px; color:var(--ink-4); line-height:1.5; margin-top:2px")}>The page stays open until you close it</span>
                   </span>
                 </Hoverable>
-                <Hoverable as="button" style={sx("display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2); transition:border-color .15s ease, background .15s ease")} onClick={v.ps.expDate.go} hoverStyle={sx("border-color:var(--ink-6)")}>
+                <Hoverable as="button" style={choiceCard(v.ps.expDate.on)} onClick={v.ps.expDate.go} hoverStyle={choiceHover}>
                   <span style={sx("width:17px; height:17px; flex:0 0 17px; margin-top:1px; border-radius:50%; border:1.5px solid var(--ink-6); display:flex; align-items:center; justify-content:center")}>
                     {!!(v.ps.expDate.on) && (<>
                             <span style={sx("width:9px; height:9px; border-radius:50%; background:var(--ink)")} />
@@ -3112,7 +3139,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                   </span>
                 </Hoverable>
                   {!!(v.ps.dateOn) && (<>
-                        <input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13px; background:var(--surface); color:var(--ink)")} placeholder="DD / MM / YYYY" />
+                        <input type="date" value={v.ps.closeDate} onChange={v.ps.setCloseDate} style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13px; background:var(--surface); color:var(--ink)")} />
                       </>)}
                 </div>
               </div>
@@ -3120,7 +3147,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               <div>
                 <div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:9px")}>After a successful payment</div>
                 <div style={sx("display:flex; flex-direction:column; gap:10px")}>
-                <Hoverable as="button" style={sx("display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2); transition:border-color .15s ease, background .15s ease")} onClick={v.ps.afterMsg.go} hoverStyle={sx("border-color:var(--ink-6)")}>
+                <Hoverable as="button" style={choiceCard(v.ps.afterMsg.on)} onClick={v.ps.afterMsg.go} hoverStyle={choiceHover}>
                   <span style={sx("width:17px; height:17px; flex:0 0 17px; margin-top:1px; border-radius:50%; border:1.5px solid var(--ink-6); display:flex; align-items:center; justify-content:center")}>
                     {!!(v.ps.afterMsg.on) && (<>
                             <span style={sx("width:9px; height:9px; border-radius:50%; background:var(--ink)")} />
@@ -3131,7 +3158,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                     <span style={sx("display:block; font-size:12px; color:var(--ink-4); line-height:1.5; margin-top:2px")}>The customer stays on the page</span>
                   </span>
                 </Hoverable>
-                <Hoverable as="button" style={sx("display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2); transition:border-color .15s ease, background .15s ease")} onClick={v.ps.afterRedirect.go} hoverStyle={sx("border-color:var(--ink-6)")}>
+                <Hoverable as="button" style={choiceCard(v.ps.afterRedirect.on)} onClick={v.ps.afterRedirect.go} hoverStyle={choiceHover}>
                   <span style={sx("width:17px; height:17px; flex:0 0 17px; margin-top:1px; border-radius:50%; border:1.5px solid var(--ink-6); display:flex; align-items:center; justify-content:center")}>
                     {!!(v.ps.afterRedirect.on) && (<>
                             <span style={sx("width:9px; height:9px; border-radius:50%; background:var(--ink)")} />
@@ -3143,7 +3170,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                   </span>
                 </Hoverable>
                   {!!(v.ps.redirectOn) && (<>
-                        <input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13px; background:var(--surface); color:var(--ink)")} placeholder="https://desertbloom.qa/thank-you" />
+                        <input type="url" value={v.ps.redirectUrl} onChange={v.ps.setRedirectUrl} style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13px; background:var(--surface); color:var(--ink)")} placeholder="https://desertbloom.qa/thank-you" />
                       </>)}
                 </div>
               </div>
@@ -3155,7 +3182,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               <div>
                 <div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:9px")}>Sending receipts</div>
                 <div style={sx("display:flex; flex-direction:column; gap:10px")}>
-                <Hoverable as="button" style={sx("display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2); transition:border-color .15s ease, background .15s ease")} onClick={v.rc.auto.go} hoverStyle={sx("border-color:var(--ink-6)")}>
+                <Hoverable as="button" style={choiceCard(v.rc.auto.on)} onClick={v.rc.auto.go} hoverStyle={choiceHover}>
                   <span style={sx("width:17px; height:17px; flex:0 0 17px; margin-top:1px; border-radius:50%; border:1.5px solid var(--ink-6); display:flex; align-items:center; justify-content:center")}>
                     {!!(v.rc.auto.on) && (<>
                             <span style={sx("width:9px; height:9px; border-radius:50%; background:var(--ink)")} />
@@ -3166,7 +3193,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                     <span style={sx("display:block; font-size:12px; color:var(--ink-4); line-height:1.5; margin-top:2px")}>Emailed to the customer the moment payment clears</span>
                   </span>
                 </Hoverable>
-                <Hoverable as="button" style={sx("display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2); transition:border-color .15s ease, background .15s ease")} onClick={v.rc.manual.go} hoverStyle={sx("border-color:var(--ink-6)")}>
+                <Hoverable as="button" style={choiceCard(v.rc.manual.on)} onClick={v.rc.manual.go} hoverStyle={choiceHover}>
                   <span style={sx("width:17px; height:17px; flex:0 0 17px; margin-top:1px; border-radius:50%; border:1.5px solid var(--ink-6); display:flex; align-items:center; justify-content:center")}>
                     {!!(v.rc.manual.on) && (<>
                             <span style={sx("width:9px; height:9px; border-radius:50%; background:var(--ink)")} />
@@ -3182,7 +3209,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               <div>
                 <div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:9px")}>What the receipt shows</div>
                 <div style={sx("display:flex; flex-direction:column; gap:10px")}>
-                <Hoverable as="button" style={sx("display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2); transition:border-color .15s ease")} onClick={v.rc.showCustomer.go} hoverStyle={sx("border-color:var(--ink-6)")}>
+                <Hoverable as="button" style={choiceCard(v.rc.showCustomer.on)} onClick={v.rc.showCustomer.go} hoverStyle={choiceHover}>
                   <span style={sx("width:17px; height:17px; flex:0 0 17px; margin-top:1px; border-radius:5px; border:1.5px solid var(--ink-6); display:flex; align-items:center; justify-content:center")}>
                     {!!(v.rc.showCustomer.on) && (<>
                             <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="m2.4 6.2 2.2 2.2 5-5.2" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -3193,7 +3220,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                     <span style={sx("display:block; font-size:12px; color:var(--ink-4); line-height:1.5; margin-top:2px")}>Name, email and phone appear on the receipt</span>
                   </span>
                 </Hoverable>
-                <Hoverable as="button" style={sx("display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2); transition:border-color .15s ease")} onClick={v.rc.ref.go} hoverStyle={sx("border-color:var(--ink-6)")}>
+                <Hoverable as="button" style={choiceCard(v.rc.ref.on)} onClick={v.rc.ref.go} hoverStyle={choiceHover}>
                   <span style={sx("width:17px; height:17px; flex:0 0 17px; margin-top:1px; border-radius:5px; border:1.5px solid var(--ink-6); display:flex; align-items:center; justify-content:center")}>
                     {!!(v.rc.ref.on) && (<>
                             <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="m2.4 6.2 2.2 2.2 5-5.2" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>

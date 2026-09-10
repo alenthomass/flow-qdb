@@ -11,6 +11,7 @@ import {
   addSubscriber,
   cancelSubscriber,
   cancelRecurringInvoice,
+  checkoutPageUnavailable,
   confirmMatch,
   connectSampleBank,
   connectShopify,
@@ -33,6 +34,7 @@ import {
   requestApproval,
   resolveApproval,
   runSimulatedBilling,
+  saveCheckoutSettings,
   sendRecurringInvoice,
   setApprovalLimit,
   setRolePermission,
@@ -102,7 +104,7 @@ const FlowStore = {
   appendTransaction, resetStore, dashboardState, dashboardSnapshot, SAMPLE_BILL, SAMPLE_BILLS,
   EXTRACT_DELAY_MS, extractBill, extractDelayMs, extractedBillForm, offsetFromLabel,
   createPaymentLink, simulatePayment, settlePayment, confirmMatch,
-  publishCheckoutPage, payPublishedCheckout, settleCheckoutPayment,
+  publishCheckoutPage, payPublishedCheckout, settleCheckoutPayment, saveCheckoutSettings, checkoutPageUnavailable,
   createSubscriptionPlan, addSubscriber, runSimulatedBilling, settleBilling,
   cancelSubscriber, deactivatePaymentLink, connectShopify, ingestShopifyOrder,
   connectSampleBank, setSmartCheckout, SAMPLE_CHECKOUT_ANALYTICS,
@@ -1014,7 +1016,7 @@ check("Public payment page matches the builder without edit chrome",
   /Payment Details/.test(payPage) &&
     /Share this on/.test(payPage) &&
     /Secured by SkipCash · SANDBOX/.test(payPage) &&
-    /Contact us/.test(payPage) &&
+    /Contact Us/.test(payPage) &&
     /box locked/.test(payPage) &&
     !/Click any text to edit/i.test(payPage) &&
     !/Add new/.test(payPage) &&
@@ -1054,6 +1056,85 @@ check("Home Net equals Reports after hosted checkout",
 check("matched + open after hosted checkout",
   getMatchRate().matched + getOpenMatches().length === getMatchRate().total,
   getMatchRate().matched + " + " + getOpenMatches().length + " = " + getMatchRate().total);
+resetStore();
+resetGateway();
+
+const settingsPage = publishCheckoutPage({
+  productName: "Settings hamper",
+  description: "Theme and receipts",
+  amountMinor: 18000,
+  theme: "dark",
+  afterPay: "message",
+  receiptAuto: true,
+  receiptCustomer: false,
+  receiptRef: false
+});
+check("Published checkout stores page theme and receipt defaults",
+  settingsPage.theme === "dark" && settingsPage.afterPay === "message" && settingsPage.receiptAuto === true &&
+    settingsPage.closeMode === "none" && settingsPage.receiptCustomer === false,
+  settingsPage.theme + " " + settingsPage.afterPay);
+const savedSettings = saveCheckoutSettings(settingsPage.id, {
+  slug: "settings-hamper",
+  theme: "light",
+  closeMode: "date",
+  closeLabel: dateInputValue(-1),
+  afterPay: "redirect",
+  redirectUrl: "https://desertbloom.qa/thank-you",
+  receiptAuto: false,
+  receiptCustomer: true,
+  receiptRef: true
+});
+check("Save checkout settings persists theme, close date, redirect and receipts",
+  savedSettings.theme === "light" && savedSettings.closeMode === "date" && savedSettings.closeLabel === dateInputValue(-1) &&
+    savedSettings.afterPay === "redirect" && savedSettings.redirectUrl === "https://desertbloom.qa/thank-you" &&
+    savedSettings.receiptAuto === false && savedSettings.receiptCustomer === true && savedSettings.receiptRef === true &&
+    savedSettings.amountMinor === 18000,
+  savedSettings.theme + " " + savedSettings.closeMode);
+check("Closed checkout page is no longer accepting payments",
+  checkoutPageUnavailable(savedSettings) === "This page is no longer accepting payments.",
+  checkoutPageUnavailable(savedSettings) || "open");
+let closedPay = "";
+try {
+  await payPublishedCheckout(savedSettings.slug);
+} catch (err) {
+  closedPay = err && err.message || String(err);
+}
+check("Paying a closed checkout page is rejected",
+  closedPay === "This page is no longer accepting payments.",
+  closedPay || "paid");
+root.setState({
+  modal: "pageSettings",
+  ppEditing: savedSettings.id,
+  ps: {
+    slug: "settings-hamper",
+    slugCustom: true,
+    theme: "dark",
+    expiry: "none",
+    after: "message",
+    closeDate: "",
+    redirectUrl: ""
+  }
+});
+root.submitModal();
+const afterModal = live().checkoutPages.find(row => row.id === savedSettings.id);
+check("Page settings Save writes the store",
+  !!(afterModal && afterModal.theme === "dark" && afterModal.closeMode === "none" && afterModal.afterPay === "message" && root.state.modal === null),
+  (afterModal && afterModal.theme) || "missing");
+root.setState({
+  modal: "receipts",
+  ppEditing: savedSettings.id,
+  rc: { auto: true, showCustomer: false, ref: false }
+});
+root.submitModal();
+const afterReceipts = live().checkoutPages.find(row => row.id === savedSettings.id);
+check("Receipts Save writes the store",
+  !!(afterReceipts && afterReceipts.receiptAuto === true && afterReceipts.receiptCustomer === false && afterReceipts.receiptRef === false && root.state.modal === null),
+  afterReceipts ? String(afterReceipts.receiptAuto) : "missing");
+const chromeSource = readFileSync(new URL("../app/dashboard/chrome.tsx", import.meta.url), "utf8");
+check("Hoverable does not paint empty borderColor as black",
+  !/merged\[key\] = ""/.test(chromeSource) && !/hoverStyle=\{sx\("border-color:var\(--ink-6\)"\)\}/.test(html),
+  "no empty borderColor, no settings card hover outline");
+
 resetStore();
 resetGateway();
 

@@ -69,15 +69,15 @@ html, body { margin: 0; padding: 0; height: 100%; }
   [data-theme="dark"] { color-scheme: dark; }
   [data-theme] { transition: background .4s ease, color .3s ease; }
   [data-theme] *, [data-theme] *::before, [data-theme] *::after {
-    transition: background-color .35s ease, background-image .35s ease, border-color .35s ease, color .3s ease, box-shadow .35s ease, fill .3s ease, stroke .3s ease;
+    transition: background-color .35s ease, background-image .35s ease, color .3s ease, box-shadow .35s ease, fill .3s ease, stroke .3s ease;
   }
   [data-theme] [data-match-fill] {
     transition: width .55s cubic-bezier(.32,.72,0,1);
   }
-  [data-theme] input, [data-theme] button { transition: background-color .35s ease, border-color .35s ease, color .3s ease, box-shadow .2s ease, transform .15s ease, filter .15s ease; }
+  [data-theme] input, [data-theme] button { transition: background-color .35s ease, color .3s ease, box-shadow .2s ease, transform .15s ease, filter .15s ease; }
   @keyframes flowGlow { 0%,100% { opacity:.55; transform: translate3d(0,0,0) scale(1); } 50% { opacity:.85; transform: translate3d(0,-14px,0) scale(1.06); } }
-  input, button, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
-  button { cursor: pointer; border: none; background: none; }
+  input, button, select, textarea { font-family: inherit; font-size: inherit; color: inherit; border-color: transparent; }
+  button { cursor: pointer; border: none; border-color: transparent; background: none; -webkit-appearance: none; appearance: none; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { color: var(--accent-2); text-decoration: underline; }
   nav::-webkit-scrollbar, [data-noscroll]::-webkit-scrollbar { width: 0; height: 0; display: none; }
@@ -88,7 +88,7 @@ html, body { margin: 0; padding: 0; height: 100%; }
   @keyframes flowPop { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
   @keyframes flowFade { from { opacity: 0; } to { opacity: 1; } }
   button, a, input, select, textarea, summary, [role="button"] {
-    transition: background-color .22s ease, background-image .22s ease, border-color .22s ease,
+    transition: background-color .22s ease, background-image .22s ease,
                 color .22s ease, box-shadow .22s ease, opacity .22s ease, filter .18s ease,
                 transform .2s cubic-bezier(.32,.72,0,1);
   }

@@ -9,6 +9,34 @@ function camelAttr(name: string): string {
   return name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
 }
 
+const BORDER_SHORTHAND: Record<string, [string, string, string]> = {
+  border: ["borderWidth", "borderStyle", "borderColor"],
+  borderTop: ["borderTopWidth", "borderTopStyle", "borderTopColor"],
+  borderRight: ["borderRightWidth", "borderRightStyle", "borderRightColor"],
+  borderBottom: ["borderBottomWidth", "borderBottomStyle", "borderBottomColor"],
+  borderLeft: ["borderLeftWidth", "borderLeftStyle", "borderLeftColor"],
+};
+
+function applyCssDecl(out: Record<string, string>, key: string, value: string) {
+  const sides = BORDER_SHORTHAND[key];
+  if (sides) {
+    if (value === "none" || value === "0") {
+      out[sides[0]] = "0";
+      out[sides[1]] = "none";
+      out[sides[2]] = "transparent";
+      return;
+    }
+    const parsed = value.match(/^(\d+(?:\.\d+)?px|0)\s+(none|hidden|solid|dashed|dotted|double)\s+(.+)$/i);
+    if (parsed) {
+      out[sides[0]] = parsed[1];
+      out[sides[1]] = parsed[2];
+      out[sides[2]] = parsed[3];
+      return;
+    }
+  }
+  out[key] = value;
+}
+
 export function sx(css: string | CSSProperties | null | undefined): CSSProperties | undefined {
   if (!css) return undefined;
   if (typeof css === "object") return css;
@@ -18,7 +46,7 @@ export function sx(css: string | CSSProperties | null | undefined): CSSPropertie
     if (i < 0) return;
     const key = camelAttr(part.slice(0, i).trim());
     const value = part.slice(i + 1).trim();
-    if (key && value) out[key] = value;
+    if (key && value) applyCssDecl(out, key, value);
   });
   return out as CSSProperties;
 }
@@ -32,17 +60,10 @@ function mergeHoverableStyle(
   active: boolean,
   focus: boolean
 ): CSSProperties | undefined {
-  const base = sx(style) || {};
-  const hoverS = sx(hoverStyle) || {};
-  const activeS = sx(activeStyle) || {};
-  const focusS = sx(focusStyle) || {};
-  const merged: Record<string, string | number> = { ...base };
-  Object.keys(hoverS).concat(Object.keys(activeS), Object.keys(focusS)).forEach(key => {
-    if (!(key in base)) merged[key] = "";
-  });
-  if (hover) Object.assign(merged, hoverS);
-  if (active) Object.assign(merged, activeS);
-  if (focus) Object.assign(merged, focusS);
+  const merged: Record<string, string | number> = { ...(sx(style) || {}) };
+  if (hover) Object.assign(merged, sx(hoverStyle) || {});
+  if (active) Object.assign(merged, sx(activeStyle) || {});
+  if (focus) Object.assign(merged, sx(focusStyle) || {});
   return merged as CSSProperties;
 }
 
@@ -77,6 +98,7 @@ export function Hoverable<T extends ElementType = "button">({
   const merged = mergeHoverableStyle(style, hoverStyle, activeStyle, focusStyle, hover, active, focus);
   return (
     <Tag
+      {...rest}
       style={merged}
       onMouseEnter={(event: MouseEvent) => { setHover(true); onMouseEnter?.(event); }}
       onMouseLeave={(event: MouseEvent) => { setHover(false); setActive(false); onMouseLeave?.(event); }}
@@ -84,7 +106,6 @@ export function Hoverable<T extends ElementType = "button">({
       onMouseUp={(event: MouseEvent) => { setActive(false); onMouseUp?.(event); }}
       onFocus={(event: FocusEvent) => { setFocus(true); onFocus?.(event); }}
       onBlur={(event: FocusEvent) => { setFocus(false); onBlur?.(event); }}
-      {...rest}
     >
       {children}
     </Tag>

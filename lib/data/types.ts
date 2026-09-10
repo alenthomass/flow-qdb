@@ -160,6 +160,10 @@ export interface CheckoutField {
   optional?: boolean;
 }
 
+export type CheckoutTheme = "light" | "dark";
+export type CheckoutCloseMode = "none" | "date";
+export type CheckoutAfterPay = "message" | "redirect";
+
 export interface CheckoutPage {
   id: string;
   slug: string;
@@ -179,6 +183,14 @@ export interface CheckoutPage {
   terms: boolean;
   payLabel: string;
   fields: CheckoutField[];
+  theme?: CheckoutTheme;
+  closeMode?: CheckoutCloseMode;
+  closeLabel?: string;
+  afterPay?: CheckoutAfterPay;
+  redirectUrl?: string;
+  receiptAuto?: boolean;
+  receiptCustomer?: boolean;
+  receiptRef?: boolean;
 }
 
 export interface SubscriptionPlan {

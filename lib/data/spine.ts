@@ -32,10 +32,13 @@ import {
 } from "./store";
 import { SAMPLE_BANKS, SAMPLE_SHOPIFY_ORDER } from "./sample-checkout";
 import { getPayrollNet } from "./selectors";
-import { monthYearLabel } from "../format";
+import { monthYearLabel, offsetFromLabel } from "../format";
 import type {
   AccessLevel,
+  CheckoutAfterPay,
+  CheckoutCloseMode,
   CheckoutPage,
+  CheckoutTheme,
   Client,
   Invoice,
   InvoiceLine,
@@ -312,11 +315,22 @@ function postInbound(opts: {
   }
 }
 
-export interface PublishCheckoutInput {
+export interface CheckoutPageSettingsPatch {
+  slug?: string;
+  theme?: CheckoutTheme;
+  closeMode?: CheckoutCloseMode;
+  closeLabel?: string;
+  afterPay?: CheckoutAfterPay;
+  redirectUrl?: string;
+  receiptAuto?: boolean;
+  receiptCustomer?: boolean;
+  receiptRef?: boolean;
+}
+
+export interface PublishCheckoutInput extends CheckoutPageSettingsPatch {
   productName: string;
   description: string;
   amountMinor: number;
-  slug?: string;
   logoDataUrl?: string | null;
   accent?: string;
   id?: string;
@@ -332,6 +346,41 @@ function defaultCheckoutFields() {
     { label: "Amount", kind: "price", optional: false },
     { label: "Email", kind: "mail", optional: false }
   ];
+}
+
+function asTheme(value: unknown): CheckoutTheme {
+  return value === "dark" ? "dark" : "light";
+}
+
+function asCloseMode(value: unknown): CheckoutCloseMode {
+  return value === "date" ? "date" : "none";
+}
+
+function asAfterPay(value: unknown): CheckoutAfterPay {
+  return value === "redirect" ? "redirect" : "message";
+}
+
+function withCheckoutSettings(
+  input: CheckoutPageSettingsPatch,
+  existing?: CheckoutPage
+): Pick<CheckoutPage, "theme" | "closeMode" | "closeLabel" | "afterPay" | "redirectUrl" | "receiptAuto" | "receiptCustomer" | "receiptRef"> {
+  return {
+    theme: asTheme(input.theme ?? existing?.theme),
+    closeMode: asCloseMode(input.closeMode ?? existing?.closeMode),
+    closeLabel: String(input.closeLabel ?? existing?.closeLabel ?? ""),
+    afterPay: asAfterPay(input.afterPay ?? existing?.afterPay),
+    redirectUrl: String(input.redirectUrl ?? existing?.redirectUrl ?? "").trim(),
+    receiptAuto: input.receiptAuto ?? existing?.receiptAuto ?? true,
+    receiptCustomer: input.receiptCustomer ?? existing?.receiptCustomer ?? false,
+    receiptRef: input.receiptRef ?? existing?.receiptRef ?? false
+  };
+}
+
+export function checkoutPageUnavailable(page: CheckoutPage): string | null {
+  if (asCloseMode(page.closeMode) !== "date") return null;
+  const offset = offsetFromLabel(page.closeLabel || "");
+  if (offset !== null && offset < 0) return "This page is no longer accepting payments.";
+  return null;
 }
 
 export function publishCheckoutPage(input: PublishCheckoutInput): CheckoutPage {
@@ -369,7 +418,8 @@ export function publishCheckoutPage(input: PublishCheckoutInput): CheckoutPage {
     supportPhone: (input.supportPhone ?? existing?.supportPhone ?? "").trim(),
     terms: input.terms ?? existing?.terms ?? true,
     payLabel: String(input.payLabel ?? existing?.payLabel ?? "Pay").trim() || "Pay",
-    fields
+    fields,
+    ...withCheckoutSettings(input, existing)
   };
   if (existing) replaceCheckoutPage(existing.id, page);
   else appendCheckoutPage(page);
@@ -380,9 +430,25 @@ export function checkoutPageBySlug(slug: string): CheckoutPage | undefined {
   return getStore().checkoutPages.find(page => page.slug === slug && page.published);
 }
 
+export function saveCheckoutSettings(id: string, patch: CheckoutPageSettingsPatch): CheckoutPage {
+  const store = getStore();
+  const existing = store.checkoutPages.find(page => page.id === id);
+  if (!existing) throw new Error("Checkout page not found");
+  const others = store.checkoutPages.filter(page => page.id !== id).map(page => page.slug);
+  const slug = patch.slug != null && String(patch.slug).trim()
+    ? uniqueSlug(patch.slug, others)
+    : existing.slug;
+  replaceCheckoutPage(id, { slug, ...withCheckoutSettings(patch, existing) });
+  const next = getStore().checkoutPages.find(page => page.id === id);
+  if (!next) throw new Error("Checkout page not found");
+  return next;
+}
+
 export async function payPublishedCheckout(slug: string) {
   const page = checkoutPageBySlug(slug);
   if (!page) throw new Error("Checkout page not found: " + slug);
+  const closed = checkoutPageUnavailable(page);
+  if (closed) throw new Error(closed);
   replaceCheckoutPage(page.id, { views: page.views + 1 });
   const record = await getGateway().createPaymentLink({
     amountMinor: page.amountMinor,
