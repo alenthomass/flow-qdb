@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties, type ComponentPropsWithoutRef, type ElementType, type FocusEvent, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ComponentPropsWithoutRef, type ElementType, type FocusEvent, type MouseEvent, type ReactNode } from "react";
 
 function camelAttr(name: string): string {
   if (name.startsWith("--")) return name;
@@ -109,5 +109,53 @@ export function Hoverable<T extends ElementType = "button">({
     >
       {children}
     </Tag>
+  );
+}
+
+const PRESENCE_MS = { overlay: 280, menu: 220, expand: 320, toast: 260 };
+
+export type PresenceKind = keyof typeof PRESENCE_MS;
+
+function presenceDuration(kind: PresenceKind): number {
+  if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return 0;
+  return PRESENCE_MS[kind];
+}
+
+export function Presence({
+  show,
+  kind = "overlay",
+  children
+}: {
+  show: boolean;
+  kind?: PresenceKind;
+  children: ReactNode;
+}) {
+  const [mounted, setMounted] = useState(!!show);
+  const [leaving, setLeaving] = useState(false);
+  const mountedRef = useRef(!!show);
+  const kidsRef = useRef(children);
+  if (show) kidsRef.current = children;
+  useEffect(() => {
+    const ms = presenceDuration(kind);
+    if (show) {
+      mountedRef.current = true;
+      setMounted(true);
+      setLeaving(false);
+      return;
+    }
+    if (!mountedRef.current) return;
+    setLeaving(true);
+    const timer = window.setTimeout(() => {
+      mountedRef.current = false;
+      setMounted(false);
+      setLeaving(false);
+    }, ms);
+    return () => window.clearTimeout(timer);
+  }, [show, kind]);
+  if (!mounted) return null;
+  return (
+    <div className={"flow-presence flow-presence-" + kind + (leaving ? " is-leaving" : "")}>
+      {show ? children : kidsRef.current}
+    </div>
   );
 }

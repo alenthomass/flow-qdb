@@ -82,7 +82,7 @@
     transition: box-shadow .25s ease; }
   .paid-card { box-shadow: 0 32px 70px -28px rgba(0,0,0,.72); animation: ck-pop .5s cubic-bezier(.22,.61,.36,1); }
   .paid-hero { padding: 28px 24px 6px; }
-  .paid-check { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  .paid-check { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
     background: color-mix(in srgb, var(--pos) 18%, transparent); color: var(--pos); margin-bottom: 16px;
     animation: paid-mark .55s cubic-bezier(.22,.61,.36,1) both; }
   @keyframes paid-mark { from { opacity: 0; transform: scale(.72); } to { opacity: 1; transform: none; } }
@@ -98,6 +98,8 @@
   .paid-receipt { font-size: 12.5px; color: var(--ink-3); line-height: 1.55; padding-top: 4px; }
   .paid-foot { margin-top: 18px; padding: 12px 24px 16px; border-top: 1px solid var(--divider); background: var(--panel-2);
     font-size: 10.5px; color: var(--ink-5); letter-spacing: .01em; }
+  .status-mark { background: var(--chip); color: var(--ink-2); }
+  .status-card .note { margin-top: 16px; font-size: 13.5px; color: var(--ink-3); }
   .card-head { padding: 24px 24px 10px; }
   .card-head h2 { margin: 0; font-family: Urbanist, Cairo, system-ui, sans-serif; font-size: 17px; font-weight: 600; letter-spacing: -.02em; color: var(--ink); }
   .rule { width: 26px; height: 3px; border-radius: 2px; background: var(--ink); margin-top: 8px; }
@@ -146,9 +148,6 @@
     transition: background-color .18s ease, color .18s ease, transform .18s cubic-bezier(.32,.72,0,1); }
   .ck-icon:hover { color: var(--ink); background: var(--chip); }
   .ck-icon:active { transform: scale(.96); }
-  .ck-menu-wrap { position: relative; }
-  .ck-menu { position: absolute; right: 0; top: 36px; width: 180px; padding: 10px 12px; border-radius: 10px; background: var(--bar-solid);
-    box-shadow: 0 16px 32px -16px rgba(0,0,0,.4); font-size: 12px; color: var(--ink-3); z-index: 2; }
   .ck-split { display: grid; grid-template-columns: minmax(240px,.9fr) minmax(0,1.15fr); min-height: 420px; flex: 1 1 auto; overflow: auto; }
   .ck-left { background: #17171C; color: #F4F4F6; padding: 22px 20px 16px; display: flex; flex-direction: column; gap: 18px; min-height: 100%;
     border-right: 1px solid rgba(255,255,255,.08); }

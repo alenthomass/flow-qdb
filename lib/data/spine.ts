@@ -28,20 +28,25 @@ import {
   replaceSubscriptionPlan,
   replaceTransaction,
   replaceUpcomingCharge,
+  replaceClient,
+  replaceMerchant,
   DEFAULT_ROLE_PERMISSIONS
 } from "./store";
 import { SAMPLE_BANKS, SAMPLE_SHOPIFY_ORDER } from "./sample-checkout";
 import { getPayrollNet } from "./selectors";
-import { monthYearLabel, offsetFromLabel } from "../format";
+import { absoluteHttpUrl, monthYearLabel, offsetFromLabel } from "../format";
 import type {
   AccessLevel,
   CheckoutAfterPay,
+  CheckoutAmountMode,
   CheckoutCloseMode,
   CheckoutPage,
   CheckoutTheme,
   Client,
   Invoice,
+  InvoiceAttachment,
   InvoiceLine,
+  Merchant,
   PaymentLink,
   PaymentLinkNote,
   PlanInterval,
@@ -331,6 +336,7 @@ export interface PublishCheckoutInput extends CheckoutPageSettingsPatch {
   productName: string;
   description: string;
   amountMinor: number;
+  amountMode?: CheckoutAmountMode;
   logoDataUrl?: string | null;
   accent?: string;
   id?: string;
@@ -339,6 +345,10 @@ export interface PublishCheckoutInput extends CheckoutPageSettingsPatch {
   terms?: boolean;
   payLabel?: string;
   fields?: { label: string; kind: string; optional?: boolean }[];
+}
+
+function asAmountMode(value: unknown): CheckoutAmountMode {
+  return value === "open" || value === "qty" ? value : "fixed";
 }
 
 function defaultCheckoutFields() {
@@ -369,7 +379,7 @@ function withCheckoutSettings(
     closeMode: asCloseMode(input.closeMode ?? existing?.closeMode),
     closeLabel: String(input.closeLabel ?? existing?.closeLabel ?? ""),
     afterPay: asAfterPay(input.afterPay ?? existing?.afterPay),
-    redirectUrl: String(input.redirectUrl ?? existing?.redirectUrl ?? "").trim(),
+    redirectUrl: absoluteHttpUrl(String(input.redirectUrl ?? existing?.redirectUrl ?? "")) || "",
     receiptAuto: input.receiptAuto ?? existing?.receiptAuto ?? true,
     receiptCustomer: input.receiptCustomer ?? existing?.receiptCustomer ?? false,
     receiptRef: input.receiptRef ?? existing?.receiptRef ?? false
@@ -387,7 +397,9 @@ export function publishCheckoutPage(input: PublishCheckoutInput): CheckoutPage {
   if (!input.productName || !String(input.productName).trim()) {
     throw new Error("Checkout page needs a product name");
   }
-  if (!input.amountMinor || input.amountMinor <= 0) {
+  const amountMode = asAmountMode(input.amountMode);
+  const amountMinor = amountMode === "open" ? 0 : input.amountMinor;
+  if (amountMode !== "open" && (!amountMinor || amountMinor <= 0)) {
     throw new Error("Checkout page needs a price");
   }
   const store = getStore();
@@ -405,7 +417,8 @@ export function publishCheckoutPage(input: PublishCheckoutInput): CheckoutPage {
     slug,
     productName: String(input.productName).trim(),
     description: input.description || "",
-    amountMinor: input.amountMinor,
+    amountMinor,
+    amountMode,
     currency: store.merchant.currency,
     logoDataUrl: input.logoDataUrl ?? existing?.logoDataUrl ?? null,
     accent: input.accent || existing?.accent || "#17171C",
@@ -444,14 +457,17 @@ export function saveCheckoutSettings(id: string, patch: CheckoutPageSettingsPatc
   return next;
 }
 
-export async function payPublishedCheckout(slug: string) {
+export async function payPublishedCheckout(slug: string, paidMinor?: number) {
   const page = checkoutPageBySlug(slug);
   if (!page) throw new Error("Checkout page not found: " + slug);
   const closed = checkoutPageUnavailable(page);
   if (closed) throw new Error(closed);
+  const amountMode = asAmountMode(page.amountMode);
+  const charged = amountMode === "open" ? (paidMinor || 0) : page.amountMinor;
+  if (!charged || charged <= 0) throw new Error("Checkout page needs a price");
   replaceCheckoutPage(page.id, { views: page.views + 1 });
   const record = await getGateway().createPaymentLink({
-    amountMinor: page.amountMinor,
+    amountMinor: charged,
     currency: page.currency,
     description: page.productName,
     customer: ownerContact()
@@ -666,6 +682,12 @@ export interface CreateInvoiceInput {
   issuedOffset?: number;
   draft?: boolean;
   lines?: InvoiceLine[];
+  partialPayment?: boolean;
+  discountMinor?: number;
+  attachments?: InvoiceAttachment[];
+  clientAddress?: string;
+  notes?: string;
+  reference?: string;
 }
 
 function nextInvoiceIdentity(): { id: string; number: string } {
@@ -679,17 +701,25 @@ function nextInvoiceIdentity(): { id: string; number: string } {
   return { id: "inv_" + pad, number: "INV-" + pad };
 }
 
-export function addClient(input: { name: string; email?: string; branchId?: string }): Client {
+export function addClient(input: { name: string; email?: string; branchId?: string; address?: string }): Client {
   const name = String(input.name || "").trim();
   if (!name) throw new Error("Client name is required");
+  const address = String(input.address || "").trim();
   const existing = getStore().clients.find(client => client.name === name);
-  if (existing) return existing;
-  return appendClient({
+  if (existing) {
+    if (address && existing.address !== address) {
+      return replaceClient(existing.id, { address }) || existing;
+    }
+    return existing;
+  }
+  const row: Client = {
     id: "cli_" + Date.now().toString(36),
     name,
     email: input.email || "",
     branchId: input.branchId || getStore().branches[0]?.id || "br_01"
-  });
+  };
+  if (address) row.address = address;
+  return appendClient(row);
 }
 
 function resolveInvoiceClient(input: { clientId?: string | null; clientName?: string }): Client {
@@ -709,6 +739,10 @@ export function createInvoice(input: CreateInvoiceInput): Invoice {
   const identity = nextInvoiceIdentity();
   const draft = !!input.draft;
   const issuedOffset = input.issuedOffset != null ? input.issuedOffset : 0;
+  const discountMinor = Math.round(input.discountMinor || 0);
+  const attachments = (input.attachments || [])
+    .map(file => ({ name: String(file.name || "").trim(), size: Number(file.size) || 0 }))
+    .filter(file => file.name);
   const invoice: Invoice = {
     id: identity.id,
     number: identity.number,
@@ -719,12 +753,28 @@ export function createInvoice(input: CreateInvoiceInput): Invoice {
     sentAt: draft ? null : 0,
     viewedAt: null,
     branchId: client.branchId,
-    lines: input.lines && input.lines.length ? input.lines.map(line => ({
-      description: line.description,
-      quantity: line.quantity,
-      unitMinor: line.unitMinor
-    })) : undefined
+    lines: input.lines && input.lines.length ? input.lines.map(line => {
+      const row: InvoiceLine = {
+        description: line.description,
+        quantity: line.quantity,
+        unitMinor: line.unitMinor
+      };
+      const note = String(line.note || "").trim();
+      if (note) row.note = note;
+      return row;
+    }) : undefined
   };
+  if (input.partialPayment) invoice.partialPayment = true;
+  if (discountMinor > 0) invoice.discountMinor = discountMinor;
+  if (attachments.length) invoice.attachments = attachments;
+  const notes = String(input.notes || "").trim();
+  if (notes) invoice.notes = notes;
+  const reference = String(input.reference || "").trim();
+  if (reference) invoice.reference = reference;
+  const clientAddress = String(input.clientAddress || "").trim();
+  if (clientAddress && client.address !== clientAddress) {
+    replaceClient(client.id, { address: clientAddress });
+  }
   appendInvoice(invoice);
   appendActivity({
     id: "act_" + invoice.id,
@@ -745,8 +795,39 @@ export function duplicateInvoice(invoiceId: string): Invoice {
     dueOffset: 14,
     issuedOffset: 0,
     draft: true,
-    lines: source.lines
+    lines: source.lines,
+    partialPayment: source.partialPayment,
+    discountMinor: source.discountMinor,
+    attachments: source.attachments,
+    clientAddress: getStore().clients.find(client => client.id === source.clientId)?.address,
+    notes: source.notes,
+    reference: source.reference
   });
+}
+
+export function saveMerchantProfile(patch: {
+  businessName?: string;
+  legalEntity?: string;
+  taxRegistrationNumber?: string | null;
+  industry?: string;
+  address?: string;
+  bankName?: string;
+  accountName?: string;
+  iban?: string;
+}): Merchant {
+  const next: Partial<Merchant> = {};
+  if (patch.businessName != null) next.businessName = String(patch.businessName).trim();
+  if (patch.legalEntity != null) next.legalEntity = String(patch.legalEntity).trim();
+  if (patch.taxRegistrationNumber !== undefined) {
+    const trn = String(patch.taxRegistrationNumber || "").trim();
+    next.taxRegistrationNumber = trn || null;
+  }
+  if (patch.industry != null) next.industry = String(patch.industry).trim();
+  if (patch.address != null) next.address = String(patch.address).trim();
+  if (patch.bankName !== undefined) next.bankName = String(patch.bankName).trim() || undefined;
+  if (patch.accountName !== undefined) next.accountName = String(patch.accountName).trim() || undefined;
+  if (patch.iban !== undefined) next.iban = String(patch.iban).trim() || undefined;
+  return replaceMerchant(next);
 }
 
 function offsetsForMonthLabel(label: string): { from: number; to: number } | null {

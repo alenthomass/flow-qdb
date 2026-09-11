@@ -39,6 +39,7 @@ export {
   postPayroll,
   publishCheckoutPage,
   saveCheckoutSettings,
+  saveMerchantProfile,
   runSimulatedBilling,
   setSmartCheckout,
   settleBilling,

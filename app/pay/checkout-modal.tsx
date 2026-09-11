@@ -61,7 +61,6 @@ export function CheckoutModal({
   onPay: () => void;
 }) {
   const [rail, setRail] = useState<PayRailId>("cards");
-  const [menu, setMenu] = useState(false);
   const [editingPhone, setEditingPhone] = useState(false);
   const [card, setCard] = useState({ number: "", expiry: "", cvv: "", save: false });
   const fee = payerFeeMinor(amountMinor);
@@ -79,10 +78,6 @@ export function CheckoutModal({
         <div className="ck-head">
           <div id="ck-title">Checkout</div>
           <div style={{ flex: 1 }} />
-          <div className="ck-menu-wrap">
-            <button type="button" className="ck-icon" aria-label="More" onClick={() => setMenu(open => !open)}>⋯</button>
-            {menu && <div className="ck-menu">Sandbox checkout · SkipCash</div>}
-          </div>
           <button type="button" className="ck-icon" aria-label="Close" onClick={onClose}>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="m3 3 6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
           </button>

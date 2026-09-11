@@ -8,6 +8,7 @@ import type {
   ExportRecord,
   Invoice,
   MatchProposal,
+  Merchant,
   PaymentLink,
   RecurringInvoice,
   RolePermissionRow,
@@ -144,6 +145,17 @@ export function appendClient(client: Client): Client {
   live.clients = [client, ...live.clients];
   persist();
   return client;
+}
+
+export function replaceClient(id: string, patch: Partial<Client>): Client | undefined {
+  let next: Client | undefined;
+  live.clients = live.clients.map(client => {
+    if (client.id !== id) return client;
+    next = Object.assign({}, client, patch, { id: client.id });
+    return next;
+  });
+  persist();
+  return next;
 }
 
 export function getMatchProposals(): MatchProposal[] {
@@ -316,6 +328,12 @@ export function replaceUpcomingCharge(id: string, patch: Partial<UpcomingCharge>
   });
   persist();
   return next;
+}
+
+export function replaceMerchant(patch: Partial<Merchant>): Merchant {
+  live.merchant = Object.assign({}, live.merchant, patch);
+  persist();
+  return live.merchant;
 }
 
 export function replaceShopify(patch: Partial<ShopifyConnection>): ShopifyConnection {

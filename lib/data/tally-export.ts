@@ -1,4 +1,4 @@
-import { formatDate } from "../format";
+import { offsetFromLabel as parseDateLabel } from "../format";
 import { dateFor } from "./seed";
 import { appendActivity, appendExportRecord, getStore } from "./store";
 import type { ExportRecord, Transaction } from "./types";
@@ -39,10 +39,7 @@ export function offsetFromLabel(label: string): number | null {
       if (tallyDate(offset) === trimmed) return offset;
     }
   }
-  for (let offset = -400; offset <= 1; offset++) {
-    if (formatDate(offset) === trimmed) return offset;
-  }
-  return null;
+  return parseDateLabel(trimmed);
 }
 
 export function resolveTallyRange(fromLabel?: string, toLabel?: string): { fromOffset: number; toOffset: number } {

@@ -79,7 +79,7 @@ async function runPayment(slug: string, outcome: PaymentOutcome, paidMinor?: num
       const message = checkoutPageUnavailable(page);
       if (message) return { status: "error", message };
     }
-    const result = page ? await payPublishedCheckout(page.slug) : await simulatePayment(link!.id, outcome, paidMinor);
+    const result = page ? await payPublishedCheckout(page.slug, paidMinor) : await simulatePayment(link!.id, outcome, paidMinor);
     publish();
     if (!result.pending || !result.txnId) {
       const status = link ? paymentLinkById(link.id)?.status : null;

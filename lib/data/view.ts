@@ -1,4 +1,4 @@
-import { formatDate, formatMoney, offsetFromLabel } from "../format";
+import { dateInputValue, formatDate, formatMoney, offsetFromLabel } from "../format";
 import { chartScale } from "../chart";
 import { seed } from "./seed";
 import { getStore } from "./store";
@@ -260,6 +260,7 @@ function periodBlock(period: Period) {
 export function dashboardState() {
   assertPhase1Invariants();
   const owner = seed.merchant.ownerName;
+  const merchant = db().merchant;
   const open = getOpenMatches();
   const matchRate = getMatchRate();
   const usage = getPlanUsage();
@@ -289,11 +290,13 @@ export function dashboardState() {
 
   const invoices = db().invoices.map(invoice => {
     const status = getInvoiceStatus(invoice.id);
+    const buyer = db().clients.find(client => client.id === invoice.clientId);
     return {
       id: invoice.id,
       no: invoice.number,
       client: clientName(invoice.clientId),
       clientId: invoice.clientId,
+      clientAddress: buyer?.address || "",
       amount: major(invoice.amountMinor),
       status: titleStatus(status),
       due: formatDate(invoice.dueOffset),
@@ -302,7 +305,23 @@ export function dashboardState() {
       viewedOn: invoice.viewedAt != null ? formatDate(invoice.viewedAt) : "—",
       tag: "Sales",
       outstanding: status === "paid" || status === "refunded" || status === "draft" ? 0 : major(invoice.amountMinor),
-      daysLate: invoice.dueOffset < 0 && status !== "paid" && status !== "refunded" ? -invoice.dueOffset : 0
+      daysLate: invoice.dueOffset < 0 && status !== "paid" && status !== "refunded" ? -invoice.dueOffset : 0,
+      lines: (invoice.lines && invoice.lines.length)
+        ? invoice.lines.map(line => ({
+            description: line.description,
+            quantity: line.quantity,
+            unitMinor: line.unitMinor,
+            note: line.note || ""
+          }))
+        : [],
+      partialPayment: !!invoice.partialPayment,
+      discount: major(invoice.discountMinor || 0),
+      notes: invoice.notes || "",
+      reference: invoice.reference || "",
+      attachments: (invoice.attachments || []).map(file => ({
+        name: file.name,
+        size: file.size || 0
+      }))
     };
   });
 
@@ -370,7 +389,7 @@ export function dashboardState() {
   };
 
   return {
-    merchantName: seed.merchant.businessName,
+    merchantName: merchant.businessName,
     ownerName: owner,
     accountantName: seed.merchant.accountantName,
     acctName: owner,
@@ -378,16 +397,19 @@ export function dashboardState() {
     ratesVat: String(getVatRate() * 100),
     showVat: getVatRate() > 0,
     showTax: getVatRate() > 0,
-    periodFrom: formatDate(-29),
-    periodTo: formatDate(0),
+    periodFrom: dateInputValue(-29),
+    periodTo: dateInputValue(0),
     profile: {
-      businessName: seed.merchant.businessName,
-      legalEntity: seed.merchant.legalEntity,
-      taxRegistrationNumber: seed.merchant.taxRegistrationNumber ?? "",
-      industry: seed.merchant.industry,
-      address: seed.merchant.address,
+      businessName: merchant.businessName,
+      legalEntity: merchant.legalEntity,
+      taxRegistrationNumber: merchant.taxRegistrationNumber ?? "",
+      industry: merchant.industry,
+      address: merchant.address,
       currency: "QR, Qatari Riyal",
-      crNumber: seed.merchant.crNumber
+      crNumber: merchant.crNumber,
+      bankName: merchant.bankName || (db().bankAccounts.find(account => !account.sample) || db().bankAccounts[0])?.bank || "",
+      accountName: merchant.accountName || "",
+      iban: merchant.iban || ""
     },
     plan: {
       tier: seed.merchant.plan.tier,
@@ -439,7 +461,8 @@ export function dashboardState() {
       title: page.productName,
       desc: page.description,
       amount: major(page.amountMinor),
-      amountText: formatMoney(page.amountMinor, currency, { trimWhole: true }),
+      amountText: page.amountMode === "open" ? "Open" : formatMoney(page.amountMinor, currency, { trimWhole: true }),
+      amountMode: page.amountMode === "open" || page.amountMode === "qty" ? page.amountMode : "fixed",
       published: page.published,
       views: page.views,
       paid: page.paidCount,
@@ -551,6 +574,7 @@ export function dashboardState() {
         id: client.id,
         name: client.name,
         email: client.email,
+        address: client.address || "",
         phone: "",
         invoiceCount: rows.length,
         total: major(rows.reduce((sum, invoice) => sum + invoice.amountMinor, 0))

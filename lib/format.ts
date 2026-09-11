@@ -4,6 +4,19 @@ import type { CurrencyCode } from "./data/types";
 const EXPONENT: Record<string, number> = { QAR: 2, AED: 2 };
 const PREFIX: Record<string, string> = { QAR: "QR ", AED: "AED " };
 
+export function absoluteHttpUrl(value: string): string | null {
+  const raw = String(value || "").trim();
+  if (!raw || /^(javascript|data|vbscript):/i.test(raw)) return null;
+  const withProtocol = /^https?:\/\//i.test(raw) ? raw : "https://" + raw.replace(/^\/\//, "");
+  try {
+    const url = new URL(withProtocol);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    if (!url.hostname) return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
 export function parseMoneyInput(raw: string): number {
   const n = Math.abs(parseFloat(String(raw || "").replace(/[^0-9.]/g, "")) || 0);
   return Math.round(n * 100);

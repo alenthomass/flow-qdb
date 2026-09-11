@@ -66,6 +66,7 @@ var FlowStore = (() => {
     resetStore: () => resetStore,
     runSimulatedBilling: () => runSimulatedBilling,
     saveCheckoutSettings: () => saveCheckoutSettings,
+    saveMerchantProfile: () => saveMerchantProfile,
     setSmartCheckout: () => setSmartCheckout,
     settleBilling: () => settleBilling,
     settleCheckoutPayment: () => settleCheckoutPayment,
@@ -352,6 +353,16 @@ var FlowStore = (() => {
     persist();
     return client;
   }
+  function replaceClient(id, patch) {
+    let next;
+    live.clients = live.clients.map((client) => {
+      if (client.id !== id) return client;
+      next = Object.assign({}, client, patch, { id: client.id });
+      return next;
+    });
+    persist();
+    return next;
+  }
   function resetStore() {
     live = cloneSeed();
     if (typeof localStorage !== "undefined") {
@@ -482,6 +493,11 @@ var FlowStore = (() => {
     persist();
     return next;
   }
+  function replaceMerchant(patch) {
+    live.merchant = Object.assign({}, live.merchant, patch);
+    persist();
+    return live.merchant;
+  }
   function replaceShopify(patch) {
     live.shopify = Object.assign({}, live.shopify, patch);
     persist();
@@ -511,6 +527,19 @@ var FlowStore = (() => {
   // lib/format.ts
   var EXPONENT = { QAR: 2, AED: 2 };
   var PREFIX = { QAR: "QR ", AED: "AED " };
+  function absoluteHttpUrl(value) {
+    const raw = String(value || "").trim();
+    if (!raw || /^(javascript|data|vbscript):/i.test(raw)) return null;
+    const withProtocol = /^https?:\/\//i.test(raw) ? raw : "https://" + raw.replace(/^\/\//, "");
+    try {
+      const url = new URL(withProtocol);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+      if (!url.hostname) return null;
+      return url.href;
+    } catch {
+      return null;
+    }
+  }
   function formatMoney(amount, currency2, options = {}) {
     const exp = EXPONENT[currency2] ?? 2;
     const abs = Math.abs(Math.trunc(amount));
@@ -1222,6 +1251,7 @@ var FlowStore = (() => {
   function dashboardState() {
     assertPhase1Invariants();
     const owner = seed.merchant.ownerName;
+    const merchant = db2().merchant;
     const open = getOpenMatches();
     const matchRate = getMatchRate();
     const usage = getPlanUsage();
@@ -1246,11 +1276,13 @@ var FlowStore = (() => {
     }));
     const invoices = db2().invoices.map((invoice) => {
       const status = getInvoiceStatus(invoice.id);
+      const buyer = db2().clients.find((client) => client.id === invoice.clientId);
       return {
         id: invoice.id,
         no: invoice.number,
         client: clientName(invoice.clientId),
         clientId: invoice.clientId,
+        clientAddress: buyer?.address || "",
         amount: major(invoice.amountMinor),
         status: titleStatus(status),
         due: formatDate(invoice.dueOffset),
@@ -1259,7 +1291,21 @@ var FlowStore = (() => {
         viewedOn: invoice.viewedAt != null ? formatDate(invoice.viewedAt) : "\u2014",
         tag: "Sales",
         outstanding: status === "paid" || status === "refunded" || status === "draft" ? 0 : major(invoice.amountMinor),
-        daysLate: invoice.dueOffset < 0 && status !== "paid" && status !== "refunded" ? -invoice.dueOffset : 0
+        daysLate: invoice.dueOffset < 0 && status !== "paid" && status !== "refunded" ? -invoice.dueOffset : 0,
+        lines: invoice.lines && invoice.lines.length ? invoice.lines.map((line) => ({
+          description: line.description,
+          quantity: line.quantity,
+          unitMinor: line.unitMinor,
+          note: line.note || ""
+        })) : [],
+        partialPayment: !!invoice.partialPayment,
+        discount: major(invoice.discountMinor || 0),
+        notes: invoice.notes || "",
+        reference: invoice.reference || "",
+        attachments: (invoice.attachments || []).map((file) => ({
+          name: file.name,
+          size: file.size || 0
+        }))
       };
     });
     const matches = open.map((proposal) => {
@@ -1322,7 +1368,7 @@ var FlowStore = (() => {
       month: periodBlock("month")
     };
     return {
-      merchantName: seed.merchant.businessName,
+      merchantName: merchant.businessName,
       ownerName: owner,
       accountantName: seed.merchant.accountantName,
       acctName: owner,
@@ -1330,16 +1376,19 @@ var FlowStore = (() => {
       ratesVat: String(getVatRate() * 100),
       showVat: getVatRate() > 0,
       showTax: getVatRate() > 0,
-      periodFrom: formatDate(-29),
-      periodTo: formatDate(0),
+      periodFrom: dateInputValue(-29),
+      periodTo: dateInputValue(0),
       profile: {
-        businessName: seed.merchant.businessName,
-        legalEntity: seed.merchant.legalEntity,
-        taxRegistrationNumber: seed.merchant.taxRegistrationNumber ?? "",
-        industry: seed.merchant.industry,
-        address: seed.merchant.address,
+        businessName: merchant.businessName,
+        legalEntity: merchant.legalEntity,
+        taxRegistrationNumber: merchant.taxRegistrationNumber ?? "",
+        industry: merchant.industry,
+        address: merchant.address,
         currency: "QR, Qatari Riyal",
-        crNumber: seed.merchant.crNumber
+        crNumber: merchant.crNumber,
+        bankName: merchant.bankName || (db2().bankAccounts.find((account) => !account.sample) || db2().bankAccounts[0])?.bank || "",
+        accountName: merchant.accountName || "",
+        iban: merchant.iban || ""
       },
       plan: {
         tier: seed.merchant.plan.tier,
@@ -1391,7 +1440,8 @@ var FlowStore = (() => {
         title: page.productName,
         desc: page.description,
         amount: major(page.amountMinor),
-        amountText: formatMoney(page.amountMinor, currency, { trimWhole: true }),
+        amountText: page.amountMode === "open" ? "Open" : formatMoney(page.amountMinor, currency, { trimWhole: true }),
+        amountMode: page.amountMode === "open" || page.amountMode === "qty" ? page.amountMode : "fixed",
         published: page.published,
         views: page.views,
         paid: page.paidCount,
@@ -1493,6 +1543,7 @@ var FlowStore = (() => {
           id: client.id,
           name: client.name,
           email: client.email,
+          address: client.address || "",
           phone: "",
           invoiceCount: rows.length,
           total: major(rows.reduce((sum, invoice) => sum + invoice.amountMinor, 0))
@@ -2131,6 +2182,9 @@ var FlowStore = (() => {
       });
     }
   }
+  function asAmountMode(value) {
+    return value === "open" || value === "qty" ? value : "fixed";
+  }
   function defaultCheckoutFields() {
     return [
       { label: "Amount", kind: "price", optional: false },
@@ -2152,7 +2206,7 @@ var FlowStore = (() => {
       closeMode: asCloseMode(input.closeMode ?? existing?.closeMode),
       closeLabel: String(input.closeLabel ?? existing?.closeLabel ?? ""),
       afterPay: asAfterPay(input.afterPay ?? existing?.afterPay),
-      redirectUrl: String(input.redirectUrl ?? existing?.redirectUrl ?? "").trim(),
+      redirectUrl: absoluteHttpUrl(String(input.redirectUrl ?? existing?.redirectUrl ?? "")) || "",
       receiptAuto: input.receiptAuto ?? existing?.receiptAuto ?? true,
       receiptCustomer: input.receiptCustomer ?? existing?.receiptCustomer ?? false,
       receiptRef: input.receiptRef ?? existing?.receiptRef ?? false
@@ -2168,7 +2222,9 @@ var FlowStore = (() => {
     if (!input.productName || !String(input.productName).trim()) {
       throw new Error("Checkout page needs a product name");
     }
-    if (!input.amountMinor || input.amountMinor <= 0) {
+    const amountMode = asAmountMode(input.amountMode);
+    const amountMinor = amountMode === "open" ? 0 : input.amountMinor;
+    if (amountMode !== "open" && (!amountMinor || amountMinor <= 0)) {
       throw new Error("Checkout page needs a price");
     }
     const store = getStore();
@@ -2185,7 +2241,8 @@ var FlowStore = (() => {
       slug,
       productName: String(input.productName).trim(),
       description: input.description || "",
-      amountMinor: input.amountMinor,
+      amountMinor,
+      amountMode,
       currency: store.merchant.currency,
       logoDataUrl: input.logoDataUrl ?? existing?.logoDataUrl ?? null,
       accent: input.accent || existing?.accent || "#17171C",
@@ -2219,14 +2276,17 @@ var FlowStore = (() => {
     if (!next) throw new Error("Checkout page not found");
     return next;
   }
-  async function payPublishedCheckout(slug) {
+  async function payPublishedCheckout(slug, paidMinor) {
     const page = checkoutPageBySlug(slug);
     if (!page) throw new Error("Checkout page not found: " + slug);
     const closed = checkoutPageUnavailable(page);
     if (closed) throw new Error(closed);
+    const amountMode = asAmountMode(page.amountMode);
+    const charged = amountMode === "open" ? paidMinor || 0 : page.amountMinor;
+    if (!charged || charged <= 0) throw new Error("Checkout page needs a price");
     replaceCheckoutPage(page.id, { views: page.views + 1 });
     const record = await getGateway().createPaymentLink({
-      amountMinor: page.amountMinor,
+      amountMinor: charged,
       currency: page.currency,
       description: page.productName,
       customer: ownerContact()
@@ -2420,14 +2480,22 @@ var FlowStore = (() => {
   function addClient(input) {
     const name = String(input.name || "").trim();
     if (!name) throw new Error("Client name is required");
+    const address = String(input.address || "").trim();
     const existing = getStore().clients.find((client) => client.name === name);
-    if (existing) return existing;
-    return appendClient({
+    if (existing) {
+      if (address && existing.address !== address) {
+        return replaceClient(existing.id, { address }) || existing;
+      }
+      return existing;
+    }
+    const row = {
       id: "cli_" + Date.now().toString(36),
       name,
       email: input.email || "",
       branchId: input.branchId || getStore().branches[0]?.id || "br_01"
-    });
+    };
+    if (address) row.address = address;
+    return appendClient(row);
   }
   function resolveInvoiceClient(input) {
     if (input.clientId) {
@@ -2445,6 +2513,8 @@ var FlowStore = (() => {
     const identity = nextInvoiceIdentity();
     const draft = !!input.draft;
     const issuedOffset = input.issuedOffset != null ? input.issuedOffset : 0;
+    const discountMinor = Math.round(input.discountMinor || 0);
+    const attachments = (input.attachments || []).map((file) => ({ name: String(file.name || "").trim(), size: Number(file.size) || 0 })).filter((file) => file.name);
     const invoice = {
       id: identity.id,
       number: identity.number,
@@ -2455,12 +2525,28 @@ var FlowStore = (() => {
       sentAt: draft ? null : 0,
       viewedAt: null,
       branchId: client.branchId,
-      lines: input.lines && input.lines.length ? input.lines.map((line) => ({
-        description: line.description,
-        quantity: line.quantity,
-        unitMinor: line.unitMinor
-      })) : void 0
+      lines: input.lines && input.lines.length ? input.lines.map((line) => {
+        const row = {
+          description: line.description,
+          quantity: line.quantity,
+          unitMinor: line.unitMinor
+        };
+        const note = String(line.note || "").trim();
+        if (note) row.note = note;
+        return row;
+      }) : void 0
     };
+    if (input.partialPayment) invoice.partialPayment = true;
+    if (discountMinor > 0) invoice.discountMinor = discountMinor;
+    if (attachments.length) invoice.attachments = attachments;
+    const notes = String(input.notes || "").trim();
+    if (notes) invoice.notes = notes;
+    const reference = String(input.reference || "").trim();
+    if (reference) invoice.reference = reference;
+    const clientAddress = String(input.clientAddress || "").trim();
+    if (clientAddress && client.address !== clientAddress) {
+      replaceClient(client.id, { address: clientAddress });
+    }
     appendInvoice(invoice);
     appendActivity({
       id: "act_" + invoice.id,
@@ -2480,8 +2566,29 @@ var FlowStore = (() => {
       dueOffset: 14,
       issuedOffset: 0,
       draft: true,
-      lines: source.lines
+      lines: source.lines,
+      partialPayment: source.partialPayment,
+      discountMinor: source.discountMinor,
+      attachments: source.attachments,
+      clientAddress: getStore().clients.find((client) => client.id === source.clientId)?.address,
+      notes: source.notes,
+      reference: source.reference
     });
+  }
+  function saveMerchantProfile(patch) {
+    const next = {};
+    if (patch.businessName != null) next.businessName = String(patch.businessName).trim();
+    if (patch.legalEntity != null) next.legalEntity = String(patch.legalEntity).trim();
+    if (patch.taxRegistrationNumber !== void 0) {
+      const trn = String(patch.taxRegistrationNumber || "").trim();
+      next.taxRegistrationNumber = trn || null;
+    }
+    if (patch.industry != null) next.industry = String(patch.industry).trim();
+    if (patch.address != null) next.address = String(patch.address).trim();
+    if (patch.bankName !== void 0) next.bankName = String(patch.bankName).trim() || void 0;
+    if (patch.accountName !== void 0) next.accountName = String(patch.accountName).trim() || void 0;
+    if (patch.iban !== void 0) next.iban = String(patch.iban).trim() || void 0;
+    return replaceMerchant(next);
   }
   function offsetsForMonthLabel(label) {
     const wanted = String(label || "").trim();
@@ -2578,10 +2685,7 @@ var FlowStore = (() => {
         if (tallyDate(offset) === trimmed) return offset;
       }
     }
-    for (let offset = -400; offset <= 1; offset++) {
-      if (formatDate(offset) === trimmed) return offset;
-    }
-    return null;
+    return offsetFromLabel(trimmed);
   }
   function resolveTallyRange(fromLabel, toLabel) {
     const fromOffset = fromLabel ? offsetFromLabel2(fromLabel) : -29;

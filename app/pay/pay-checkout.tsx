@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { getStore } from "../../lib/data/store";
 import type { CheckoutField, CheckoutPage, PaymentLink } from "../../lib/data/types";
-import { formatMoney, parseMoneyInput } from "../../lib/format";
+import { absoluteHttpUrl, formatMoney, parseMoneyInput } from "../../lib/format";
 import { defaultDial, GCC_DIALS } from "../../lib/pay/gcc";
 import {
   checkoutBySlug, emailError, getPayRevision, getServerPayRevision,
@@ -104,14 +104,20 @@ function CardHeading({ children }: { children: ReactNode }) {
   return <div className="card-head"><h2>{children}</h2><div className="rule" /></div>;
 }
 
-function SuccessCard({ result, email, phone, receiptAuto, showCustomer, showRef = true }: {
+function SuccessCard({ result, email, phone, receiptAuto, showCustomer, showRef = true, redirectTo }: {
   result: Extract<PayResult, { status: "success" }>;
   email?: string;
   phone?: string;
   receiptAuto?: boolean;
   showCustomer?: boolean;
   showRef?: boolean;
+  redirectTo?: string | null;
 }) {
+  useEffect(() => {
+    if (!redirectTo) return;
+    const timer = window.setTimeout(() => { window.location.assign(redirectTo); }, 2200);
+    return () => window.clearTimeout(timer);
+  }, [redirectTo]);
   const contact = [email, phone].filter(Boolean).join(" · ");
   return <div className="card paid-card" role="status">
     <div className="paid-hero">
@@ -130,6 +136,35 @@ function SuccessCard({ result, email, phone, receiptAuto, showCustomer, showRef 
       {showCustomer && contact ? <div className="paid-row"><span className="paid-k">Payer</span><span className="paid-v">{contact}</span></div> : null}
       {showRef ? <div className="paid-row"><span className="paid-k">{"Reference "}</span><span className="paid-v paid-ref">{result.reference}</span></div> : null}
       {receiptAuto && email ? <div className="paid-receipt">A receipt was sent to {email}</div> : null}
+      {redirectTo ? <div className="paid-receipt">Redirecting you now…</div> : null}
+    </div>
+    <div className="paid-foot">Secured by Flow · SkipCash · SANDBOX</div>
+  </div>;
+}
+
+function StatusCard({ title, message, amountMinor, merchant, detail }: {
+  title: string;
+  message: string;
+  amountMinor?: number;
+  merchant: string;
+  detail?: string;
+}) {
+  const currency = getStore().merchant.currency;
+  return <div className="card paid-card status-card" role="status">
+    <div className="paid-hero">
+      <span className="paid-check status-mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M6.2 9.2V7.4A3.8 3.8 0 0 1 10 3.6a3.8 3.8 0 0 1 3.8 3.8v1.8M5.2 9.2h9.6v7.2H5.2V9.2Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+      <h2>{title}</h2>
+      <div className="rule" />
+      <div className="note">{message}</div>
+      {amountMinor ? <div className="paid-amt">{formatMoney(amountMinor, currency)}</div> : null}
+    </div>
+    <div className="paid-meta">
+      <div className="paid-row"><span className="paid-k">Merchant</span><span className="paid-v">{merchant}</span></div>
+      {detail ? <div className="paid-row"><span className="paid-k">For</span><span className="paid-v">{detail}</span></div> : null}
     </div>
     <div className="paid-foot">Secured by Flow · SkipCash · SANDBOX</div>
   </div>;
@@ -196,9 +231,19 @@ function LinkPay({ slug, link, outcome, receiptTxn, merchant }: {
     return <div className="link-pay"><SuccessCard result={result} email={email} phone={(dial + " " + phone).trim()} showRef={true} /></div>;
   }
 
+  if (unavailable) {
+    const closed = /no longer accepting/i.test(unavailable);
+    return <div className="link-pay"><StatusCard
+      title={closed ? "Link closed" : "Already used"}
+      message={unavailable}
+      amountMinor={link.amountMinor}
+      merchant={merchant}
+      detail={link.description}
+    /></div>;
+  }
+
   return <div className="link-pay">
-    {unavailable ? <div className="card"><div className="fields"><div className="note">{unavailable}</div></div></div> : null}
-    {!unavailable && !open ? <div className="card pay-card">
+    {!open ? <div className="card pay-card">
       <CardHeading>Pay</CardHeading>
       <div className="fields">
         {link.partialPayment ? <div className="field">
@@ -244,7 +289,7 @@ function PaymentForm({ slug, fields, amountMinor, payLabel, unavailable, outcome
   const split = splitPhone(initialPhone, defaultDial(getStore().merchant.country));
   const [phone, setPhone] = useState(split.local);
   const [dial, setDial] = useState(split.dial);
-  const [amountText, setAmountText] = useState(() => (amountMinor / 100).toFixed(2));
+  const [amountText, setAmountText] = useState(() => (amountMinor > 0 ? (amountMinor / 100).toFixed(2) : ""));
   const busy = useRef(false);
   const form = useRef<HTMLFormElement>(null);
   const currency = getStore().merchant.currency;
@@ -262,7 +307,7 @@ function PaymentForm({ slug, fields, amountMinor, payLabel, unavailable, outcome
     const charged = currentAmountMinor();
     if (editableAmount) {
       if (charged <= 0) nextErrors.amount = "Enter an amount";
-      else if (charged > amountMinor) nextErrors.amount = "Cannot exceed " + listedAmount;
+      else if (amountMinor > 0 && charged > amountMinor) nextErrors.amount = "Cannot exceed " + listedAmount;
     }
     shownFields.forEach((field, index) => {
       if (field.kind === "price" || /^amount$/i.test(field.label)) return;
@@ -304,18 +349,14 @@ function PaymentForm({ slug, fields, amountMinor, payLabel, unavailable, outcome
     const result = await submitPayment(slug, emailValue(), sandboxOutcome(outcome || null), currentAmountMinor());
     setState(result);
     busy.current = false;
-    if (result.status === "success") {
-      setOpen(false);
-      const href = String(redirectUrl || "").trim();
-      if (afterPay === "redirect" && /^https?:\/\//i.test(href)) window.location.assign(href);
-    }
+    if (result.status === "success") setOpen(false);
   }
 
   function submit(event: FormEvent) { event.preventDefault(); openCheckout(); }
-  if (state.status === "success") return <SuccessCard result={state} email={emailValue()} phone={(dial + " " + phone).trim()} receiptAuto={receiptAuto} showCustomer={receiptCustomer} showRef={receiptRef !== false} />;
+  if (state.status === "success") return <SuccessCard result={state} email={emailValue()} phone={(dial + " " + phone).trim()} receiptAuto={receiptAuto} showCustomer={receiptCustomer} showRef={receiptRef !== false} redirectTo={afterPay === "redirect" ? absoluteHttpUrl(redirectUrl || "") : null} />;
   const failure = state.status === "declined" || state.status === "timeout" || state.status === "error" ? state : null;
   const charged = currentAmountMinor() || amountMinor;
-  const payText = processing ? "Processing…" : payLabel + " " + formatMoney(charged, currency);
+  const payText = processing ? "Processing…" : (editableAmount && charged <= 0 ? payLabel : payLabel + " " + formatMoney(charged, currency));
   return <>
     <form ref={form} className="card pay-card" noValidate onSubmit={submit} aria-busy={processing}>
       <CardHeading>Payment Details</CardHeading><div className="fields">
@@ -399,7 +440,8 @@ export default function PayCheckout({ slug, outcome, receipt = false }: { slug: 
   const amountMinor = page?.amountMinor ?? link?.amountMinor ?? 0;
   const fields = page?.fields.length ? page.fields : defaultFields;
   const unavailable = page ? checkoutPageUnavailable(page) : link ? linkUnavailable(link.id) : "No payment is available on this link.";
-  const receiptTxn = receipt ? store.transactions.find(txn => txn.id === (link?.txnId || page?.txnIds.at(-1)) && txn.status !== "pending") : undefined;
+  const settledId = link?.txnId || (receipt ? page?.txnIds.at(-1) : undefined);
+  const receiptTxn = settledId ? store.transactions.find(txn => txn.id === settledId && txn.status !== "pending") : undefined;
   const receiptProps = {
     receiptAuto: page ? page.receiptAuto !== false : false,
     showCustomer: !!page?.receiptCustomer,
@@ -411,7 +453,7 @@ export default function PayCheckout({ slug, outcome, receipt = false }: { slug: 
   return <div className="grid">
     <MerchantCopy branding={branding} merchant={merchant} title={title} description={description} />
     <div className="pay-col">
-      {receiptTxn ? <SuccessCard result={{ status: "success", amountMinor: receiptTxn.amountMinor, merchant, reference: txnReference(link?.referenceId, receiptTxn.id) }} {...receiptProps} /> : <PaymentForm slug={slug} fields={fields} amountMinor={amountMinor} payLabel={page?.payLabel || "Pay"} unavailable={unavailable} outcome={outcome} editableAmount={!!link?.partialPayment} initialEmail={link?.customerEmail || ""} initialPhone={link?.customerPhone || ""} afterPay={page?.afterPay} redirectUrl={page?.redirectUrl} receiptAuto={receiptProps.receiptAuto} receiptCustomer={receiptProps.showCustomer} receiptRef={receiptProps.showRef} />}
+      {receiptTxn ? <SuccessCard result={{ status: "success", amountMinor: receiptTxn.amountMinor, merchant, reference: txnReference(link?.referenceId, receiptTxn.id) }} {...receiptProps} /> : <PaymentForm slug={slug} fields={fields} amountMinor={amountMinor} payLabel={page?.payLabel || "Pay"} unavailable={unavailable} outcome={outcome} editableAmount={!!link?.partialPayment || page?.amountMode === "open"} initialEmail={link?.customerEmail || ""} initialPhone={link?.customerPhone || ""} afterPay={page?.afterPay} redirectUrl={page?.redirectUrl} receiptAuto={receiptProps.receiptAuto} receiptCustomer={receiptProps.showCustomer} receiptRef={receiptProps.showRef} />}
     </div>
     <FlowFooter email={branding.supportEmail} />
   </div>;

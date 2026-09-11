@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { getStore } from "../../lib/data/store";
-import { createPaymentLink } from "../../lib/data/spine";
+import { createInvoice, createPaymentLink } from "../../lib/data/spine";
 import { getOutstandingInvoices } from "../../lib/data/selectors";
 import type { PaymentLink, PaymentLinkNote } from "../../lib/data/types";
-import { dateInputValue, formatMoney, parseMoneyInput } from "../../lib/format";
+import { dateInputValue, formatMoney, offsetFromLabel, parseMoneyInput } from "../../lib/format";
 import { defaultDial, GCC_DIALS } from "../../lib/pay/gcc";
 import { publishDashStore } from "../../lib/dashboard/session";
 import { Hoverable, sx } from "./chrome";
@@ -56,6 +56,12 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
   const [notes, setNotes] = useState<PaymentLinkNote[]>([{ key: "", value: "" }]);
   const [clientId, setClientId] = useState("");
   const [invoiceId, setInvoiceId] = useState("");
+  const [newOpen, setNewOpen] = useState(false);
+  const [newClientId, setNewClientId] = useState("");
+  const [newClientName, setNewClientName] = useState("");
+  const [newAmount, setNewAmount] = useState("");
+  const [newDue, setNewDue] = useState(dateInputValue(14));
+  const [newError, setNewError] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -73,12 +79,64 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
   }
 
   function onInvoice(id: string) {
+    if (id === "__new__") {
+      setNewOpen(true);
+      setNewError("");
+      if (!newAmount && amount) setNewAmount(amount);
+      if (!newClientId && clientId) setNewClientId(clientId);
+      return;
+    }
+    setNewOpen(false);
     setInvoiceId(id);
     const invoice = invoices.find(row => row.id === id);
     if (!invoice) return;
     setAmount((invoice.amountMinor / 100).toFixed(2));
     setClientId(invoice.clientId);
     setReferenceId(invoice.number);
+  }
+
+  function saveNewInvoice() {
+    setNewError("");
+    const dueOffset = offsetFromLabel(newDue);
+    if (dueOffset == null) {
+      setNewError("Due date is required");
+      return;
+    }
+    const amountMinor = parseMoneyInput(newAmount);
+    if (!amountMinor) {
+      setNewError("Amount is required");
+      return;
+    }
+    const existingId = newClientId || clientId;
+    const typedName = newClientName.trim();
+    if (!existingId && !typedName) {
+      setNewError("Client is required");
+      return;
+    }
+    try {
+      const invoice = createInvoice({
+        clientId: existingId || undefined,
+        clientName: existingId ? undefined : typedName,
+        amountMinor,
+        dueOffset,
+        lines: [{
+          description: description.trim() || "Invoice",
+          quantity: 1,
+          unitMinor: amountMinor
+        }]
+      });
+      publishDashStore();
+      setInvoiceId(invoice.id);
+      setAmount((invoice.amountMinor / 100).toFixed(2));
+      setClientId(invoice.clientId);
+      setReferenceId(invoice.number);
+      const client = getStore().clients.find(row => row.id === invoice.clientId);
+      if (client?.email && !email) setEmail(client.email);
+      setNewOpen(false);
+      setNewClientName("");
+    } catch (err) {
+      setNewError(err instanceof Error ? err.message : "Could not create invoice");
+    }
   }
 
   function onClient(id: string) {
@@ -235,16 +293,52 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
           {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
         </select>
       </label>
-      <label style={sx("display:block")}>
-        <div style={sx(label)}>Invoice (optional)</div>
-        <select style={sx(field)} value={invoiceId} onChange={e => onInvoice(e.target.value)}>
-          <option value="">None</option>
-          {invoices.map(invoice => {
-            const name = clients.find(client => client.id === invoice.clientId)?.name || "";
-            return <option key={invoice.id} value={invoice.id}>{invoice.number} · {name} · {formatMoney(invoice.amountMinor, currency, { trimWhole: true })}</option>;
-          })}
-        </select>
-      </label>
+      <div>
+        <label style={sx("display:block")}>
+          <div style={sx(label)}>Invoice (optional)</div>
+          <select style={sx(field)} value={invoiceId} onChange={e => onInvoice(e.target.value)}>
+            <option value="">None</option>
+            <option value="__new__">+ New invoice</option>
+            {invoices.map(invoice => {
+              const name = clients.find(client => client.id === invoice.clientId)?.name || "";
+              return <option key={invoice.id} value={invoice.id}>{invoice.number} · {name} · {formatMoney(invoice.amountMinor, currency, { trimWhole: true })}</option>;
+            })}
+          </select>
+        </label>
+        {newOpen && (
+          <div style={sx("margin-top:10px; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--panel-2); display:flex; flex-direction:column; gap:12px")}>
+            <div style={sx("font-size:12.5px; font-weight:650")}>Create invoice and attach</div>
+            <label style={sx("display:block")}>
+              <div style={sx(label)}>Client</div>
+              <select style={sx(field)} value={newClientId || clientId} onChange={e => { setNewClientId(e.target.value); setNewClientName(""); }}>
+                <option value="">Select a client</option>
+                {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
+              </select>
+            </label>
+            {!(newClientId || clientId) && (
+              <label style={sx("display:block")}>
+                <div style={sx(label)}>Or add a client</div>
+                <input style={sx(field)} value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="Client name" />
+              </label>
+            )}
+            <div style={sx("display:grid; grid-template-columns:1fr 1fr; gap:10px")}>
+              <label>
+                <div style={sx(label)}>Amount ({chip})</div>
+                <input style={sx(field)} value={newAmount} onChange={e => setNewAmount(e.target.value)} placeholder="0.00" inputMode="decimal" />
+              </label>
+              <label>
+                <div style={sx(label)}>Due date</div>
+                <input style={sx(field)} type="date" value={newDue} onChange={e => setNewDue(e.target.value)} />
+              </label>
+            </div>
+            {newError && <div role="alert" style={sx("font-size:12.5px; color:var(--neg)")}>{newError}</div>}
+            <div style={sx("display:flex; gap:8px")}>
+              <button type="button" onClick={saveNewInvoice} style={sx("font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); padding:9px 14px; border-radius:9px")}>Create and attach</button>
+              <button type="button" onClick={() => { setNewOpen(false); setNewError(""); }} style={sx("font-size:12.5px; font-weight:600; padding:9px 14px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light)")}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {error && <div role="alert" style={sx("font-size:12.5px; color:var(--neg)")}>{error}</div>}
 

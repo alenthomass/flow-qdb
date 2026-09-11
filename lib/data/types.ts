@@ -33,6 +33,9 @@ export interface Merchant {
   ownerName: string;
   accountantName: string;
   plan: MerchantPlan;
+  bankName?: string;
+  accountName?: string;
+  iban?: string;
 }
 
 export interface Branch {
@@ -75,6 +78,12 @@ export interface InvoiceLine {
   description: string;
   quantity: number;
   unitMinor: number;
+  note?: string;
+}
+
+export interface InvoiceAttachment {
+  name: string;
+  size?: number;
 }
 
 export interface Invoice {
@@ -88,12 +97,18 @@ export interface Invoice {
   viewedAt: number | null;
   branchId: string;
   lines?: InvoiceLine[];
+  partialPayment?: boolean;
+  discountMinor?: number;
+  attachments?: InvoiceAttachment[];
+  notes?: string;
+  reference?: string;
 }
 
 export interface Client {
   id: string;
   name: string;
   email: string;
+  address?: string;
   branchId: string;
 }
 
@@ -163,6 +178,7 @@ export interface CheckoutField {
 export type CheckoutTheme = "light" | "dark";
 export type CheckoutCloseMode = "none" | "date";
 export type CheckoutAfterPay = "message" | "redirect";
+export type CheckoutAmountMode = "fixed" | "open" | "qty";
 
 export interface CheckoutPage {
   id: string;
@@ -170,6 +186,7 @@ export interface CheckoutPage {
   productName: string;
   description: string;
   amountMinor: number;
+  amountMode?: CheckoutAmountMode;
   currency: CurrencyCode;
   logoDataUrl: string | null;
   accent: string;
