@@ -471,13 +471,13 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                         </>)}
                   </div>
                 </div>
-                <div style={sx("margin-left:auto; display:flex; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18); border-radius:16px; padding:3px; gap:2px; backdrop-filter:blur(8px)")}>
+                <div style={sx("margin-left:auto; display:flex; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18); border-radius:11px; padding:3px; gap:2px; backdrop-filter:blur(8px)")}>
                   {((v.tfs) || []).map((x: any, xIdx: any) => <Fragment key={x?.id || x?.key || 'x-' + xIdx}>
                         {!!(x.on) && (<>
-                          <button style={sx("padding:6px 14px; font-size:12px; font-weight:700; border-radius:7px; background:#FFFFFF; color:#15151A")}>{x.label}</button>
+                          <button style={sx("padding:6px 14px; font-size:12px; font-weight:700; border-radius:8px; background:#FFFFFF; color:#15151A")}>{x.label}</button>
                         </>)}
                     {!!(x.off) && (<>
-                          <button style={sx("padding:6px 14px; font-size:12px; font-weight:600; border-radius:7px; color:rgba(255,255,255,.7)")} onClick={x.go}>{x.label}</button>
+                          <button style={sx("padding:6px 14px; font-size:12px; font-weight:600; border-radius:8px; color:rgba(255,255,255,.7)")} onClick={x.go}>{x.label}</button>
                         </>)}
                       </Fragment>)}
                 </div>

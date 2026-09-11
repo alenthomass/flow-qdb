@@ -106,7 +106,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Extraction returns vendor, date, total, tax, lines and tag: Barzan Water / Al Maha Stationery
 - PASS Scan accepts an image or PDF: file input accept image/*,application/pdf
 - PASS Extraction delay is 1.5-2.5s: 1800ms
-- PASS Scan shows extraction in progress: 1841ms
+- PASS Scan shows extraction in progress: 2384ms
 - PASS Extracted fields are correctable with confidence: Barzan Water tax QR 0 · vendor 96%
 - PASS Scan save recomputes Money Out: Money Out QR 34,545 (was QR 33,365.00)
 - PASS Scan save drops Reports net profit: net profit QR 21,465 (was QR 22,645.00)
@@ -114,12 +114,12 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Tally after Barzan scan is 22 settled rows: 22 items (23 would include pending txn_13)
 - PASS Second sample bill saves through selectors: Money Out QR 33,705.00 · Al Maha Stationery
 - PASS Payment link copies to clipboard: submitModal writes the pay URL
-- PASS Payment link URL stays on Flow, not SkipCash test: /pay/pl_66f82df405
+- PASS Payment link URL stays on Flow, not SkipCash test: /pay/pl_0c71f3a6c0
 - PASS Copied payment links open Flow checkout: React /pay handles payment links
 - PASS Spine create leaves Money In unchanged: Money In QR 56,010.00
 - PASS Home Net equals Reports after creating a link: QR 22,645.00
 - PASS Who owes me equals Outstanding after creating a link: QR 20,900.00 across 3
-- PASS Spine success appends a pending ledger row: txn_link_pl_66f82df pending
+- PASS Spine success appends a pending ledger row: txn_link_pl_0c71f3a pending
 - PASS Pending payment is excluded from Money In: Money In QR 56,010.00; pending QR 11,700.00
 - PASS Linked invoice awaits settlement while pending: awaiting settlement
 - PASS Needs Your Attention includes the new proposal: 4 open
@@ -137,9 +137,9 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Home Net equals Reports after confirm: QR 28,045.00
 - PASS Simulate decline marks the link rejected without a ledger row: rejected
 - PASS Simulate timeout marks the link failed without a ledger row: failed
-- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_pl_87becfc
+- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_pl_ede3433
 - PASS Reference ID matches an outstanding invoice for reconciliation: inv_0144
-- PASS simulatePayment still works after gateway reset: txn_link_pl_815a492
+- PASS simulatePayment still works after gateway reset: txn_link_pl_300a55c
 - PASS Tally export uses ENVELOPE / HEADER / BODY: envelope present
 - PASS Tally export is one voucher per settled transaction in the last 30 days: 21 vouchers; pending txn_13 omitted
 - PASS Tally vouchers tag the cost centre: COSTCENTREALLOCATIONS.LIST NAME = transaction tag
@@ -156,7 +156,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Public payment page matches the builder without edit chrome: customer checkout chrome
 - PASS Public pay page validates email and shows a receipt: email + success card
 - PASS Published checkout stores product name, QAR price and slug: eid-hamper QR 250.00
-- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_cc4c2be0b8
+- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_32e6282125
 - PASS Hosted checkout pending is excluded from Money In: QR 56,010.00
 - PASS Hosted checkout settle lifts Money In by the page price: Money In QR 56,260.00
 - PASS Home Net equals Reports after hosted checkout: QR 22,895.00
@@ -175,7 +175,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Payment link deactivate updates status: Deactivated
 - PASS Payment links expose expiry, uses and copy URL: 18 Sept 2026 · uses 0
 - PASS Subscription plan creates a customer and upcoming charge: 1 upcoming · QR 400.00
-- PASS Simulated billing appends a pending ledger row: txn_sub_77d78add22
+- PASS Simulated billing appends a pending ledger row: txn_sub_0fd43d1d29
 - PASS Simulated billing settle lifts Money In: QR 56,410.00
 - PASS Cancel stops further upcoming charges: 0 upcoming
 - PASS Smart Checkout lives on Get Paid overview: overview toggle card
@@ -191,14 +191,14 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS applyStore copies team and employees from the ledger: 4 members · 3 employees
 - PASS Recurring invoice next three offsets: 0, 30, 60
 - PASS Sending a recurring invoice appends an invoice: INV-0151 · sentCount 1
-- PASS Recurring Start schedule writes the store: rec_mtwkj62j · 0, 30, 60
+- PASS Recurring Start schedule writes the store: rec_mtwkzxyd · 0, 30, 60
 - PASS Recurring UI shows the next three sends: 11 Sept 2026 / 11 Oct 2026 / 10 Nov 2026
 - PASS Tag rename updates ledger rows: 26 rows
 - PASS Tag list counts come from the ledger: 26 items
 - PASS Removing a used tag fails loudly: Can't remove Sales renamed: 26 items still use it
 - PASS Permission write persists: view
 - PASS Approval limit write persists: QR 5,000.00
-- PASS Approval request waits on the owner: apv_mtwkj6we
+- PASS Approval request waits on the owner: apv_mtwkzyri
 - PASS Approval resolve writes the store: approved
 - PASS Recurring / tags / approvals are bound in the view: start + rename + limits
 - PASS Reset demo data asks for confirm: modal open, Money In still QR 61,410.00
