@@ -70,6 +70,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
       </>)}
 
   <Presence show={!!v.flyout.show} kind="menu">
+        <div className="flow-fly-layer">
         <div className="flow-open-menu" style={sx(v.flyout.style)} onMouseEnter={v.flyout.keep} onMouseLeave={v.flyout.close}>
       <div style={sx("padding:16px 18px 12px; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5); border-bottom:1px solid var(--divider-2)")}>{v.flyout.title}</div>
       <div style={sx("padding:8px")}>
@@ -81,9 +82,10 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
             </Fragment>)}
       </div>
     </div>
+        </div>
       </Presence>
 
-  <main style={sx(v.sty.main)}>
+  <main style={sx(v.sty.main)} onPointerDown={v.h.dismissFly} onWheel={v.h.dismissFly}>
     <header style={sx(v.sty.headerBar)}>
       <div style={sx(v.sty.header)}>
       {!!(v.head.show) && (<>
@@ -1597,9 +1599,13 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                                 </>)}
                           </button>
                             </Fragment>)}
-                        <div style={sx("display:flex; align-items:center; gap:8px; padding:9px; border-top:1px solid var(--divider)")}>
-                          <Hoverable as="input" style={sx("flex:1; min-width:0; padding:8px 11px; border:1px solid var(--line); border-radius:8px; outline:none; font-size:12.5px; background:var(--panel)")} value={v.nv.newClient} onChange={v.nv.setNewClient} placeholder="Add a new client" focusStyle={sx("border-color:var(--ink-6)")} />
-                          <Hoverable as="button" style={sx("flex:0 0 auto; font-size:12px; font-weight:650; padding:8px 13px; border-radius:8px; color:var(--on-block); background:var(--btn-dark); transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.nv.addClient} hoverStyle={sx("filter:brightness(1.12)")}>Add</Hoverable>
+                        <div style={sx("display:flex; flex-direction:column; gap:8px; padding:9px; border-top:1px solid var(--divider)")}>
+                          <Hoverable as="input" style={sx("width:100%; padding:8px 11px; border:1px solid var(--line); border-radius:8px; outline:none; font-size:12.5px; background:var(--panel)")} value={v.nv.newClient} onChange={v.nv.setNewClient} placeholder="Add a new client" focusStyle={sx("border-color:var(--ink-6)")} />
+                          <label>
+                            <div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Address<span style={sx("color:var(--neg); margin-left:3px")}>*</span></div>
+                            <Hoverable as="input" style={sx("width:100%; padding:8px 11px; border:1px solid var(--line); border-radius:8px; outline:none; font-size:12.5px; background:var(--panel)")} value={v.nv.newClientAddress} onChange={v.nv.setNewClientAddress} placeholder="Address" focusStyle={sx("border-color:var(--ink-6)")} />
+                          </label>
+                          <Hoverable as="button" style={sx("align-self:flex-end; flex:0 0 auto; font-size:12px; font-weight:650; padding:8px 13px; border-radius:8px; color:var(--on-block); background:var(--btn-dark); transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.nv.addClient} hoverStyle={sx("filter:brightness(1.12)")}>Add</Hoverable>
                         </div>
                       </div>
                         </Presence>
@@ -2603,12 +2609,17 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                 <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Business name</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px")} value={v.profile.businessName} onChange={v.F.businessName} /></label>
                 <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Legal entity</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px")} value={v.profile.legalEntity} onChange={v.F.legalEntity} /></label>
                 <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Tax registration number</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif")} value={v.profile.taxRegistrationNumber} onChange={v.F.taxRegNumber} placeholder="Not registered" /></label>
+                <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Commercial registration (CR)</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif")} value={v.profile.crNumber || ""} onChange={v.F.crNumber} placeholder="CR-114820" /></label>
                 <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Industry</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px")} value={v.profile.industry} onChange={v.F.industry} /></label>
                 <label style={sx("grid-column:span 2")}><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Address</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px")} value={v.profile.address} onChange={v.F.profileAddress} /></label>
+                <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Phone</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px")} value={v.profile.phone || ""} onChange={v.F.profilePhone} placeholder="+974 4000 0000" /></label>
+                <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Email</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px")} value={v.profile.email || ""} onChange={v.F.profileEmail} placeholder="accounts@albidda.qa" /></label>
                 <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Currency</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel)")} value={v.profile.currency} onChange={v.F.profileCurrency} /></label>
                 <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Bank name</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px")} value={v.profile.bankName || ""} onChange={v.F.profileBankName} placeholder="Ahli Bank" /></label>
                 <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Account name</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px")} value={v.profile.accountName || ""} onChange={v.F.profileAccountName} placeholder={v.profile.businessName} /></label>
                 <label style={sx("grid-column:span 2")}><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>IBAN</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif")} value={v.profile.iban || ""} onChange={v.F.profileIban} placeholder="QA00 AHLB 0000 0000 0000 0000 000" /></label>
+                <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Account number</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif")} value={v.profile.accountNumber || ""} onChange={v.F.profileAccountNumber} placeholder="001234567890" /></label>
+                <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>SWIFT / BIC</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif")} value={v.profile.swiftCode || ""} onChange={v.F.profileSwiftCode} placeholder="AHLBQAQA" /></label>
               </div>
               <button style={sx("margin-top:20px; font-size:13px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:11px 20px; border-radius:9px")} onClick={v.h.saveProfile}>Save changes</button>
             </div>
@@ -2796,7 +2807,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                     <div style={sx("display:flex; flex-direction:column; gap:11px; margin-top:14px")}>
                       <div style={sx("display:flex; gap:11px; align-items:center")}><span style={sx("width:8px; height:8px; border-radius:50%; background:var(--pos)")} /><span style={sx("font-size:12.5px; flex:1")}>Created</span><span style={sx("font-size:11.5px; color:var(--ink-4)")}>{v.det.o.createdOn}</span></div>
                       <div style={sx("display:flex; gap:11px; align-items:center")}><span style={sx("width:8px; height:8px; border-radius:50%; background:var(--pos)")} /><span style={sx("font-size:12.5px; flex:1")}>Sent to client</span><span style={sx("font-size:11.5px; color:var(--ink-4)")}>{v.det.o.sentOn}</span></div>
-                      <div style={sx("display:flex; gap:11px; align-items:center")}><span style={sx("width:8px; height:8px; border-radius:50%; background:var(--pos)")} /><span style={sx("font-size:12.5px; flex:1")}>Viewed</span><span style={sx("font-size:11.5px; color:var(--ink-4)")}>{v.det.o.viewedOn}</span></div>
+                      <div style={sx("display:flex; gap:11px; align-items:center")}><span style={sx("width:8px; height:8px; border-radius:50%; background:" + (v.det.o.viewedOn && v.det.o.viewedOn !== "—" ? "var(--pos)" : "var(--toggle-off)"))} /><span style={sx("font-size:12.5px; flex:1")}>Viewed</span><span style={sx("font-size:11.5px; color:var(--ink-4)")}>{v.det.o.viewedOn}</span></div>
                       <div style={sx("display:flex; gap:11px; align-items:center")}><span style={sx("width:8px; height:8px; border-radius:50%; background:var(--toggle-off)")} /><span style={sx("font-size:12.5px; flex:1; color:var(--ink-4)")}>Paid</span><span style={sx("font-size:11.5px; color:var(--ink-4)")}>due {v.det.o.due}</span></div>
                     </div>
                   </div>
@@ -2967,6 +2978,10 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                   <div><div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)")}>EMAIL</div><div style={sx("font-size:13.5px; font-weight:600; margin-top:5px")}>{v.det.o.email}</div></div>
                   <div><div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)")}>PHONE</div><div style={sx("font-size:13.5px; font-weight:600; margin-top:5px")}>{v.det.o.phone}</div></div>
                   <div><div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)")}>LIFETIME</div><div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; margin-top:4px")}>{v.det.o.totalT}</div></div>
+                </div>
+                <div style={sx("margin-top:16px")}>
+                  <div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)")}>ADDRESS</div>
+                  <div style={sx("font-size:13.5px; font-weight:600; margin-top:5px; white-space:pre-wrap")}>{v.det.o.address || "—"}</div>
                 </div>
               </div>
               <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); margin-top:16px; overflow:hidden")}>

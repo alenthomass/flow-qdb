@@ -4,6 +4,8 @@ export class Component {
   onState: ((state: unknown) => void) | null;
   setState(update: unknown): void;
   applyStore(extra?: Record<string, unknown>): void;
+  attachChrome(): void;
+  detachChrome(): void;
   renderVals(): Record<string, any>;
   pageSlug(st?: unknown): string;
   startExtract(ref: string): void;

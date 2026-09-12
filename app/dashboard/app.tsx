@@ -31,6 +31,8 @@ export function DashboardApp() {
     }
     applyLiveStore(logic);
     setReady(true);
+    logic.attachChrome();
+    return () => logic.detachChrome();
   }, [logic]);
 
   useEffect(() => {
