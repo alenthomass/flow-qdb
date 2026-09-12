@@ -1722,13 +1722,43 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               </div>
             </div>
             <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); overflow:hidden")}>
-              <div style={sx("display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid var(--divider)")}>
+              <div style={sx("display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid var(--divider); flex-wrap:wrap")}>
                 <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>All Invoices</div>
-                <span style={sx("font-size:12px; color:var(--ink-4)")}>{v.counts.invoices} total</span>
+                <span style={sx("font-size:12px; color:var(--ink-4)")}>{v.counts.invShown} of {v.counts.invoices} shown</span>
                 <div style={sx("flex:1")} />
+                {!!(v.iclear && v.iclear.show) && (<>
+                      <Hoverable as="button" style={sx("font-size:12px; font-weight:600; padding:8px 13px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); color:var(--ink-3); transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.iclear.go} hoverStyle={sx("filter:brightness(.97)")}>Clear filters</Hoverable>
+                    </>)}
                 <button style={sx("font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light)")} onClick={v.h.note} data-note="Reminders queued for open invoices">Send reminders</button>
                 <button style={sx("font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light)")} onClick={v.h.export}>Export</button>
                 <button style={sx("font-size:12.5px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:9px 15px; border-radius:8px")} onClick={v.h.newInvoice}>New invoice</button>
+              </div>
+              <div style={sx("position:relative; display:flex; align-items:center; gap:9px; padding:13px 20px; border-bottom:1px solid var(--divider); flex-wrap:wrap")}>
+                {((v.imenu) || []).map((fm: any, fmIdx: any) => <Fragment key={fm?.id || fm?.key || 'im-' + fmIdx}>
+                      <div style={sx("position:relative")}>
+                    <button style={sx(fm.chipStyle)} onClick={fm.toggle}>
+                      <span>{fm.label}: {fm.value}</span>
+                      <svg style={sx("flex:0 0 10px")} width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.4 3.9 5 6.5l2.6-2.6" stroke={fm.caret} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </button>
+                    <Presence show={!!fm.open} kind="menu">
+                          <div style={sx("position:fixed; inset:0; z-index:38")} onClick={fm.toggle} />
+                      <div className="flow-open-menu" style={sx("position:absolute; top:calc(100% + 6px); left:0; z-index:39; min-width:172px; padding:5px; background:var(--modal); backdrop-filter:blur(24px) saturate(150%); border:1px solid var(--line); border-radius:12px; box-shadow:0 22px 44px -22px rgba(0,0,0,.45)")}>
+                        {((fm.options) || []).map((o: any, oIdx: any) => <Fragment key={o?.id || o?.key || 'imo-' + oIdx}>
+                              <Hoverable as="button" style={sx("width:100%; display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:9px; text-align:left; font-size:12.5px; font-weight:500; color:var(--ink-2)")} onClick={o.go} hoverStyle={sx("background:var(--panel-3)")}>
+                            <span style={sx("width:11px; flex:0 0 11px")}>
+                              {!!(o.on) && (<>
+                                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2.2 6.2 4.6 8.6 9.8 3.4" stroke="var(--ink)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                  </>)}
+                            </span>
+                            <span>{o.label}</span>
+                          </Hoverable>
+                            </Fragment>)}
+                      </div>
+                        </Presence>
+                  </div>
+                    </Fragment>)}
+                <div style={sx("flex:1")} />
+                <input style={sx("width:220px; max-width:100%; padding:8px 12px; border:1px solid var(--line); border-radius:9px; outline:none; font-size:12.5px; background:var(--btn-light)")} value={v.invSearch || ""} onChange={v.setInvSearch} placeholder="Search client or invoice" />
               </div>
               <div style={sx("display:grid; grid-template-columns:.8fr 1.4fr 1fr .85fr .8fr .8fr; gap:28px; padding:11px 20px; border-bottom:1px solid var(--divider); font-size:10.5px; font-weight:700; color:var(--ink-5); letter-spacing:.09em; text-transform:uppercase")}>
                 <span>NUMBER</span><span>CLIENT</span><span>AMOUNT</span><span>STATUS</span><span>DUE</span><span>TAG</span>
@@ -1738,6 +1768,13 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                   <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>No invoices yet</div>
                   <div style={sx("font-size:12.5px; color:var(--ink-4); max-width:320px; line-height:1.6")}>Bill a client and Flow will track what is paid and what is late.</div>
                   <Hoverable as="button" style={sx("margin-top:12px; font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 8px 18px -10px rgba(0,0,0,.5); transition:transform .15s ease, filter .15s ease; padding:10px 18px; border-radius:9px")} onClick={v.h.newInvoice} hoverStyle={sx("filter:brightness(1.12); transform:translateY(-1px)")}>New invoice</Hoverable>
+                </div>
+                  </>)}
+              {!!(v.empt.invFiltered) && (<>
+                    <div style={sx("display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px; padding:52px 24px")}>
+                  <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>No invoices match these filters</div>
+                  <div style={sx("font-size:12.5px; color:var(--ink-4); max-width:320px; line-height:1.6")}>Widen the period or clear a filter to see more.</div>
+                  <Hoverable as="button" style={sx("margin-top:12px; font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 8px 18px -10px rgba(0,0,0,.5); transition:transform .15s ease, filter .15s ease; padding:10px 18px; border-radius:9px")} onClick={v.iclear.go} hoverStyle={sx("filter:brightness(1.12); transform:translateY(-1px)")}>Clear filters</Hoverable>
                 </div>
                   </>)}
               {((v.invoices) || []).map((i: any, iIdx: any) => <Fragment key={i?.id || i?.key || 'i-' + iIdx}>

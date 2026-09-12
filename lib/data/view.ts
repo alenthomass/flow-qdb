@@ -1,6 +1,6 @@
 import { dateInputValue, formatDate, formatMoney, offsetFromLabel } from "../format";
 import { chartScale } from "../chart";
-import { seed } from "./seed";
+import { dateFor, seed } from "./seed";
 import { getStore } from "./store";
 import { SAMPLE_BILL, SAMPLE_BILLS } from "./sample-bill";
 import { SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS } from "./sample-checkout";
@@ -301,6 +301,12 @@ export function dashboardState() {
       status: titleStatus(status),
       due: formatDate(invoice.dueOffset),
       issued: formatDate(invoice.issuedOffset),
+      issuedOffset: invoice.issuedOffset,
+      issuedThisMonth: (() => {
+        const issued = dateFor(invoice.issuedOffset);
+        const today = dateFor(0);
+        return issued.getUTCFullYear() === today.getUTCFullYear() && issued.getUTCMonth() === today.getUTCMonth();
+      })(),
       sentOn: invoice.sentAt != null ? formatDate(invoice.sentAt) : "—",
       viewedOn: invoice.viewedAt != null ? formatDate(invoice.viewedAt) : "—",
       tag: "Sales",
