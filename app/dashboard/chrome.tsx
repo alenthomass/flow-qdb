@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type ComponentPropsWithoutRef, type ElementType, type FocusEvent, type MouseEvent, type ReactNode } from "react";
+import { debounce, registerNvDraftFlush } from "../../lib/dashboard/nv-draft.js";
 
 function camelAttr(name: string): string {
   if (name.startsWith("--")) return name;
@@ -37,18 +38,24 @@ function applyCssDecl(out: Record<string, string>, key: string, value: string) {
   out[key] = value;
 }
 
+const SX_CACHE = new Map<string, CSSProperties>();
+
 export function sx(css: string | CSSProperties | null | undefined): CSSProperties | undefined {
   if (!css) return undefined;
   if (typeof css === "object") return css;
+  const cached = SX_CACHE.get(css);
+  if (cached) return cached;
   const out: Record<string, string> = {};
-  String(css).split(";").forEach(part => {
+  css.split(";").forEach(part => {
     const i = part.indexOf(":");
     if (i < 0) return;
     const key = camelAttr(part.slice(0, i).trim());
     const value = part.slice(i + 1).trim();
     if (key && value) applyCssDecl(out, key, value);
   });
-  return out as CSSProperties;
+  const parsed = out as CSSProperties;
+  SX_CACHE.set(css, parsed);
+  return parsed;
 }
 
 function mergeHoverableStyle(
@@ -109,6 +116,66 @@ export function Hoverable<T extends ElementType = "button">({
     >
       {children}
     </Tag>
+  );
+}
+
+const NV_DRAFT_MS = 140;
+
+export function DebouncedField({
+  as,
+  value,
+  onChange,
+  onBlur,
+  ...rest
+}: any) {
+  const committed = value == null ? "" : String(value);
+  const [local, setLocal] = useState(committed);
+  const localRef = useRef(local);
+  localRef.current = local;
+  const dirtyRef = useRef(false);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const debouncedRef = useRef<ReturnType<typeof debounce> | null>(null);
+  if (!debouncedRef.current) {
+    debouncedRef.current = debounce((next: string) => {
+      dirtyRef.current = false;
+      if (typeof onChangeRef.current === "function") onChangeRef.current({ target: { value: next } });
+    }, NV_DRAFT_MS);
+  }
+
+  useEffect(() => {
+    if (!dirtyRef.current) setLocal(committed);
+  }, [committed]);
+
+  useEffect(() => {
+    const flush = () => {
+      const d = debouncedRef.current;
+      if (d) d.flush();
+    };
+    return registerNvDraftFlush(flush);
+  }, []);
+
+  useEffect(() => () => {
+    if (debouncedRef.current) debouncedRef.current.cancel();
+  }, []);
+
+  return (
+    <Hoverable
+      as={as || "input"}
+      {...rest}
+      value={local}
+      onChange={(event: { target: { value: string } }) => {
+        const next = event.target.value;
+        dirtyRef.current = true;
+        localRef.current = next;
+        setLocal(next);
+        if (debouncedRef.current) debouncedRef.current(next);
+      }}
+      onBlur={(event: FocusEvent) => {
+        if (debouncedRef.current) debouncedRef.current.flush();
+        if (typeof onBlur === "function") onBlur(event);
+      }}
+    />
   );
 }
 
