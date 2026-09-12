@@ -274,19 +274,53 @@ export function dashboardState() {
   const txns = db().transactions
     .slice()
     .sort((a, b) => b.dayOffset - a.dayOffset || a.id.localeCompare(b.id))
-    .map(txn => ({
-      id: txn.id,
-      d: formatDate(txn.dayOffset),
-      offset: txn.dayOffset,
-      amount: major(signedAmount(txn)),
-      type: txn.type,
-      src: sourceLabel(txn.source),
-      party: txn.counterparty,
-      tag: txn.tag,
-      status: titleStatus(txn.status),
-      branchId: txn.branchId,
-      invoiceId: txn.invoiceId
-    }));
+    .map(txn => {
+      const proposal = db().matchProposals.find(row => row.transactionId === txn.id);
+      const invoice = txn.invoiceId
+        ? db().invoices.find(row => row.id === txn.invoiceId)
+        : proposal?.invoiceId
+          ? db().invoices.find(row => row.id === proposal.invoiceId)
+          : undefined;
+      const inUniverse = txn.direction === "in" || txn.type === "refund";
+      const openMatch = proposal?.status === "open";
+      const ledgerMatched = !openMatch && (!!txn.invoiceId || (txn.source === "shopify" && inUniverse));
+      let matchLabel = "—";
+      if (openMatch) matchLabel = "Waiting for review";
+      else if (ledgerMatched) matchLabel = invoice ? "Matched to " + invoice.number : "Matched";
+      else if (inUniverse) matchLabel = "Unmatched";
+      const log: { when: string; text: string }[] = [];
+      const when = formatDate(txn.dayOffset);
+      if (txn.type === "refund") log.push({ when, text: "Refund recorded" + (txn.source === "skipcash" ? " by SkipCash" : "") });
+      else if (txn.type === "expense") log.push({ when, text: "Expense recorded" });
+      else if (txn.type === "payroll") log.push({ when, text: "Payroll posted" });
+      else if (txn.source === "skipcash") log.push({ when, text: "Payment authorised by SkipCash" });
+      else if (txn.source === "shopify") log.push({ when, text: "Order recorded from Shopify" });
+      else if (txn.source === "link") log.push({ when, text: "Payment received via payment link" });
+      else log.push({ when, text: "Payment recorded from " + sourceLabel(txn.source) });
+      if (ledgerMatched) {
+        log.push({ when, text: invoice ? "Matched to " + invoice.number : "Matched from the ledger" });
+      } else if (openMatch && invoice) {
+        log.push({ when, text: "Suggested match: " + invoice.number });
+      }
+      if (proposal?.status === "confirmed") {
+        log.push({ when, text: "Confirmed by " + owner });
+      }
+      return {
+        id: txn.id,
+        d: formatDate(txn.dayOffset),
+        offset: txn.dayOffset,
+        amount: major(signedAmount(txn)),
+        type: txn.type,
+        src: sourceLabel(txn.source),
+        party: txn.counterparty,
+        tag: txn.tag,
+        status: titleStatus(txn.status),
+        branchId: txn.branchId,
+        invoiceId: txn.invoiceId,
+        matchLabel,
+        matchLog: log
+      };
+    });
 
   const invoices = db().invoices.map(invoice => {
     const status = getInvoiceStatus(invoice.id);

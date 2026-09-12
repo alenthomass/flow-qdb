@@ -2733,16 +2733,18 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                   <div><div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)")}>DATE</div><div style={sx("font-size:13.5px; font-weight:600; margin-top:5px")}>{v.det.o.d}</div></div>
                   <div><div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)")}>SOURCE</div><div style={sx("font-size:13.5px; font-weight:600; margin-top:5px")}>{v.det.o.src}</div></div>
                   <div><div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)")}>TAG</div><div style={sx("font-size:13.5px; font-weight:600; margin-top:5px")}>{v.det.o.tag}</div></div>
-                  <div><div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)")}>MATCHED</div><div style={sx("font-size:13.5px; font-weight:600; margin-top:5px; color:var(--ink-3)")}>Waiting for review</div></div>
+                  <div><div style={sx("font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-5)")}>MATCHED</div><div style={sx("font-size:13.5px; font-weight:600; margin-top:5px; color:var(--ink-3)")}>{v.det.o.matchLabel || "—"}</div></div>
                 </div>
               </div>
               <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px; margin-top:16px")}>
                 <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>What happened to this payment</div>
                 <div style={sx("display:flex; flex-direction:column; gap:12px; margin-top:16px")}>
-                  <div style={sx("display:flex; gap:12px")}><span style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:11.5px; color:var(--ink-4); width:96px; flex:0 0 96px")}>09:41</span><span style={sx("font-size:12.5px")}>Payment authorised by SkipCash</span></div>
-                  <div style={sx("display:flex; gap:12px")}><span style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:11.5px; color:var(--ink-4); width:96px; flex:0 0 96px")}>09:42</span><span style={sx("font-size:12.5px")}>Matched to invoice automatically</span></div>
-                  <div style={sx("display:flex; gap:12px")}><span style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:11.5px; color:var(--ink-4); width:96px; flex:0 0 96px")}>10:02</span><span style={sx("font-size:12.5px")}>Confirmed by {v.ownerName}</span></div>
-                  <div style={sx("display:flex; gap:12px")}><span style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:11.5px; color:var(--ink-4); width:96px; flex:0 0 96px")}>06:00 +1</span><span style={sx("font-size:12.5px")}>Pushed to Zoho Books</span></div>
+                  {((v.det.o.matchLog) || []).map((line: any, lineIdx: any) => <Fragment key={line?.id || line?.key || 'log-' + lineIdx}>
+                    <div style={sx("display:flex; gap:12px")}><span style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:11.5px; color:var(--ink-4); width:96px; flex:0 0 96px")}>{line.when}</span><span style={sx("font-size:12.5px")}>{line.text}</span></div>
+                  </Fragment>)}
+                  {!!(!(v.det.o.matchLog && v.det.o.matchLog.length)) && (<>
+                    <div style={sx("font-size:12.5px; color:var(--ink-4)")}>No activity is stored for this payment.</div>
+                  </>)}
                 </div>
               </div>
                 </>)}
