@@ -1301,7 +1301,11 @@ resetStore();
 resetGateway();
 
 root.applyStore();
-root.setState(st => ({ form: Object.assign({}, st.form, { recClient: "Lusail Hospitality", recAmount: "5400", recEvery: "Month" }) }));
+root.setState(st => ({
+  page: "invoicing",
+  tab: Object.assign({}, st.tab, { invoicing: "recurring" }),
+  form: Object.assign({}, st.form, { recClient: "Lusail Hospitality", recAmount: "5400", recEvery: "Month" })
+}));
 root.renderVals().rec.start();
 const uiRec = live().recurringInvoices[0];
 check("Recurring Start schedule writes the store",
@@ -1322,6 +1326,7 @@ check("Tag rename updates ledger rows",
     live().transactions.every(txn => txn.tag !== "Sales"),
   renamed.count + " rows");
 root.applyStore();
+root.setState(st => ({ page: "settings", tab: Object.assign({}, st.tab, { settings: "tags" }), detail: null }));
 const salesTag = root.renderVals().tagList.find(row => row.label === "Sales renamed");
 check("Tag list counts come from the ledger",
   salesTag && salesTag.count === String(salesCount),

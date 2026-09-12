@@ -3,7 +3,7 @@ import { dashboardState } from "./view";
 
 export { appendTransaction, persistStore, resetStore } from "./store";
 export { hydrateStore as hydrateFromStorage } from "./hydrate";
-export { dashboardSnapshot, dashboardState } from "./view";
+export { bankView, dashboardSnapshot, dashboardState } from "./view";
 export {
   EXTRACT_DELAY_MS,
   SAMPLE_BILL,

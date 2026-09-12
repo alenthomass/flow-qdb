@@ -1,6 +1,6 @@
 import { appendTransaction, resetStore } from "../data/store";
 import { hydrateStore } from "../data/hydrate";
-import { dashboardSnapshot, dashboardState } from "../data/view";
+import { bankView, dashboardSnapshot, dashboardState } from "../data/view";
 import {
   EXTRACT_DELAY_MS,
   SAMPLE_BILL,
@@ -57,6 +57,7 @@ export const FlowStore = {
   hydrateFromStorage: hydrateStore,
   dashboardState,
   dashboardSnapshot,
+  bankView,
   EXTRACT_DELAY_MS,
   SAMPLE_BILL,
   SAMPLE_BILLS,

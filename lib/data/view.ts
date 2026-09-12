@@ -718,7 +718,7 @@ function sourceStats() {
   };
 }
 
-function bankView() {
+export function bankView() {
   const account = db().bankAccounts[0];
   const cashOnHand = getCashOnHand();
   const name = account ? account.bank + ", " + account.label : "";
