@@ -1627,13 +1627,16 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                     </div>
                   </div>
                   <div style={sx("display:grid; grid-template-columns:1fr 1fr; gap:12px")}>
-                    {!!(v.showTax) && (<>
-                          <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Tax %</div><Hoverable as="input" style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif; background:var(--panel)")} value={v.nv.tax} onChange={v.nv.setTax} focusStyle={sx("border-color:var(--ink-6)")} /></label>
-                        </>)}
+                    <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Issue date</div><Hoverable as="input" style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel); color:var(--ink)")} type="date" value={v.nv.issued} onChange={v.nv.setIssued} focusStyle={sx("border-color:var(--ink-6)")} />{!!(v.nv.issuedErrorOn) && (<>
+                            <span style={sx("display:block; font-size:12px; font-weight:650; color:var(--neg); margin-top:6px")}>{v.nv.issuedError}</span>
+                          </>)}</label>
                     <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Due date<span style={sx("color:var(--neg); margin-left:3px")}>*</span></div><Hoverable as="input" style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel); color:var(--ink)")} type="date" value={v.nv.due} onChange={v.nv.setDue} focusStyle={sx("border-color:var(--ink-6)")} />{!!(v.nv.dueErrorOn) && (<>
                             <span style={sx("display:block; font-size:12px; font-weight:650; color:var(--neg); margin-top:6px")}>{v.nv.dueError}</span>
                           </>)}</label>
                   </div>
+                  {!!(v.showTax) && (<>
+                        <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Tax %</div><Hoverable as="input" style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif; background:var(--panel)")} value={v.nv.tax} onChange={v.nv.setTax} focusStyle={sx("border-color:var(--ink-6)")} /></label>
+                      </>)}
                   <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Discount (optional)</div><Hoverable as="input" style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; font-family:'Urbanist','Cairo',sans-serif; background:var(--panel)")} value={v.nv.discount} onChange={v.nv.setDiscount} placeholder="0.00" focusStyle={sx("border-color:var(--ink-6)")} /></label>
                   <div style={sx("display:flex; align-items:center; gap:12px")}>
                     <div style={sx("flex:1")}>
