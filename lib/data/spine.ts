@@ -33,7 +33,7 @@ import {
   DEFAULT_ROLE_PERMISSIONS
 } from "./store";
 import { SAMPLE_BANKS, SAMPLE_SHOPIFY_ORDER } from "./sample-checkout";
-import { getPayrollNet } from "./selectors";
+import { getInvoiceStatus, getPayrollNet } from "./selectors";
 import { absoluteHttpUrl, monthYearLabel, offsetFromLabel } from "../format";
 import type {
   AccessLevel,
@@ -162,6 +162,55 @@ export async function createPaymentLink(input: CreateLinkInput): Promise<Payment
 
 export function paymentLinkById(id: string): PaymentLink | undefined {
   return getStore().paymentLinks.find(row => row.id === id);
+}
+
+function invoicePayLinkStatus(invoice: Invoice): PaymentLink["status"] | null {
+  const status = getInvoiceStatus(invoice.id);
+  if (status === "draft") return null;
+  if (status === "paid" || status === "refunded") return "paid";
+  if (status === "awaiting settlement") return "pending";
+  return "active";
+}
+
+export function ensureInvoicePaymentLink(invoice: Invoice): PaymentLink | undefined {
+  const wanted = invoicePayLinkStatus(invoice);
+  if (!wanted) return undefined;
+  const existing = getStore().paymentLinks.find(row => row.id === invoice.number);
+  const client = getStore().clients.find(row => row.id === invoice.clientId);
+  const email = (client?.email || ownerContact().email || "").trim() || null;
+  const description = "Invoice " + invoice.number;
+  if (existing) {
+    const patch: Partial<PaymentLink> = {};
+    if (existing.status === "active") {
+      if (existing.amountMinor !== invoice.amountMinor) patch.amountMinor = invoice.amountMinor;
+      if (existing.description !== description) patch.description = description;
+      if (!!existing.partialPayment !== !!invoice.partialPayment) patch.partialPayment = !!invoice.partialPayment;
+    }
+    if (existing.invoiceId !== invoice.id) patch.invoiceId = invoice.id;
+    if (existing.clientId !== invoice.clientId) patch.clientId = invoice.clientId;
+    if (existing.referenceId !== invoice.number) patch.referenceId = invoice.number;
+    if (wanted !== "active" && existing.status === "active") patch.status = wanted;
+    if (Object.keys(patch).length) return replacePaymentLink(existing.id, patch) || existing;
+    return existing;
+  }
+  const link: PaymentLink = {
+    id: invoice.number,
+    payUrl: hostedLinkUrl(invoice.number),
+    amountMinor: invoice.amountMinor,
+    description,
+    clientId: invoice.clientId,
+    invoiceId: invoice.id,
+    status: wanted,
+    createdOffset: 0,
+    uses: wanted === "active" ? 0 : 1,
+    expiry: "-",
+    txnId: null,
+    customerEmail: email,
+    referenceId: invoice.number,
+    partialPayment: !!invoice.partialPayment
+  };
+  appendPaymentLink(link);
+  return getStore().paymentLinks.find(row => row.id === invoice.number) || link;
 }
 
 function ensureGatewayPayment(link: PaymentLink): void {
@@ -687,6 +736,7 @@ export interface CreateInvoiceInput {
   attachments?: InvoiceAttachment[];
   clientAddress?: string;
   notes?: string;
+  termsAndConditions?: string;
   reference?: string;
 }
 
@@ -699,6 +749,10 @@ function nextInvoiceIdentity(): { id: string; number: string } {
   const next = max + 1;
   const pad = String(next).padStart(4, "0");
   return { id: "inv_" + pad, number: "INV-" + pad };
+}
+
+export function peekNextInvoiceNumber(): string {
+  return nextInvoiceIdentity().number;
 }
 
 export function addClient(input: { name: string; email?: string; branchId?: string; address?: string }): Client {
@@ -769,6 +823,8 @@ export function createInvoice(input: CreateInvoiceInput): Invoice {
   if (attachments.length) invoice.attachments = attachments;
   const notes = String(input.notes || "").trim();
   if (notes) invoice.notes = notes;
+  const termsAndConditions = String(input.termsAndConditions || "").trim();
+  if (termsAndConditions) invoice.termsAndConditions = termsAndConditions;
   const reference = String(input.reference || "").trim();
   if (reference) invoice.reference = reference;
   const clientAddress = String(input.clientAddress || "").trim();
@@ -783,6 +839,7 @@ export function createInvoice(input: CreateInvoiceInput): Invoice {
     actor: getStore().merchant.ownerName,
     what: draft ? "Invoice " + invoice.number + " saved as draft" : "Invoice " + invoice.number + " sent"
   });
+  if (!draft) ensureInvoicePaymentLink(invoice);
   return invoice;
 }
 
@@ -801,6 +858,7 @@ export function duplicateInvoice(invoiceId: string): Invoice {
     attachments: source.attachments,
     clientAddress: getStore().clients.find(client => client.id === source.clientId)?.address,
     notes: source.notes,
+    termsAndConditions: source.termsAndConditions,
     reference: source.reference
   });
 }
@@ -814,6 +872,11 @@ export function saveMerchantProfile(patch: {
   bankName?: string;
   accountName?: string;
   iban?: string;
+  accountNumber?: string;
+  swiftCode?: string;
+  crNumber?: string;
+  phone?: string;
+  email?: string;
 }): Merchant {
   const next: Partial<Merchant> = {};
   if (patch.businessName != null) next.businessName = String(patch.businessName).trim();
@@ -827,6 +890,11 @@ export function saveMerchantProfile(patch: {
   if (patch.bankName !== undefined) next.bankName = String(patch.bankName).trim() || undefined;
   if (patch.accountName !== undefined) next.accountName = String(patch.accountName).trim() || undefined;
   if (patch.iban !== undefined) next.iban = String(patch.iban).trim() || undefined;
+  if (patch.accountNumber !== undefined) next.accountNumber = String(patch.accountNumber).trim() || undefined;
+  if (patch.swiftCode !== undefined) next.swiftCode = String(patch.swiftCode).trim() || undefined;
+  if (patch.crNumber !== undefined) next.crNumber = String(patch.crNumber).trim();
+  if (patch.phone !== undefined) next.phone = String(patch.phone).trim() || undefined;
+  if (patch.email !== undefined) next.email = String(patch.email).trim() || undefined;
   return replaceMerchant(next);
 }
 

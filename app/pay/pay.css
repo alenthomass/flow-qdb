@@ -39,16 +39,17 @@
   @keyframes pattern-in { from { opacity: 0; } to { opacity: 1; } }
   .page { position: relative; min-height: 100vh; display: flex; justify-content: stretch; align-items: stretch; padding: 0; }
   .stage { width: 100%; max-width: none; }
-  .grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); grid-template-rows: 1fr auto;
+  .grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
     gap: 0; align-items: stretch; min-height: 100vh; }
-  .copy { min-width: 0; grid-column: 1; grid-row: 1; display: flex; justify-content: center;
+  .copy-col { min-width: 0; display: flex; flex-direction: column; min-height: 100vh; }
+  .copy { min-width: 0; display: flex; justify-content: center;
     padding: 72px clamp(28px, 5vw, 80px) 28px; }
-  .copy-foot { grid-column: 1; grid-row: 2; align-self: end; display: flex; justify-content: center;
+  .copy-foot { display: flex; justify-content: center; margin-top: auto;
     padding: 0 clamp(28px, 5vw, 80px) 48px; }
   .copy-inner { width: 100%; max-width: 400px; }
   .brand, h1, .desc, .meta, .flow { max-width: none; }
-  .pay-col { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center;
-    padding: 72px clamp(28px, 5vw, 80px); grid-column: 2; grid-row: 1 / span 2; }
+  .pay-col { position: relative; z-index: 1; display: flex; align-items: flex-start; justify-content: center;
+    padding: 72px clamp(28px, 5vw, 80px); min-height: 100vh; }
   .link-pay { position: relative; z-index: 1; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
   .brand { display: flex; align-items: center; gap: 14px; }
   .logo { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 12px; border: none; display: flex;
@@ -208,11 +209,12 @@
       mask-image: linear-gradient(to bottom, rgba(0,0,0,.38) 0%, rgba(0,0,0,.16) 42%, transparent 100%);
       -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.38) 0%, rgba(0,0,0,.16) 42%, transparent 100%); }
     .page { padding: 0; }
-    .grid { grid-template-columns: minmax(0,1fr); grid-template-rows: none; min-height: 0; gap: 8px; }
+    .grid { grid-template-columns: minmax(0,1fr); min-height: 0; gap: 8px; }
+    .copy-col { display: contents; min-height: 0; }
     .copy, .pay-col, .copy-foot { grid-column: auto; grid-row: auto; max-width: none; }
-    .copy { padding: 36px 20px 12px; }
-    .pay-col { padding: 8px 20px 28px; align-items: stretch; justify-content: stretch; }
-    .copy-foot { padding: 8px 20px 36px; }
+    .copy { order: 1; padding: 36px 20px 12px; }
+    .pay-col { order: 2; padding: 8px 20px 28px; align-items: stretch; justify-content: stretch; min-height: 0; }
+    .copy-foot { order: 3; padding: 8px 20px 36px; margin-top: 0; }
     .copy-inner { max-width: none; }
     .card { width: 100%; max-width: none; }
     h1 { font-size: 30px; margin-top: 22px; }

@@ -1658,11 +1658,13 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                         </Fragment>)}
                   </div>
                   <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Notes</div><DebouncedField as="textarea" style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; resize:vertical; background:var(--panel)")} value={v.nv.notes} onChange={v.nv.setNotes} placeholder="Thanks for your business." rows={3} focusStyle={sx("border-color:var(--ink-6)")} /></label>
+                  <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>Terms & conditions (optional)</div><DebouncedField as="textarea" style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; resize:vertical; background:var(--panel)")} value={v.nv.terms} onChange={v.nv.setTerms} placeholder="Payment due within 14 days of issue." rows={3} focusStyle={sx("border-color:var(--ink-6)")} /></label>
                   <div style={sx("display:flex; gap:10px; flex-wrap:wrap")}>
                     <Hoverable as="button" style={sx("font-size:13px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:11px 18px; border-radius:9px")} onClick={v.nv.create} hoverStyle={sx("filter:brightness(1.12)")}>Create invoice</Hoverable>
                     <Hoverable as="button" style={sx("font-size:13px; font-weight:600; padding:11px 18px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light); transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.nv.draft} hoverStyle={sx("filter:brightness(.97)")}>Save as draft</Hoverable>
                     <Hoverable as="button" disabled={!!v.nv.exportOff} style={sx("font-size:13px; font-weight:600; padding:11px 18px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light); opacity:" + (v.nv.exportOff ? ".45" : "1") + "; cursor:" + (v.nv.exportOff ? "default" : "pointer"))} onClick={v.nv.downloadPdf} hoverStyle={sx(v.nv.exportOff ? "" : "filter:brightness(.97)")}>{v.nv.pdfBusy ? "Downloading…" : "Download PDF"}</Hoverable>
                     <Hoverable as="button" disabled={!!v.nv.exportOff} style={sx("font-size:13px; font-weight:600; padding:11px 18px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light); opacity:" + (v.nv.exportOff ? ".45" : "1") + "; cursor:" + (v.nv.exportOff ? "default" : "pointer"))} onClick={v.nv.printInvoice} hoverStyle={sx(v.nv.exportOff ? "" : "filter:brightness(.97)")}>Print</Hoverable>
+                    <Hoverable as="button" disabled={!!v.nv.exportOff} style={sx("font-size:13px; font-weight:600; padding:11px 18px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light); opacity:" + (v.nv.exportOff ? ".45" : "1") + "; cursor:" + (v.nv.exportOff ? "default" : "pointer"))} onClick={v.nv.copyLink} hoverStyle={sx(v.nv.exportOff ? "" : "filter:brightness(.97)")}>Copy invoice link</Hoverable>
                   </div>
                 </div>
               </div>
@@ -1673,6 +1675,9 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                 businessName={v.nv.businessName}
                 sellerAddress={v.nv.sellerAddress || v.profile.address}
                 taxReg={v.nv.taxReg || v.profile.taxRegistrationNumber}
+                crNumber={v.nv.crNumber || v.profile.crNumber}
+                sellerPhone={v.nv.sellerPhone || v.profile.phone}
+                sellerEmail={v.nv.sellerEmail || v.profile.email}
                 issued={v.nv.issuedLabel}
                 due={v.nv.dueLabel}
                 status={v.nv.statusLabel}
@@ -1684,9 +1689,13 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                 partialPayment={!!v.nv.partialOn}
                 reference={v.nv.reference}
                 notes={v.nv.notes}
+                termsAndConditions={v.nv.terms}
                 bankName={v.nv.bankName}
                 accountName={v.nv.accountName}
                 iban={v.nv.iban}
+                accountNumber={v.nv.accountNumber}
+                swiftCode={v.nv.swiftCode}
+                payUrl={v.nv.payUrl}
               />
             </div>
               </>)}
@@ -2707,6 +2716,9 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                   businessName={v.det.o.businessName}
                   sellerAddress={v.det.o.sellerAddress || v.profile.address}
                   taxReg={v.det.o.taxReg || v.profile.taxRegistrationNumber}
+                  crNumber={v.det.o.crNumber || v.profile.crNumber}
+                  sellerPhone={v.det.o.sellerPhone || v.profile.phone}
+                  sellerEmail={v.det.o.sellerEmail || v.profile.email}
                   issued={v.det.o.issuedLabel || v.det.o.issued}
                   due={v.det.o.due}
                   status={v.det.o.status}
@@ -2718,9 +2730,13 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                   partialPayment={!!v.det.o.partialPayment}
                   reference={v.det.o.reference}
                   notes={v.det.o.notes}
+                  termsAndConditions={v.det.o.termsAndConditions}
                   bankName={v.det.o.bankName}
                   accountName={v.det.o.accountName}
                   iban={v.det.o.iban}
+                  accountNumber={v.det.o.accountNumber}
+                  swiftCode={v.det.o.swiftCode}
+                  payUrl={v.det.o.payUrl}
                 />
                 <div style={sx("display:flex; flex-direction:column; gap:16px")}>
                   <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px")}>

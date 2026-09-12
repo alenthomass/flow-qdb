@@ -1,6 +1,6 @@
 import { getStore } from "../data/store";
 import { hydrateStore } from "../data/hydrate";
-import { checkoutPageBySlug, checkoutPageUnavailable, paymentLinkById, payPublishedCheckout, settleCheckoutPayment, settlePayment, simulatePayment } from "../data/spine";
+import { checkoutPageBySlug, checkoutPageUnavailable, ensureInvoicePaymentLink, paymentLinkById, payPublishedCheckout, settleCheckoutPayment, settlePayment, simulatePayment } from "../data/spine";
 import { offsetFromLabel } from "../format";
 import type { PaymentOutcome } from "../gateway/index";
 
@@ -32,8 +32,13 @@ export function emailError(value: string): string {
 
 export function checkoutBySlug(slug: string) {
   const page = checkoutPageBySlug(slug);
-  const link = page ? undefined : paymentLinkById(slug);
-  return { page, link };
+  if (page) return { page, link: undefined };
+  let link = paymentLinkById(slug);
+  if (!link) {
+    const invoice = getStore().invoices.find(row => row.number === slug);
+    if (invoice) link = ensureInvoicePaymentLink(invoice);
+  }
+  return { page: undefined, link };
 }
 
 export function linkUnavailable(slug: string): string | null {

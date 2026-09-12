@@ -134,7 +134,7 @@ export function CheckoutModal({
                 <div className="ck-card-fields">
                   <label>
                     <span>Card Number</span>
-                    <input inputMode="numeric" autoComplete="cc-number" placeholder="ACCT-000003" value={card.number} onChange={e => setCard(c => ({ ...c, number: e.target.value }))} />
+                    <input inputMode="numeric" autoComplete="cc-number" placeholder="1234 5678 9012 3456" value={card.number} onChange={e => setCard(c => ({ ...c, number: e.target.value }))} />
                   </label>
                   <div className="ck-card-row">
                     <label>

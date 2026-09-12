@@ -58,6 +58,7 @@ var FlowStore = (() => {
     payPublishedCheckout: () => payPublishedCheckout,
     paymentLinkById: () => paymentLinkById,
     payrollPostedFor: () => payrollPostedFor,
+    peekNextInvoiceNumber: () => peekNextInvoiceNumber,
     persistStore: () => persistStore,
     postPayroll: () => postPayroll,
     previousMonthLabel: () => previousMonthLabel,
@@ -183,7 +184,14 @@ var FlowStore = (() => {
       address: "Building 42, Al Sadd, Doha, Qatar",
       ownerName,
       accountantName,
-      plan: { tier: "Starter", monthlyPrice: 3900, txnLimit: 5e3 }
+      plan: { tier: "Starter", monthlyPrice: 3900, txnLimit: 5e3 },
+      bankName: "Ahli Bank",
+      accountName: "Al Bidda Trading W.L.L.",
+      iban: "QA58 AHLB 0000 0000 0000 0000 001",
+      accountNumber: "001234567890",
+      swiftCode: "AHLBQAQA",
+      phone: "+974 4012 8800",
+      email: "accounts@albidda.qa"
     },
     branches: [
       { id: "br_01", name: "Doha" },
@@ -294,6 +302,7 @@ var FlowStore = (() => {
       ...row,
       invoices: row.invoices && row.invoices.length ? row.invoices : base.invoices,
       clients: row.clients && row.clients.length ? row.clients : base.clients,
+      merchant: { ...base.merchant, ...row.merchant || {} },
       paymentLinks: row.paymentLinks && row.paymentLinks.length ? row.paymentLinks : base.paymentLinks,
       checkoutPages: row.checkoutPages || [],
       subscriptionPlans: row.subscriptionPlans || [],
@@ -1301,6 +1310,7 @@ var FlowStore = (() => {
         partialPayment: !!invoice.partialPayment,
         discount: major(invoice.discountMinor || 0),
         notes: invoice.notes || "",
+        termsAndConditions: invoice.termsAndConditions || "",
         reference: invoice.reference || "",
         attachments: (invoice.attachments || []).map((file) => ({
           name: file.name,
@@ -1386,9 +1396,13 @@ var FlowStore = (() => {
         address: merchant.address,
         currency: "QR, Qatari Riyal",
         crNumber: merchant.crNumber,
+        phone: merchant.phone || "",
+        email: merchant.email || "",
         bankName: merchant.bankName || (db2().bankAccounts.find((account) => !account.sample) || db2().bankAccounts[0])?.bank || "",
         accountName: merchant.accountName || "",
-        iban: merchant.iban || ""
+        iban: merchant.iban || "",
+        accountNumber: merchant.accountNumber || "",
+        swiftCode: merchant.swiftCode || ""
       },
       plan: {
         tier: seed.merchant.plan.tier,
@@ -2477,6 +2491,9 @@ var FlowStore = (() => {
     const pad = String(next).padStart(4, "0");
     return { id: "inv_" + pad, number: "INV-" + pad };
   }
+  function peekNextInvoiceNumber() {
+    return nextInvoiceIdentity().number;
+  }
   function addClient(input) {
     const name = String(input.name || "").trim();
     if (!name) throw new Error("Client name is required");
@@ -2541,6 +2558,8 @@ var FlowStore = (() => {
     if (attachments.length) invoice.attachments = attachments;
     const notes = String(input.notes || "").trim();
     if (notes) invoice.notes = notes;
+    const termsAndConditions = String(input.termsAndConditions || "").trim();
+    if (termsAndConditions) invoice.termsAndConditions = termsAndConditions;
     const reference = String(input.reference || "").trim();
     if (reference) invoice.reference = reference;
     const clientAddress = String(input.clientAddress || "").trim();
@@ -2572,6 +2591,7 @@ var FlowStore = (() => {
       attachments: source.attachments,
       clientAddress: getStore().clients.find((client) => client.id === source.clientId)?.address,
       notes: source.notes,
+      termsAndConditions: source.termsAndConditions,
       reference: source.reference
     });
   }
@@ -2588,6 +2608,11 @@ var FlowStore = (() => {
     if (patch.bankName !== void 0) next.bankName = String(patch.bankName).trim() || void 0;
     if (patch.accountName !== void 0) next.accountName = String(patch.accountName).trim() || void 0;
     if (patch.iban !== void 0) next.iban = String(patch.iban).trim() || void 0;
+    if (patch.accountNumber !== void 0) next.accountNumber = String(patch.accountNumber).trim() || void 0;
+    if (patch.swiftCode !== void 0) next.swiftCode = String(patch.swiftCode).trim() || void 0;
+    if (patch.crNumber !== void 0) next.crNumber = String(patch.crNumber).trim();
+    if (patch.phone !== void 0) next.phone = String(patch.phone).trim() || void 0;
+    if (patch.email !== void 0) next.email = String(patch.email).trim() || void 0;
     return replaceMerchant(next);
   }
   function offsetsForMonthLabel(label) {

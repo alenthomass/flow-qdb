@@ -26,6 +26,7 @@ export {
   connectShopify,
   createInvoice,
   createPaymentLink,
+  peekNextInvoiceNumber,
   createSubscriptionPlan,
   deactivatePaymentLink,
   defaultPayrollPeriod,

@@ -120,7 +120,14 @@ export const seed: Seed = {
     address: "Building 42, Al Sadd, Doha, Qatar",
     ownerName,
     accountantName,
-    plan: { tier: "Starter", monthlyPrice: 3900, txnLimit: 5000 }
+    plan: { tier: "Starter", monthlyPrice: 3900, txnLimit: 5000 },
+    bankName: "Ahli Bank",
+    accountName: "Al Bidda Trading W.L.L.",
+    iban: "QA58 AHLB 0000 0000 0000 0000 001",
+    accountNumber: "001234567890",
+    swiftCode: "AHLBQAQA",
+    phone: "+974 4012 8800",
+    email: "accounts@albidda.qa"
   },
   branches: [
     { id: "br_01", name: "Doha" },

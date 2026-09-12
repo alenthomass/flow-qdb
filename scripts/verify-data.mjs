@@ -16,6 +16,7 @@ import {
   connectSampleBank,
   connectShopify,
   createInvoice,
+  peekNextInvoiceNumber,
   createPaymentLink,
   createRecurringInvoice,
   createSubscriptionPlan,
@@ -577,11 +578,25 @@ check(
 );
 root.setState({ detail: null, toast: "" });
 
+const peekedNumber = peekNextInvoiceNumber();
 const created = createInvoice({
   clientName: "Lusail Hospitality",
   amountMinor: 340000,
-  dueOffset: 14
+  dueOffset: 14,
+  notes: "Thanks for your business.",
+  termsAndConditions: "Payment due within 14 days of issue."
 });
+check(
+  "peekNextInvoiceNumber matches the number assigned on save",
+  peekedNumber === created.number && created.number === "INV-0151",
+  peekedNumber + " vs " + created.number
+);
+check(
+  "Invoice notes and termsAndConditions persist separately",
+  created.notes === "Thanks for your business." &&
+    created.termsAndConditions === "Payment due within 14 days of issue.",
+  "notes " + (created.notes || "") + " · terms " + (created.termsAndConditions || "")
+);
 root.applyStore();
 const afterCreate = getTotalInvoiced();
 const afterOut = getOutstanding();
@@ -1450,7 +1465,7 @@ const doc = [
   "",
   "## Not stored in the seed",
   "",
-  "- Bank account number is not stored. Opening balance is stored on bank_01 (QR 85,000 as of ANCHOR_DATE minus 30 days).",
+  "- Merchant profile in the seed: CR-114820, phone +974 4012 8800, accounts@albidda.qa, Ahli Bank, account 001234567890, SWIFT AHLBQAQA. Opening balance is stored on bank_01 (QR 85,000 as of ANCHOR_DATE minus 30 days).",
   "- Four paid payment links are in the seed (collected QR 6,540, times paid 4). Subscription plans, checkout product price and saved report packs are not, so those lists start empty. Checkout drop-off uses labelled sample analytics in lib/data/sample-checkout.ts.",
   "- Shopify starts disconnected. Seed shopify transactions stay as historical rows; only new incoming after connect are tagged by the plugin.",
   "- Extra bank connections are labelled sample and store opening QR 0 so cash on hand does not change.",

@@ -36,6 +36,10 @@ export interface Merchant {
   bankName?: string;
   accountName?: string;
   iban?: string;
+  accountNumber?: string;
+  swiftCode?: string;
+  phone?: string;
+  email?: string;
 }
 
 export interface Branch {
@@ -101,6 +105,7 @@ export interface Invoice {
   discountMinor?: number;
   attachments?: InvoiceAttachment[];
   notes?: string;
+  termsAndConditions?: string;
   reference?: string;
 }
 

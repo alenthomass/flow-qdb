@@ -66,6 +66,7 @@ function withDefaults(row: Seed): Seed {
     ...row,
     invoices: (row.invoices && row.invoices.length) ? row.invoices : base.invoices,
     clients: (row.clients && row.clients.length) ? row.clients : base.clients,
+    merchant: { ...base.merchant, ...(row.merchant || {}) },
     paymentLinks: (row.paymentLinks && row.paymentLinks.length) ? row.paymentLinks : base.paymentLinks,
     checkoutPages: row.checkoutPages || [],
     subscriptionPlans: row.subscriptionPlans || [],

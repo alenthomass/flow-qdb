@@ -317,6 +317,7 @@ export function dashboardState() {
       partialPayment: !!invoice.partialPayment,
       discount: major(invoice.discountMinor || 0),
       notes: invoice.notes || "",
+      termsAndConditions: invoice.termsAndConditions || "",
       reference: invoice.reference || "",
       attachments: (invoice.attachments || []).map(file => ({
         name: file.name,
@@ -407,9 +408,13 @@ export function dashboardState() {
       address: merchant.address,
       currency: "QR, Qatari Riyal",
       crNumber: merchant.crNumber,
+      phone: merchant.phone || "",
+      email: merchant.email || "",
       bankName: merchant.bankName || (db().bankAccounts.find(account => !account.sample) || db().bankAccounts[0])?.bank || "",
       accountName: merchant.accountName || "",
-      iban: merchant.iban || ""
+      iban: merchant.iban || "",
+      accountNumber: merchant.accountNumber || "",
+      swiftCode: merchant.swiftCode || ""
     },
     plan: {
       tier: seed.merchant.plan.tier,

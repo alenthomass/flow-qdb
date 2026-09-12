@@ -20,18 +20,47 @@ function invoiceDoc(): HTMLElement | null {
   return document.querySelector(INVOICE_DOC_SELECTOR);
 }
 
+const HTML2CANVAS_COLOR_PROPS = [
+  "color",
+  "backgroundColor",
+  "backgroundImage",
+  "borderColor",
+  "borderTopColor",
+  "borderRightColor",
+  "borderBottomColor",
+  "borderLeftColor",
+  "outlineColor",
+  "textDecorationColor"
+] as const;
+
+const SRGB_COLOR_RE = /color\(\s*(?:srgb|display-p3)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)(?:\s*\/\s*([0-9.]+))?\s*\)/gi;
+
+function srgbToCss(r: number, g: number, b: number, a: number): string {
+  const rr = Math.max(0, Math.min(255, Math.round(r * 255)));
+  const gg = Math.max(0, Math.min(255, Math.round(g * 255)));
+  const bb = Math.max(0, Math.min(255, Math.round(b * 255)));
+  if (!(a < 1)) return "rgb(" + rr + ", " + gg + ", " + bb + ")";
+  return "rgba(" + rr + ", " + gg + ", " + bb + ", " + a + ")";
+}
+
+function html2canvasSafeColor(value: string): string {
+  if (!value || value.indexOf("color(") === -1) return value;
+  return value.replace(SRGB_COLOR_RE, (_m, r, g, b, a) =>
+    srgbToCss(parseFloat(r), parseFloat(g), parseFloat(b), a == null || a === "" ? 1 : parseFloat(a))
+  );
+}
+
 function flattenComputedColors(source: HTMLElement, clone: HTMLElement) {
   const from = [source, ...Array.from(source.querySelectorAll<HTMLElement>("*"))];
   const to = [clone, ...Array.from(clone.querySelectorAll<HTMLElement>("*"))];
   const limit = Math.min(from.length, to.length);
   for (let i = 0; i < limit; i++) {
     const style = getComputedStyle(from[i]);
-    to[i].style.color = style.color;
-    to[i].style.backgroundColor = style.backgroundColor;
-    if (style.backgroundImage && style.backgroundImage !== "none") {
-      to[i].style.backgroundImage = style.backgroundImage;
+    for (const prop of HTML2CANVAS_COLOR_PROPS) {
+      const raw = style[prop];
+      if (!raw || raw === "none") continue;
+      to[i].style[prop] = html2canvasSafeColor(raw);
     }
-    to[i].style.borderColor = style.borderColor;
     to[i].style.boxShadow = "none";
     to[i].style.animation = "none";
   }
@@ -103,16 +132,31 @@ export async function downloadInvoicePdf(number?: string, client?: string, node?
     }
   }));
   if (!canvas.width || !canvas.height) throw new Error("Could not render invoice to PDF");
+  // True A4 page (210mm x 297mm): short invoices get normal blank space below the
+  // content, like a real printed page. Content taller than one page's content area
+  // spills onto additional A4 pages instead of being squeezed or cut off.
   const pageW = 210;
+  const pageH = 297;
   const margin = 12;
-  const maxW = pageW - margin * 2;
+  const drawW = pageW - margin * 2;
+  const contentH = pageH - margin * 2;
   const ratio = canvas.width / canvas.height;
-  const drawW = maxW;
-  const drawH = drawW / ratio;
-  const pageH = drawH + margin * 2;
-  const pdf = new jsPDF({ orientation: "p", unit: "mm", format: [pageW, pageH] });
+  const totalDrawH = drawW / ratio;
+  const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
   const img = canvas.toDataURL("image/jpeg", 0.95);
-  pdf.addImage(img, "JPEG", margin, margin, drawW, drawH);
+  if (totalDrawH <= contentH) {
+    pdf.addImage(img, "JPEG", margin, margin, drawW, totalDrawH);
+  } else {
+    const maxPages = 50;
+    let renderedH = 0;
+    let page = 0;
+    while (renderedH < totalDrawH && page < maxPages) {
+      if (page > 0) pdf.addPage();
+      pdf.addImage(img, "JPEG", margin, margin - renderedH, drawW, totalDrawH);
+      renderedH += contentH;
+      page++;
+    }
+  }
   const blob = pdf.output("blob");
   const href = URL.createObjectURL(blob);
   const a = document.createElement("a");

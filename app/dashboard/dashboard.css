@@ -221,7 +221,7 @@ html, body { margin: 0; padding: 0; height: 100%; }
     position: relative;
     overflow: hidden;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 18px;
     padding: 22px 26px 20px;
@@ -237,9 +237,13 @@ html, body { margin: 0; padding: 0; height: 100%; }
   }
   .flow-invoice-glow.is-band { top: -86px; right: -54px; width: 240px; height: 240px; }
   .flow-invoice-glow.is-total { top: -72px; right: -42px; width: 200px; height: 200px; }
-  .flow-invoice-brand { position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+  .flow-invoice-brand {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: flex-start;
+    gap: 12px; min-width: 0; text-align: left;
+  }
   .flow-invoice-mark {
-    width: 42px; height: 42px; flex: 0 0 42px;
+    width: 42px; height: 42px; flex: none;
     border-radius: 12px;
     background: var(--on-block);
     color: var(--ink-block);
@@ -247,16 +251,16 @@ html, body { margin: 0; padding: 0; height: 100%; }
     font-family: 'Urbanist', 'Cairo', sans-serif;
     font-size: 13px; font-weight: 800; letter-spacing: .02em;
   }
-  .flow-invoice-seller { min-width: 0; }
+  .flow-invoice-seller { min-width: 0; text-align: left; }
   .flow-invoice-seller-name {
     font-family: 'Urbanist', 'Cairo', sans-serif;
     font-size: 15px; font-weight: 700; letter-spacing: -.02em;
-    color: var(--on-block);
+    color: var(--on-block); text-align: left;
   }
   .flow-invoice-seller-meta {
     font-size: 11.5px; line-height: 1.45; margin-top: 4px;
     color: color-mix(in srgb, var(--on-block) 68%, transparent);
-    white-space: pre-wrap;
+    white-space: pre-wrap; text-align: left;
   }
   .flow-invoice-id { position: relative; z-index: 1; text-align: right; flex: 0 0 auto; }
   .flow-invoice-eyebrow {
@@ -269,9 +273,9 @@ html, body { margin: 0; padding: 0; height: 100%; }
     color: var(--on-block); margin-top: 4px; white-space: nowrap;
   }
   .flow-invoice-status {
-    display: inline-flex; align-items: center;
+    display: inline-flex; align-items: center; justify-content: center;
     margin-top: 8px; padding: 4px 10px; border-radius: 999px;
-    font-size: 11px; font-weight: 650; letter-spacing: .01em; white-space: nowrap;
+    font-size: 11px; font-weight: 600; line-height: 1.2; letter-spacing: .01em; white-space: nowrap;
   }
   .flow-invoice-body { padding: 22px 26px 16px; }
   .flow-invoice-meta {
@@ -384,14 +388,23 @@ html, body { margin: 0; padding: 0; height: 100%; }
   .flow-invoice-payline span:last-child {
     min-width: 0; text-align: right; overflow-wrap: anywhere; word-break: break-word;
   }
+  .flow-invoice-payline a { color: inherit; }
   .flow-invoice-signoff {
     display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap;
     margin-top: 16px; padding-top: 10px;
     border-top: 1px solid var(--divider);
     font-size: 11px; color: var(--ink-5);
   }
+  .flow-invoice-terms {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--divider);
+  }
+  .flow-invoice-terms-copy {
+    font-size: 11px; line-height: 1.45; margin-top: 6px; color: var(--ink-5); white-space: pre-wrap;
+  }
   @container (max-width: 600px) {
-    .flow-invoice-band { flex-wrap: wrap; }
+    .flow-invoice-band { flex-wrap: wrap; row-gap: 14px; }
     .flow-invoice-id { margin-left: auto; }
     .flow-invoice-number { font-size: 22px; }
     .flow-invoice-meta { grid-template-columns: 1fr 1fr; }
@@ -403,7 +416,7 @@ html, body { margin: 0; padding: 0; height: 100%; }
     .flow-invoice-total-due strong { font-size: 22px; }
   }
   @media print {
-    @page { size: 210mm auto; margin: 12mm; }
+    @page { size: A4; margin: 12mm; }
     html, body {
       background: #fff !important;
       height: auto !important;

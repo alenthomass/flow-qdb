@@ -451,11 +451,13 @@ export default function PayCheckout({ slug, outcome, receipt = false }: { slug: 
     return <LinkPay slug={slug} link={link} outcome={outcome} receiptTxn={receiptTxn} merchant={merchant} />;
   }
   return <div className="grid">
-    <MerchantCopy branding={branding} merchant={merchant} title={title} description={description} />
+    <div className="copy-col">
+      <MerchantCopy branding={branding} merchant={merchant} title={title} description={description} />
+      <FlowFooter email={branding.supportEmail} />
+    </div>
     <div className="pay-col">
       {receiptTxn ? <SuccessCard result={{ status: "success", amountMinor: receiptTxn.amountMinor, merchant, reference: txnReference(link?.referenceId, receiptTxn.id) }} {...receiptProps} /> : <PaymentForm slug={slug} fields={fields} amountMinor={amountMinor} payLabel={page?.payLabel || "Pay"} unavailable={unavailable} outcome={outcome} editableAmount={!!link?.partialPayment || page?.amountMode === "open"} initialEmail={link?.customerEmail || ""} initialPhone={link?.customerPhone || ""} afterPay={page?.afterPay} redirectUrl={page?.redirectUrl} receiptAuto={receiptProps.receiptAuto} receiptCustomer={receiptProps.showCustomer} receiptRef={receiptProps.showRef} />}
     </div>
-    <FlowFooter email={branding.supportEmail} />
   </div>;
 }
 
