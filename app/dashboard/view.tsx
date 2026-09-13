@@ -18,7 +18,7 @@ function BankMark({ logo, initials, size = 42 }: { logo?: string | null; initial
   return (
     <span style={sx("position:relative; width:" + size + "px; height:" + size + "px; flex:0 0 " + size + "px; border-radius:" + radius + "px; background:var(--ink-block); color:var(--on-block); display:flex; align-items:center; justify-content:center; font-size:" + (size >= 42 ? 12 : 11.5) + "px; font-weight:700; overflow:hidden")}>
       <span>{initials}</span>
-      {logo ? <img alt="" src={logo} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", padding: size >= 42 ? 4 : 3, boxSizing: "border-box", background: "#fff" }} onError={(event) => { event.currentTarget.style.display = "none"; }} /> : null}
+      {logo ? <img alt="" src={logo} style={sx("position:absolute; inset:0; width:100%; height:100%; object-fit:contain; padding:" + (size >= 42 ? 4 : 3) + "px; box-sizing:border-box; background:#fff")} onError={(event) => { event.currentTarget.style.display = "none"; }} /> : null}
     </span>
   );
 }
