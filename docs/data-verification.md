@@ -39,7 +39,7 @@ All identity checks passed.
 - PASS week chart includes every completed transaction on its day: 7 cumulative points checked, including refunds
 - PASS week pending excluded from Money In: pending QR 6,300.00 sits outside Money In QR 21,240.00
 - PASS week refunds line sits under revenue: revenue QR 21,240.00, refunds QR 0, net QR 19,990.00
-- PASS Month chart thins labels only: 30 data points; ticks 13 Aug, 18 Aug, 23 Aug, 28 Aug, 2 Sept, 7 Sept
+- PASS Month chart thins labels only: 30 data points; ticks 15 Aug, 20 Aug, 25 Aug, 30 Aug, 4 Sept, 9 Sept
 - PASS month Money In vs completed inflow rows: QR 56,010.00 vs ledger QR 56,010.00
 - PASS month Money Out vs completed outflow rows: QR 33,365.00 vs ledger QR 33,365.00
 - PASS month Net equals Money In minus Money Out: QR 22,645.00 = QR 56,010.00 - QR 33,365.00
@@ -83,9 +83,11 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Completed refunded outflow reduces live cash: QR 106,465.00
 - PASS Matched automatically list equals getMatchRate().matched: 11 listed · 11 matched
 - PASS Reminders list is sent, viewed, overdue or awaiting settlement: 3 remindable · INV-0142, INV-0147, INV-0148
-- PASS INV-0147 timeline dates follow invoice offsets: created 22 Aug 2026 · sent 22 Aug 2026 · viewed 26 Aug 2026
-- PASS Invoice detail timeline binds derived dates: 22 Aug 2026 / 22 Aug 2026 / 26 Aug 2026
+- PASS INV-0147 timeline dates follow invoice offsets: created 24 Aug 2026 · sent 24 Aug 2026 · viewed 28 Aug 2026
+- PASS Invoice detail timeline binds derived dates: 24 Aug 2026 / 24 Aug 2026 / 28 Aug 2026
 - PASS Send reminder toasts the client, not the clipboard: Reminder sent to Lusail Hospitality
+- PASS peekNextInvoiceNumber matches the number assigned on save: INV-0151 vs INV-0151
+- PASS Invoice notes and termsAndConditions persist separately: notes Thanks for your business. · terms Payment due within 14 days of issue.
 - PASS Creating INV-0151 updates invoiced totals from the store: invoiced QR 46,700.00 / 10 · outstanding QR 24,300.00 / 4
 - After creating INV-0151 (Lusail Hospitality, QR 3,400): Total Invoiced QR 46,700.00 / 10 invoices; Outstanding QR 24,300.00 / 4 unpaid
 - PASS Lusail lifetime and invoice count both read the store: count 2 · lifetime QR 8800
@@ -96,17 +98,21 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Seed payroll is already posted for the payslip period: August 2026
 - PASS Post to Transactions is labelled already posted for the seed period: Already posted for August 2026
 - PASS Posting the seed period does not append another salaries row: August 2026
+- PASS Generate payslips writes one slip per seed employee for the period: 3 slips · August 2026
+- PASS Generated payslip totals match payroll run gross / deduction / net: QR 20,700.00 / QR 1,035.00 / QR 19,665.00
+- PASS Generating the same period replaces slips instead of duplicating: 3 stored
+- PASS Payslips page lists generated slips for the selected period: 3
 - Plan usage: 42 of 5000
 - Branches: Doha inflow QR 32,610.00 (58%); Al Wakrah inflow QR 23,400.00 (42%)
 - PASS Seeded payment links match the four paid counterparties: Noor Interiors, Mohammed Rashid, Fatima Al-Kuwari, Msheireb Boutiques
 - PASS Collected via links is QR 6,540 across 4 payments: QR 6,540.00 · times paid 4
 - PASS Page settings slug is derived, not a leftover default: empty slug · Fleet Deposit → fleet-deposit
-- PASS Sample bill is distinct from seed Kahramaa: Barzan Water 11 Sept 2026 offset 0
+- PASS Sample bill is distinct from seed Kahramaa: Barzan Water 13 Sept 2026 offset 0
 - PASS Two sample bills ship in the repo: barzan-water.pdf, al-maha-stationery.svg
 - PASS Extraction returns vendor, date, total, tax, lines and tag: Barzan Water / Al Maha Stationery
 - PASS Scan accepts an image or PDF: file input accept image/*,application/pdf
 - PASS Extraction delay is 1.5-2.5s: 1800ms
-- PASS Scan shows extraction in progress: 2384ms
+- PASS Scan shows extraction in progress: 2072ms
 - PASS Extracted fields are correctable with confidence: Barzan Water tax QR 0 · vendor 96%
 - PASS Scan save recomputes Money Out: Money Out QR 34,545 (was QR 33,365.00)
 - PASS Scan save drops Reports net profit: net profit QR 21,465 (was QR 22,645.00)
@@ -114,12 +120,12 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Tally after Barzan scan is 22 settled rows: 22 items (23 would include pending txn_13)
 - PASS Second sample bill saves through selectors: Money Out QR 33,705.00 · Al Maha Stationery
 - PASS Payment link copies to clipboard: submitModal writes the pay URL
-- PASS Payment link URL stays on Flow, not SkipCash test: /pay/pl_0c71f3a6c0
+- PASS Payment link URL stays on Flow, not SkipCash test: /pay/pl_25b12c35e3
 - PASS Copied payment links open Flow checkout: React /pay handles payment links
 - PASS Spine create leaves Money In unchanged: Money In QR 56,010.00
 - PASS Home Net equals Reports after creating a link: QR 22,645.00
 - PASS Who owes me equals Outstanding after creating a link: QR 20,900.00 across 3
-- PASS Spine success appends a pending ledger row: txn_link_pl_0c71f3a pending
+- PASS Spine success appends a pending ledger row: txn_link_pl_25b12c3 pending
 - PASS Pending payment is excluded from Money In: Money In QR 56,010.00; pending QR 11,700.00
 - PASS Linked invoice awaits settlement while pending: awaiting settlement
 - PASS Needs Your Attention includes the new proposal: 4 open
@@ -137,26 +143,26 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Home Net equals Reports after confirm: QR 28,045.00
 - PASS Simulate decline marks the link rejected without a ledger row: rejected
 - PASS Simulate timeout marks the link failed without a ledger row: failed
-- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_pl_ede3433
+- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_pl_3ad9565
 - PASS Reference ID matches an outstanding invoice for reconciliation: inv_0144
-- PASS simulatePayment still works after gateway reset: txn_link_pl_300a55c
+- PASS simulatePayment still works after gateway reset: txn_link_pl_d86d2a1
 - PASS Tally export uses ENVELOPE / HEADER / BODY: envelope present
 - PASS Tally export is one voucher per settled transaction in the last 30 days: 21 vouchers; pending txn_13 omitted
 - PASS Tally vouchers tag the cost centre: COSTCENTREALLOCATIONS.LIST NAME = transaction tag
 - PASS Tally amounts are major units: txn_01 1540.00
-- PASS Tally filename uses from and to stamps: flow-tally-export-20260813-20260911.xml
-- PASS Tally range is editable: 5 vouchers from 5 Sept 2026 to 11 Sept 2026
+- PASS Tally filename uses from and to stamps: flow-tally-export-20260815-20260913.xml
+- PASS Tally range is editable: 5 vouchers from 7 Sept 2026 to 13 Sept 2026
 - PASS Tally export is recorded in history: 1 tally row(s)
 - PASS Zoho sync is labelled simulated and recorded: Zoho Books (simulated) · 21 items
 - PASS From and To inputs are bound: periodFrom / periodTo onChange
 - PASS Export XML downloads a file: runTallyExport writes XML
 - PASS Tally export history appears in the UI: 2 history row(s)
-- PASS Zoho sync success is visible: Last push simulated · 21 items · 11 Sept 2026
+- PASS Zoho sync success is visible: Last push simulated · 21 items · 13 Sept 2026
 - PASS Hosted checkout publishes a shareable /pay/ slug: React route + UI URL
 - PASS Public payment page matches the builder without edit chrome: customer checkout chrome
 - PASS Public pay page validates email and shows a receipt: email + success card
 - PASS Published checkout stores product name, QAR price and slug: eid-hamper QR 250.00
-- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_32e6282125
+- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_572d3a23d2
 - PASS Hosted checkout pending is excluded from Money In: QR 56,010.00
 - PASS Hosted checkout settle lifts Money In by the page price: Money In QR 56,260.00
 - PASS Home Net equals Reports after hosted checkout: QR 22,895.00
@@ -173,9 +179,9 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Publish with no amount names the missing field: Amount is required
 - PASS Publish with no title names the missing field: Page title is required
 - PASS Payment link deactivate updates status: Deactivated
-- PASS Payment links expose expiry, uses and copy URL: 18 Sept 2026 · uses 0
+- PASS Payment links expose expiry, uses and copy URL: 20 Sept 2026 · uses 0
 - PASS Subscription plan creates a customer and upcoming charge: 1 upcoming · QR 400.00
-- PASS Simulated billing appends a pending ledger row: txn_sub_0fd43d1d29
+- PASS Simulated billing appends a pending ledger row: txn_sub_06f8fe231a
 - PASS Simulated billing settle lifts Money In: QR 56,410.00
 - PASS Cancel stops further upcoming charges: 0 upcoming
 - PASS Smart Checkout lives on Get Paid overview: overview toggle card
@@ -191,14 +197,34 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS applyStore copies team and employees from the ledger: 4 members · 3 employees
 - PASS Recurring invoice next three offsets: 0, 30, 60
 - PASS Sending a recurring invoice appends an invoice: INV-0151 · sentCount 1
-- PASS Recurring Start schedule writes the store: rec_mtwkzxyd · 0, 30, 60
-- PASS Recurring UI shows the next three sends: 11 Sept 2026 / 11 Oct 2026 / 10 Nov 2026
+- PASS Recurring Start schedule writes the store: rec_mtzhvop8 · 0, 30, 60
+- PASS Recurring UI shows the next three sends: 13 Sept 2026 / 13 Oct 2026 / 12 Nov 2026
 - PASS Tag rename updates ledger rows: 26 rows
 - PASS Tag list counts come from the ledger: 26 items
 - PASS Removing a used tag fails loudly: Can't remove Sales renamed: 26 items still use it
+- PASS Create tag adds a top-level catalog entry: Sales, Supplies, Rent, Salaries, Utilities, Marketing, Fees, Events, Ads
+- PASS Create tag nests a child under a top-level parent: {"Ads":"Marketing"}
+- PASS Manage Tags nests the child under its parent: depth 1 after Marketing
+- PASS New tags appear on expense, filter, and scan pickers: picks true · filter true · scan true
+- PASS Expense and scan offer a tag when the category has children: exp ,Ads · scan ,Ads
+- PASS Tag field stays hidden when the category has no tags: hasTag=false hasSub=false
+- PASS Manage Tags lists sub-tags inside the parent: subs Ads
+- PASS Opening a parent tag shows its sub-tags: Marketing empty=false
+- PASS Manage Tags parent rows expose a manage action: parents 8
+- PASS Existing top-level tag can get a parent later: {"Ads":"Marketing","Events":"Marketing"}
+- PASS Later parent is written to storage: {"Ads":"Marketing","Events":"Marketing"}
+- PASS Later parent survives reload hydrate: {"Ads":"Marketing","Events":"Marketing"}
+- PASS Later parent nests in Manage Tags: depth 1 under Marketing
+- PASS Rename can change name and parent together: {"tags":["Sales","Supplies","Rent","Salaries","Utilities","Marketing","Fees","Launch","Ads"],"parents":{"Ads":"Marketing","Launch":"Sales"}}
+- PASS Renaming a parent remaps the child: {"Ads":"Promo","Launch":"Sales"}
+- PASS A parent with children cannot be nested: A tag with sub-tags cannot be nested
+- PASS setTagParent rejects a child as parent: Parent must be a top-level tag
+- PASS Unused top-level tag can be removed: Sales, Supplies, Rent, Salaries, Utilities, Marketing, Fees, Ads
+- PASS Removing an unused parent promotes its children: {"tags":["Sales","Supplies","Rent","Salaries","Utilities","Marketing","Fees","Ads","Flyers"],"parents":{"Ads":"Marketing"}}
+- PASS A child cannot be used as a parent: Parent must be a top-level tag
 - PASS Permission write persists: view
 - PASS Approval limit write persists: QR 5,000.00
-- PASS Approval request waits on the owner: apv_mtwkzyri
+- PASS Approval request waits on the owner: apv_mtzhvp8r
 - PASS Approval resolve writes the store: approved
 - PASS Recurring / tags / approvals are bound in the view: start + rename + limits
 - PASS Reset demo data asks for confirm: modal open, Money In still QR 61,410.00

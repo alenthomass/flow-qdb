@@ -1,0 +1,89 @@
+{
+  "nav": {
+    "dashboard": "الرئيسية",
+    "payments": "التحصيل",
+    "transactions": "الأموال الداخلة والخارجة",
+    "invoicing": "الفواتير",
+    "accounting": "المزامنة مع المحاسبة",
+    "connections": "التطبيقات المتصلة",
+    "reports": "التقارير",
+    "team": "فريقك",
+    "payroll": "الرواتب",
+    "settings": "الإعدادات"
+  },
+  "navGroup": {
+    "paid": "استلم أموالك وتتبعها",
+    "business": "منشأتك",
+    "account": "الحساب"
+  },
+  "search": {
+    "placeholder": "ابحث في المدفوعات والفواتير…"
+  },
+  "back": "رجوع",
+  "signOut": "تسجيل الخروج",
+  "sandbox": "تجريبي",
+  "sandboxTip": "بوابة دفع تجريبية. معالجة المدفوعات الحقيقية معلّقة إلى حين استخراج السجل التجاري في قطر.",
+  "planBadge": "خطة فلو",
+  "mobile": {
+    "overview": "نظرة عامة",
+    "home": "الرئيسية",
+    "activity": "النشاط",
+    "invoices": "الفواتير",
+    "pay": "دفع",
+    "more": "المزيد"
+  },
+  "user": {
+    "business": "المنشأة",
+    "branch": "الفرع",
+    "limit": "حد الاعتماد",
+    "lastLogin": "آخر تسجيل دخول",
+    "owner": "المالك",
+    "noLimit": "بلا حد",
+    "profile": "الملف التجاري",
+    "security": "الأمان والأجهزة",
+    "billing": "الخطة والفواتير"
+  },
+  "lang": {
+    "switcher": "اللغة",
+    "english": "الإنجليزية",
+    "arabic": "العربية"
+  },
+  "modal": {
+    "cancel": "إلغاء"
+  },
+  "toast": {
+    "saved": "تم حفظ التغييرات",
+    "signedOut": "تم تسجيل الخروج من هذه البيئة التجريبية",
+    "accountUpdated": "تم تحديث الحساب",
+    "accountPasswordUpdated": "تم تحديث الحساب وكلمة المرور",
+    "emailInvalid": "يبدو أن البريد الإلكتروني غير صحيح",
+    "passwordShort": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل",
+    "demoRestored": "تم استعادة بيانات العرض",
+    "tagUpdated": "تم تحديث الوسم",
+    "tagRenamed": "تم تغيير اسم الوسم",
+    "tagRemoved": "تم حذف الوسم",
+    "tagUnchanged": "لا شيء للحفظ",
+    "tagRequired": "اسم الوسم مطلوب",
+    "tagRenameFailed": "تعذّر تغيير اسم الوسم",
+    "tagRemoveFailed": "تعذّر حذف الوسم",
+    "tagRenamedTo": "تم تغيير الاسم من {{from}} إلى {{to}}",
+    "tagInUse": "لا يمكن حذف {{name}}: ما زال مستخدماً في {{count}} عناصر",
+    "tagInUse_one": "لا يمكن حذف {{name}}: ما زال مستخدماً في عنصر واحد",
+    "tagCreated": "تم إنشاء {{name}}",
+    "tagCreatedUnder": "تم إنشاء {{name}} تحت {{parent}}",
+    "tagCreateFailed": "تعذّر إنشاء الوسم",
+    "tagParentSet": "تم نقل {{name}} تحت {{parent}}",
+    "tagParentCleared": "{{name}} أصبح وسماً من المستوى الأعلى",
+    "tagParentFailed": "تعذّر تحديث الوسم الأب",
+    "linkedTo": "تم الربط بـ {{inv}}",
+    "matchConfirmed": "تم تأكيد المطابقة",
+    "sentBack": "أُعيد للمراجعة",
+    "matchUndone": "تم التراجع عن المطابقة",
+    "linkCopied": "تم نسخ الرابط",
+    "noLink": "لا يوجد رابط للنسخ",
+    "linkCreated": "تم إنشاء رابط الدفع",
+    "linkCreatedCopied": "تم إنشاء رابط الدفع ونسخه",
+    "reminderSent": "أُرسل تذكير إلى {{name}}",
+    "reminderSentClient": "أُرسل تذكير إلى العميل"
+  }
+}

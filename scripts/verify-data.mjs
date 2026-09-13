@@ -5,7 +5,7 @@ import { formatDate, formatMoney, offsetFromLabel, dateInputValue, previousMonth
 import { chartScale } from "../lib/chart.ts";
 import { dateFor, seed } from "../lib/data/seed.ts";
 import { SAMPLE_BILL, SAMPLE_BILLS, EXTRACT_DELAY_MS, EXTRACT_DELAY_MIN_MS, EXTRACT_DELAY_MAX_MS, extractBill, extractDelayMs, extractedBillForm } from "../lib/data/sample-bill.ts";
-import { appendTransaction, getStore, resetStore } from "../lib/data/store.ts";
+import { appendTransaction, getStore, hydrateFromStorage, resetStore } from "../lib/data/store.ts";
 import {
   addClient,
   addSubscriber,
@@ -15,6 +15,7 @@ import {
   confirmMatch,
   connectSampleBank,
   connectShopify,
+  createTag,
   createInvoice,
   peekNextInvoiceNumber,
   createPaymentLink,
@@ -22,6 +23,8 @@ import {
   createSubscriptionPlan,
   deactivatePaymentLink,
   defaultPayrollPeriod,
+  generatePayslips,
+  payslipsForPeriod,
   duplicateInvoice,
   ingestShopifyOrder,
   payPublishedCheckout,
@@ -32,6 +35,7 @@ import {
   recurringNextOffsets,
   removeTag,
   renameTag,
+  setTagParent,
   requestApproval,
   resolveApproval,
   runSimulatedBilling,
@@ -66,6 +70,8 @@ import {
   getOutstanding,
   getOutstandingInvoices,
   getOverdue,
+  getPayrollDeductions,
+  getPayrollGross,
   getPayrollNet,
   getPendingSettlement,
   getProfitAndLoss,
@@ -110,11 +116,12 @@ const FlowStore = {
   cancelSubscriber, deactivatePaymentLink, connectShopify, ingestShopifyOrder,
   connectSampleBank, setSmartCheckout, SAMPLE_CHECKOUT_ANALYTICS,
   createInvoice, duplicateInvoice, addClient, postPayroll, payrollPostedFor, defaultPayrollPeriod,
+  generatePayslips, payslipsForPeriod,
   dateInputValue, previousMonthLabel, formatDate,
   exportTallyXml, simulateZohoSync, resetGateway,
   createRecurringInvoice, sendRecurringInvoice, recurringNextOffsets,
   pauseRecurringInvoice, cancelRecurringInvoice,
-  renameTag, removeTag, setRolePermission, setApprovalLimit,
+  renameTag, removeTag, createTag, setTagParent, setRolePermission, setApprovalLimit,
   requestApproval, resolveApproval
 };
 let pendingExtract = null;
@@ -151,6 +158,9 @@ const html = [
 ].join("\n");
 const payPage = readFileSync(new URL("../app/pay/pay-checkout.tsx", import.meta.url), "utf8");
 const rootSource = readFileSync(new URL("../lib/dashboard/component.js", import.meta.url), "utf8");
+const enChrome = readFileSync(new URL("../locales/en/chrome.json", import.meta.url), "utf8");
+const enSettings = readFileSync(new URL("../locales/en/settings.json", import.meta.url), "utf8");
+const enUi = readFileSync(new URL("../locales/en/ui.json", import.meta.url), "utf8");
 const root = new Component();
 check("Home defaults to 30 days", root.state.tf === "month", root.periodOf().label);
 const homeToggle = root.renderVals().tfs.map(item => item.label).join(" / ");
@@ -673,6 +683,32 @@ check(
 );
 const postedAgain = postPayroll(payPeriod);
 check("Posting the seed period does not append another salaries row", postedAgain.alreadyPosted === true, postedAgain.period);
+const slips = generatePayslips(payPeriod);
+const slipGross = slips.reduce((sum, row) => sum + row.grossMinor, 0);
+const slipDed = slips.reduce((sum, row) => sum + row.deductionMinor, 0);
+const slipNet = slips.reduce((sum, row) => sum + row.netMinor, 0);
+check(
+  "Generate payslips writes one slip per seed employee for the period",
+  slips.length === seed.employees.length && payslipsForPeriod(payPeriod).length === seed.employees.length,
+  slips.length + " slips · " + payPeriod
+);
+check(
+  "Generated payslip totals match payroll run gross / deduction / net",
+  slipGross === getPayrollGross("pay_01") && slipDed === getPayrollDeductions("pay_01") && slipNet === getPayrollNet("pay_01"),
+  money(slipGross) + " / " + money(slipDed) + " / " + money(slipNet)
+);
+const slipsAgain = generatePayslips(payPeriod);
+check(
+  "Generating the same period replaces slips instead of duplicating",
+  slipsAgain.length === seed.employees.length && live().payslips.filter(row => row.period === payPeriod).length === seed.employees.length,
+  live().payslips.filter(row => row.period === payPeriod).length + " stored"
+);
+root.applyStore();
+check(
+  "Payslips page lists generated slips for the selected period",
+  root.renderVals().payroll.hasSlips && root.renderVals().payroll.slips.length === seed.employees.length,
+  String(root.renderVals().payroll.slips.length)
+);
 resetStore();
 root.applyStore();
 
@@ -748,7 +784,7 @@ check("Extraction returns vendor, date, total, tax, lines and tag",
     barzanExtract.confidence.vendor > 0 && barzanExtract.confidence.vendor <= 1,
   barzanExtract.vendor + " / " + almahaExtract.vendor);
 check("Scan accepts an image or PDF",
-  /accept="image\/\*,application\/pdf"/.test(html) && /Choose image or PDF/.test(html),
+  /accept="image\/\*,application\/pdf"/.test(html) && /ui\.scan\.choose/.test(html) && /Choose image or PDF/.test(enUi),
   "file input accept image/*,application/pdf");
 check("Extraction delay is 1.5-2.5s",
   EXTRACT_DELAY_MS >= EXTRACT_DELAY_MIN_MS && EXTRACT_DELAY_MS <= EXTRACT_DELAY_MAX_MS,
@@ -1240,7 +1276,7 @@ resetStore();
 resetGateway();
 
 check("Smart Checkout lives on Get Paid overview",
-  /smart\.overview/.test(html) && /Automatic Checkout/.test(html) && !/smartCard/.test(rootSource),
+  /smart\.overview/.test(html) && /ui\.smart\.title/.test(html) && /Automatic Checkout/.test(enUi) && !/smartCard/.test(rootSource),
   "overview toggle card");
 setSmartCheckout(true);
 check("Smart Checkout on shows labelled sample analytics",
@@ -1280,7 +1316,7 @@ check("Sample bank connect is labelled and does not change cash",
     getCashOnHand() === cash0,
   money(getCashOnHand()));
 check("Bank onboarding is wired in the UI",
-  /bankOn\.start/.test(html) && /Connect sample bank/.test(html),
+  /bankOn\.start/.test(html) && /ui\.bank\.connectSample/.test(html) && /Connect sample bank/.test(enUi),
   "onboarding steps");
 resetStore();
 resetGateway();
@@ -1352,6 +1388,123 @@ check("Removing a used tag fails loudly",
   /still use/.test(removeUsed),
   removeUsed || "no error");
 renameTag("Sales renamed", "Sales");
+
+const createdTop = createTag("Events");
+const createdChild = createTag("Ads", "Marketing");
+check("Create tag adds a top-level catalog entry",
+  createdTop === "Events" && live().tags.includes("Events") && !live().tagParents.Events,
+  live().tags.join(", "));
+check("Create tag nests a child under a top-level parent",
+  createdChild === "Ads" && live().tagParents.Ads === "Marketing",
+  JSON.stringify(live().tagParents));
+root.applyStore();
+root.setState(st => ({ page: "settings", tab: Object.assign({}, st.tab, { settings: "tags" }), detail: null }));
+const nested = root.renderVals().tagList;
+const adsRow = nested.find(row => row.label === "Ads");
+const marketingIdx = nested.findIndex(row => row.label === "Marketing");
+const adsIdx = nested.findIndex(row => row.label === "Ads");
+check("Manage Tags nests the child under its parent",
+  adsRow && adsRow.depth === 1 && adsRow.child === true && adsIdx === marketingIdx + 1,
+  adsRow ? "depth " + adsRow.depth + " after " + nested[marketingIdx]?.label : "missing");
+const expensePick = root.renderVals().expCat.options.some(row => row.value === "Events" || row.label === "Events");
+const moneyFilter = (root.renderVals().fopts.tag || []).some(row => row.label === "Ads" || row.value === "Ads");
+const scanOpts = (root.renderVals().tagOptions || []).includes("Ads") && (root.renderVals().tagOptions || []).includes("Events");
+check("New tags appear on expense, filter, and scan pickers",
+  expensePick && moneyFilter && scanOpts,
+  "picks " + expensePick + " · filter " + moneyFilter + " · scan " + scanOpts);
+root.setState(st => ({ form: Object.assign({}, st.form, { expTag: "Marketing", scanTag: "Marketing" }) }));
+const expSub = root.renderVals().expCat;
+const scanSub = root.renderVals().scanCat;
+check("Expense and scan offer a tag when the category has children",
+  expSub.hasTag && expSub.tagOptions.some(row => row.value === "Ads") &&
+    scanSub.hasTag && scanSub.tagOptions.some(row => row.value === "Ads") &&
+    !expSub.hasSub && !scanSub.hasSub,
+  "exp " + (expSub.tagOptions || []).map(row => row.value).join(",") + " · scan " + (scanSub.tagOptions || []).map(row => row.value).join(","));
+root.setState(st => ({ form: Object.assign({}, st.form, { expTag: "Utilities", scanTag: "Utilities" }) }));
+const utilPick = root.renderVals().expCat;
+check("Tag field stays hidden when the category has no tags",
+  !utilPick.hasTag && !utilPick.hasSub,
+  "hasTag=" + !!utilPick.hasTag + " hasSub=" + !!utilPick.hasSub);
+root.setState(st => ({ form: Object.assign({}, st.form, { expTag: "Marketing", scanTag: "Marketing" }) }));
+const marketingRow = root.renderVals().tagList.find(row => row.label === "Marketing");
+check("Manage Tags lists sub-tags inside the parent",
+  marketingRow && (marketingRow.subs || []).some(row => row.label === "Ads"),
+  marketingRow ? "subs " + (marketingRow.subs || []).map(row => row.label).join(",") : "missing");
+root.setState({ openTag: "Marketing" });
+const folder = root.renderVals().tagFolder;
+check("Opening a parent tag shows its sub-tags",
+  folder.on && folder.name === "Marketing" && !folder.empty &&
+    root.renderVals().tagList.some(row => row.parent === "Marketing" && row.label === "Ads"),
+  folder.on ? folder.name + " empty=" + folder.empty : "closed");
+root.setState({ openTag: null });
+check("Manage Tags parent rows expose a manage action",
+  root.renderVals().tagList.filter(row => !row.child).every(row => typeof row.open === "function"),
+  "parents " + root.renderVals().tagList.filter(row => !row.child).length);
+
+const laterParent = setTagParent("Events", "Marketing");
+check("Existing top-level tag can get a parent later",
+  laterParent.parent === "Marketing" && live().tagParents.Events === "Marketing",
+  JSON.stringify(live().tagParents));
+const persisted = globalThis.localStorage.getItem("flow-live-v1");
+const persistedParents = persisted ? JSON.parse(persisted).tagParents : {};
+check("Later parent is written to storage",
+  persistedParents.Events === "Marketing",
+  JSON.stringify(persistedParents));
+resetStore();
+if (persisted) globalThis.localStorage.setItem("flow-live-v1", persisted);
+hydrateFromStorage();
+check("Later parent survives reload hydrate",
+  live().tagParents.Events === "Marketing" && live().tags.includes("Events"),
+  JSON.stringify(live().tagParents));
+root.applyStore();
+const eventsNested = root.renderVals().tagList.find(row => row.label === "Events");
+check("Later parent nests in Manage Tags",
+  eventsNested && eventsNested.depth === 1 && eventsNested.parent === "Marketing",
+  eventsNested ? "depth " + eventsNested.depth + " under " + eventsNested.parent : "missing");
+
+root.setState(st => ({ modal: "tag", editTag: "Events", form: Object.assign({}, st.form, { newTag: "Launch", newTagParent: "Sales" }) }));
+root.submitModal();
+check("Rename can change name and parent together",
+  live().tags.includes("Launch") && !live().tags.includes("Events") && live().tagParents.Launch === "Sales",
+  JSON.stringify({ tags: live().tags, parents: live().tagParents }));
+
+const renamedParent = renameTag("Marketing", "Promo");
+check("Renaming a parent remaps the child",
+  renamedParent.to === "Promo" && live().tagParents.Ads === "Promo" && !live().tagParents.Marketing,
+  JSON.stringify(live().tagParents));
+renameTag("Promo", "Marketing");
+
+let nestParentErr = "";
+try { setTagParent("Marketing", "Sales"); } catch (err) { nestParentErr = err.message; }
+check("A parent with children cannot be nested",
+  /sub-tags|cannot be nested/i.test(nestParentErr),
+  nestParentErr || "no error");
+let nestUnderChild = "";
+try { setTagParent("Launch", "Ads"); } catch (err) { nestUnderChild = err.message; }
+check("setTagParent rejects a child as parent",
+  /top-level/.test(nestUnderChild),
+  nestUnderChild || "no error");
+
+removeTag("Launch");
+check("Unused top-level tag can be removed",
+  !live().tags.includes("Launch") && !live().tags.includes("Events"),
+  live().tags.join(", "));
+
+createTag("Campaigns");
+createTag("Flyers", "Campaigns");
+removeTag("Campaigns");
+check("Removing an unused parent promotes its children",
+  live().tags.includes("Flyers") && !live().tagParents.Flyers && !live().tags.includes("Campaigns"),
+  JSON.stringify({ tags: live().tags, parents: live().tagParents }));
+removeTag("Ads");
+removeTag("Flyers");
+let nestedParentErr = "";
+createTag("Events");
+createTag("Ads", "Marketing");
+try { createTag("Banners", "Ads"); } catch (err) { nestedParentErr = err.message; }
+check("A child cannot be used as a parent",
+  /top-level/.test(nestedParentErr),
+  nestedParentErr || "no error");
 resetStore();
 resetGateway();
 
@@ -1373,7 +1526,7 @@ check("Approval resolve writes the store",
   live().approvalRequests.find(row => row.id === asked.id)?.status || "missing");
 check("Recurring / tags / approvals are bound in the view",
   /v\.rec\.start/.test(html) && /v\.F\.recClient/.test(html) && /v\.F\.recAmount/.test(html) &&
-    /tg\.rename/.test(html) && /tg\.setName/.test(html) && /l\.setCap/.test(html) && /l\.readOnly/.test(html),
+    /tg\.edit/.test(html) && /tg\.del/.test(html) && /l\.setCap/.test(html) && /l\.readOnly/.test(html),
   "start + rename + limits");
 resetStore();
 resetGateway();
@@ -1431,22 +1584,22 @@ check("Reset keeps the Tally date range",
   root.state.periodFrom === periodFromKept && root.state.periodTo === periodToKept,
   root.state.periodFrom + " → " + root.state.periodTo);
 check("HTML has Reset demo data and confirm modal",
-  /Reset demo data/.test(html) && /modal\.reset/.test(html) && /s\.modal === 'reset'/.test(html) &&
-    /This restores the seed/.test(html),
+  /settings\.account\.resetCta/.test(html) && /settings\.reset\.body/.test(html) &&
+    /modal\.reset/.test(html) && /s\.modal === 'reset'/.test(html) &&
+    /Reset demo data/.test(enSettings) && /This restores the seed/.test(enSettings),
   "button + confirm modal");
 check("SANDBOX tooltip string present",
-  html.includes("Simulated gateway. Live payment processing pending Qatar commercial registration.") &&
-    /envLabel:\s*'SANDBOX'/.test(rootSource) &&
-    /title="Simulated gateway\. Live payment processing pending Qatar commercial registration\."/.test(html),
+  /chrome\.sandboxTip/.test(html) && /this\.t\('chrome\.sandbox'\)/.test(rootSource) &&
+    enChrome.includes("Simulated gateway. Live payment processing pending Qatar commercial registration."),
   "SANDBOX hover tooltip");
 check("No Peppol or VAT in public HTML",
   !/Peppol/i.test(html) && !/\bVAT\b/i.test(html) && !/Peppol/i.test(payPage) && !/\bVAT\b/i.test(payPage),
   "React dashboard and pay route");
 check("Simulated labels on Payment Setup and Connected Apps",
-  /money settles straight to you/.test(html) &&
-    /One simulated gateway in this phase/.test(html) &&
-    /Live mode is still simulated\. Payment processing pending Qatar commercial registration\./.test(html) &&
-    /Simulated connection/.test(html),
+  /ui\.pay\.gatewaySub/.test(html) && /money settles straight to you/.test(enUi) &&
+    /ui\.conn\.oneGw/.test(html) && /One simulated gateway in this phase/.test(enUi) &&
+    /ui\.pay\.liveNote/.test(rootSource) && /Live mode is still simulated\. Payment processing pending Qatar commercial registration\./.test(enUi) &&
+    /ui\.det\.simConn/.test(html) && /Simulated connection/.test(enUi),
   "Payment Setup / Connected Apps");
 check("getVatRate still 0 after Stage 6",
   getVatRate() === 0,

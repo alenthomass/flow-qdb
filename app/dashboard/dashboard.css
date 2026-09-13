@@ -35,6 +35,7 @@ html, body { margin: 0; padding: 0; height: 100%; }
     --main-glow: radial-gradient(880px 600px at 2% -10%, rgba(58,70,104,.46) 0%, rgba(58,70,104,0) 68%),
                  radial-gradient(680px 500px at 32% -16%, rgba(84,74,116,.34) 0%, rgba(84,74,116,0) 72%);
     --shadow-card: 0 18px 40px -30px rgba(10,10,16,.45);
+    --flow-leading: 1.205;
   }
   [data-theme="dark"] {
     --canvas: radial-gradient(1000px 700px at -8% -18%, rgba(140,152,186,.22) 0%, rgba(140,152,186,0) 68%),
@@ -69,7 +70,8 @@ html, body { margin: 0; padding: 0; height: 100%; }
   }
   html, body { margin: 0; padding: 0; background: #F1F1F3; }
   [data-theme="dark"] { color-scheme: dark; }
-  [data-theme] { transition: background .4s ease, color .3s ease; }
+  [data-theme] { line-height: var(--flow-leading); transition: background .4s ease, color .3s ease; }
+  [data-theme] :where(button, input, select, textarea) { line-height: inherit; }
   [data-theme] *, [data-theme] *::before, [data-theme] *::after {
     transition: background-color .35s ease, background-image .35s ease, color .3s ease, box-shadow .35s ease, fill .3s ease, stroke .3s ease;
   }
@@ -78,9 +80,9 @@ html, body { margin: 0; padding: 0; height: 100%; }
   }
   [data-theme] input, [data-theme] button { transition: background-color .35s ease, color .3s ease, box-shadow .2s ease, transform .15s ease, filter .15s ease; }
   @keyframes flowGlow { 0%,100% { opacity:.55; transform: translate3d(0,0,0) scale(1); } 50% { opacity:.85; transform: translate3d(0,-14px,0) scale(1.06); } }
-  input, button, select, textarea { font-family: inherit; font-size: inherit; color: inherit; border-color: transparent; }
-  .flow-field { border: 1px solid var(--ink-6); background: var(--bar-solid); }
-  input.flow-field, textarea.flow-field { border-color: var(--ink-6); background: var(--bar-solid); }
+  input, button, select, textarea { font-family: inherit; font-size: inherit; line-height: inherit; color: inherit; border-color: transparent; }
+  .flow-field { border: none; background: var(--field); }
+  input.flow-field, textarea.flow-field { border: none; background: var(--field); }
   button { cursor: pointer; border: none; border-color: transparent; background: none; -webkit-appearance: none; appearance: none; }
   button.flow-action-tile {
     border: 1px solid var(--tile);
@@ -211,12 +213,16 @@ html, body { margin: 0; padding: 0; height: 100%; }
     container-type: inline-size;
     isolation: isolate;
     margin-top: 14px;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 210 / 297;
+    min-height: 0;
     background: var(--bar-solid);
     color: var(--ink);
     border-radius: 11px;
-    overflow: hidden;
-    min-height: 0;
-    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     box-shadow: 0 10px 30px color-mix(in srgb, var(--ink) 8%, transparent);
     font-family: 'Cairo', 'Urbanist', sans-serif;
   }
@@ -450,6 +456,8 @@ html, body { margin: 0; padding: 0; height: 100%; }
       background: #fff !important;
       min-height: 0 !important;
       height: auto !important;
+      aspect-ratio: auto !important;
+      overflow: visible !important;
     }
     .flow-invoice-glow { display: none !important; animation: none !important; }
   }

@@ -31,6 +31,8 @@ var FlowStore = (() => {
     addClient: () => addClient,
     addSubscriber: () => addSubscriber,
     appendTransaction: () => appendTransaction,
+    bankView: () => bankView,
+    cancelRecurringInvoice: () => cancelRecurringInvoice,
     cancelSubscriber: () => cancelSubscriber,
     cancelSubscriptionPlan: () => cancelSubscriptionPlan,
     checkoutPageBySlug: () => checkoutPageBySlug,
@@ -40,7 +42,9 @@ var FlowStore = (() => {
     connectShopify: () => connectShopify,
     createInvoice: () => createInvoice,
     createPaymentLink: () => createPaymentLink,
+    createRecurringInvoice: () => createRecurringInvoice,
     createSubscriptionPlan: () => createSubscriptionPlan,
+    createTag: () => createTag,
     dashboardSnapshot: () => dashboardSnapshot,
     dashboardState: () => dashboardState,
     dateInputValue: () => dateInputValue,
@@ -51,29 +55,42 @@ var FlowStore = (() => {
     extractBill: () => extractBill,
     extractDelayMs: () => extractDelayMs,
     extractedBillForm: () => extractedBillForm,
+    formatDate: () => formatDate,
+    generatePayslips: () => generatePayslips,
     hydrateFromStorage: () => hydrateStore,
     ingestShopifyOrder: () => ingestShopifyOrder,
     offsetFromLabel: () => offsetFromLabel,
+    pauseRecurringInvoice: () => pauseRecurringInvoice,
     pauseSubscriber: () => pauseSubscriber,
     payPublishedCheckout: () => payPublishedCheckout,
     paymentLinkById: () => paymentLinkById,
     payrollPostedFor: () => payrollPostedFor,
+    payslipsForPeriod: () => payslipsForPeriod,
     peekNextInvoiceNumber: () => peekNextInvoiceNumber,
     persistStore: () => persistStore,
     postPayroll: () => postPayroll,
     previousMonthLabel: () => previousMonthLabel,
     publishCheckoutPage: () => publishCheckoutPage,
+    recurringNextOffsets: () => recurringNextOffsets,
+    removeTag: () => removeTag,
+    renameTag: () => renameTag,
     resetGateway: () => resetGateway,
     resetStore: () => resetStore,
+    resolveApproval: () => resolveApproval,
     runSimulatedBilling: () => runSimulatedBilling,
     saveCheckoutSettings: () => saveCheckoutSettings,
     saveMerchantProfile: () => saveMerchantProfile,
+    sendRecurringInvoice: () => sendRecurringInvoice,
+    setApprovalLimit: () => setApprovalLimit,
+    setRolePermission: () => setRolePermission,
     setSmartCheckout: () => setSmartCheckout,
+    setTagParent: () => setTagParent,
     settleBilling: () => settleBilling,
     settleCheckoutPayment: () => settleCheckoutPayment,
     settlePayment: () => settlePayment,
     simulatePayment: () => simulatePayment,
-    simulateZohoSync: () => simulateZohoSync
+    simulateZohoSync: () => simulateZohoSync,
+    updateClient: () => updateClient
   });
 
   // lib/data/seed.ts
@@ -253,14 +270,17 @@ var FlowStore = (() => {
     teamMembers: [
       { id: "tm_00", employeeId: "", name: ownerName, email: ownerName.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "") + "@albidda.qa", role: "Owner", lastSeenOffset: 0 },
       { id: "tm_01", employeeId: "emp_01", name: "Rashid Al-Mannai", email: emailFor("Rashid Al-Mannai"), role: "Staff", lastSeenOffset: -1 },
-      { id: "tm_02", employeeId: "emp_02", name: accountantName, email: emailFor(accountantName), role: "Staff", lastSeenOffset: -2 },
+      { id: "tm_02", employeeId: "emp_02", name: accountantName, email: emailFor(accountantName), role: "Accountant", lastSeenOffset: -2 },
       { id: "tm_03", employeeId: "emp_03", name: "Samir Haddad", email: emailFor("Samir Haddad"), role: "Staff", lastSeenOffset: -3 }
     ],
     activityLog,
     recurringInvoices: [],
     approvalRequests: [],
     rolePermissions: [],
-    approvalLimits: {}
+    approvalLimits: {},
+    payslips: [],
+    tags: ["Sales", "Supplies", "Rent", "Salaries", "Utilities", "Marketing", "Fees"],
+    tagParents: {}
   };
 
   // lib/data/store.ts
@@ -292,7 +312,10 @@ var FlowStore = (() => {
       recurringInvoices: [],
       approvalRequests: [],
       rolePermissions: DEFAULT_ROLE_PERMISSIONS.map((row) => ({ ...row })),
-      approvalLimits: {}
+      approvalLimits: {},
+      payslips: [],
+      tags: [],
+      tagParents: {}
     };
   }
   function withDefaults(row) {
@@ -314,8 +337,37 @@ var FlowStore = (() => {
       recurringInvoices: row.recurringInvoices || [],
       approvalRequests: row.approvalRequests || [],
       rolePermissions: row.rolePermissions && row.rolePermissions.length ? row.rolePermissions : emptyExtras().rolePermissions,
-      approvalLimits: row.approvalLimits || {}
+      approvalLimits: row.approvalLimits || {},
+      payslips: row.payslips || [],
+      tags: mergedTags(row, base),
+      tagParents: cleanTagParents(mergedTags(row, base), row.tagParents || {})
     };
+  }
+  function mergedTags(row, base) {
+    const listed = row.tags && row.tags.length ? row.tags : base.tags;
+    const extras = (row.transactions || []).map((txn) => txn.tag);
+    const seen = /* @__PURE__ */ new Set();
+    const out = [];
+    for (const name of listed.concat(extras)) {
+      const tag = String(name || "").trim();
+      if (!tag) continue;
+      const key = tag.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(tag);
+    }
+    return out;
+  }
+  function cleanTagParents(tags, parents) {
+    const set = new Set(tags);
+    const next = {};
+    Object.keys(parents || {}).forEach((child) => {
+      const parent = parents[child];
+      if (!set.has(child) || !set.has(parent) || child === parent) return;
+      if (parents[parent] && set.has(parents[parent])) return;
+      next[child] = parent;
+    });
+    return next;
   }
   var live = cloneSeed();
   var afterPersist = null;
@@ -521,6 +573,57 @@ var FlowStore = (() => {
     live.bankAccounts = [...live.bankAccounts, account];
     persist();
     return account;
+  }
+  function appendRecurringInvoice(row) {
+    live.recurringInvoices = [row, ...live.recurringInvoices];
+    persist();
+    return row;
+  }
+  function replaceRecurringInvoice(id, patch) {
+    let next;
+    live.recurringInvoices = live.recurringInvoices.map((row) => {
+      if (row.id !== id) return row;
+      next = Object.assign({}, row, patch, { id: row.id });
+      return next;
+    });
+    persist();
+    return next;
+  }
+  function replaceRolePermissions(rows) {
+    live.rolePermissions = rows.map((row) => ({ ...row }));
+    persist();
+    return live.rolePermissions;
+  }
+  function replaceTags(tags) {
+    live.tags = tags.slice();
+    persist();
+    return live.tags;
+  }
+  function replaceTagParents(map) {
+    live.tagParents = { ...map };
+    persist();
+    return live.tagParents;
+  }
+  function replaceApprovalLimits(limits) {
+    live.approvalLimits = { ...limits };
+    persist();
+    return live.approvalLimits;
+  }
+  function appendPayslips(slips) {
+    const ids = new Set(slips.map((row) => row.id));
+    live.payslips = [...slips, ...live.payslips.filter((row) => !ids.has(row.id))];
+    persist();
+    return slips;
+  }
+  function replaceApprovalRequest(id, patch) {
+    let next;
+    live.approvalRequests = live.approvalRequests.map((row) => {
+      if (row.id !== id) return row;
+      next = Object.assign({}, row, patch, { id: row.id });
+      return next;
+    });
+    persist();
+    return next;
   }
 
   // lib/data/hydrate.ts
@@ -1270,19 +1373,49 @@ var FlowStore = (() => {
     const outstanding = getOutstanding();
     const overdue = getOverdue();
     const invoiced = getTotalInvoiced();
-    const txns = db2().transactions.slice().sort((a, b) => b.dayOffset - a.dayOffset || a.id.localeCompare(b.id)).map((txn) => ({
-      id: txn.id,
-      d: formatDate(txn.dayOffset),
-      offset: txn.dayOffset,
-      amount: major(signedAmount(txn)),
-      type: txn.type,
-      src: sourceLabel(txn.source),
-      party: txn.counterparty,
-      tag: txn.tag,
-      status: titleStatus(txn.status),
-      branchId: txn.branchId,
-      invoiceId: txn.invoiceId
-    }));
+    const txns = db2().transactions.slice().sort((a, b) => b.dayOffset - a.dayOffset || a.id.localeCompare(b.id)).map((txn) => {
+      const proposal = db2().matchProposals.find((row) => row.transactionId === txn.id);
+      const invoice = txn.invoiceId ? db2().invoices.find((row) => row.id === txn.invoiceId) : proposal?.invoiceId ? db2().invoices.find((row) => row.id === proposal.invoiceId) : void 0;
+      const inUniverse = txn.direction === "in" || txn.type === "refund";
+      const openMatch = proposal?.status === "open";
+      const ledgerMatched = !openMatch && (!!txn.invoiceId || txn.source === "shopify" && inUniverse);
+      let matchLabel = "\u2014";
+      if (openMatch) matchLabel = "Waiting for review";
+      else if (ledgerMatched) matchLabel = invoice ? "Matched to " + invoice.number : "Matched";
+      else if (inUniverse) matchLabel = "Unmatched";
+      const log = [];
+      const when = formatDate(txn.dayOffset);
+      if (txn.type === "refund") log.push({ when, text: "Refund recorded" + (txn.source === "skipcash" ? " by SkipCash" : "") });
+      else if (txn.type === "expense") log.push({ when, text: "Expense recorded" });
+      else if (txn.type === "payroll") log.push({ when, text: "Payroll posted" });
+      else if (txn.source === "skipcash") log.push({ when, text: "Payment authorised by SkipCash" });
+      else if (txn.source === "shopify") log.push({ when, text: "Order recorded from Shopify" });
+      else if (txn.source === "link") log.push({ when, text: "Payment received via payment link" });
+      else log.push({ when, text: "Payment recorded from " + sourceLabel(txn.source) });
+      if (ledgerMatched) {
+        log.push({ when, text: invoice ? "Matched to " + invoice.number : "Matched from the ledger" });
+      } else if (openMatch && invoice) {
+        log.push({ when, text: "Suggested match: " + invoice.number });
+      }
+      if (proposal?.status === "confirmed") {
+        log.push({ when, text: "Confirmed by " + owner });
+      }
+      return {
+        id: txn.id,
+        d: formatDate(txn.dayOffset),
+        offset: txn.dayOffset,
+        amount: major(signedAmount(txn)),
+        type: txn.type,
+        src: sourceLabel(txn.source),
+        party: txn.counterparty,
+        tag: txn.tag,
+        status: titleStatus(txn.status),
+        branchId: txn.branchId,
+        invoiceId: txn.invoiceId,
+        matchLabel,
+        matchLog: log
+      };
+    });
     const invoices = db2().invoices.map((invoice) => {
       const status = getInvoiceStatus(invoice.id);
       const buyer = db2().clients.find((client) => client.id === invoice.clientId);
@@ -1296,6 +1429,12 @@ var FlowStore = (() => {
         status: titleStatus(status),
         due: formatDate(invoice.dueOffset),
         issued: formatDate(invoice.issuedOffset),
+        issuedOffset: invoice.issuedOffset,
+        issuedThisMonth: (() => {
+          const issued = dateFor(invoice.issuedOffset);
+          const today = dateFor(0);
+          return issued.getUTCFullYear() === today.getUTCFullYear() && issued.getUTCMonth() === today.getUTCMonth();
+        })(),
         sentOn: invoice.sentAt != null ? formatDate(invoice.sentAt) : "\u2014",
         viewedOn: invoice.viewedAt != null ? formatDate(invoice.viewedAt) : "\u2014",
         tag: "Sales",
@@ -1541,6 +1680,7 @@ var FlowStore = (() => {
         name: account.bank + ", " + account.label,
         label: account.label,
         initials: account.bank.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+        logo: bankLogoSrc(account.bank),
         sample: !!account.sample,
         note: account.sample ? "Sample data. Live bank feeds arrive in a later phase." : formatMoney(account.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset)
       })),
@@ -1558,7 +1698,7 @@ var FlowStore = (() => {
           name: client.name,
           email: client.email,
           address: client.address || "",
-          phone: "",
+          phone: client.phone || "",
           invoiceCount: rows.length,
           total: major(rows.reduce((sum, invoice) => sum + invoice.amountMinor, 0))
         };
@@ -1577,6 +1717,21 @@ var FlowStore = (() => {
         salary: major(employee.monthlySalary),
         method: "Bank transfer"
       })),
+      payslips: db2().payslips.map((row) => {
+        const employee = db2().employees.find((item) => item.id === row.employeeId);
+        return {
+          id: row.id,
+          period: row.period,
+          employeeId: row.employeeId,
+          employeeName: row.employeeName,
+          role: employee?.role || "",
+          method: "Bank transfer",
+          gross: major(row.grossMinor),
+          deduction: major(row.deductionMinor),
+          net: major(row.netMinor),
+          generatedOffset: row.generatedOffset
+        };
+      }),
       history: db2().activityLog.map((entry) => ({
         id: entry.id,
         kind: entry.kind,
@@ -1667,7 +1822,9 @@ var FlowStore = (() => {
           when: formatDate(row.dayOffset)
         };
       }),
-      ledgerTags: [...new Set(db2().transactions.map((txn) => txn.tag))].sort()
+      ledgerTags: [...new Set(db2().transactions.map((txn) => txn.tag))].sort(),
+      tags: db2().tags.slice(),
+      tagParents: { ...db2().tagParents }
     };
   }
   function appPayUrl(pathId) {
@@ -1678,11 +1835,11 @@ var FlowStore = (() => {
     const rows = db2().transactions.filter((txn) => txn.source === source);
     const settledIn = rows.filter((txn) => txn.direction === "in" && txn.status === "settled").reduce((sum, txn) => sum + txn.amountMinor, 0);
     const pending = rows.filter((txn) => txn.status === "pending").reduce((sum, txn) => sum + txn.amountMinor, 0);
-    const settledCount = rows.filter((txn) => txn.status === "settled").length;
+    const volume = settledIn + pending;
     return {
       month: formatMoney(settledIn, currency),
       settling: formatMoney(pending, currency),
-      success: rows.length ? Math.round(settledCount / rows.length * 100) + "%" : ""
+      success: volume ? Math.round(settledIn / volume * 100) + "%" : ""
     };
   }
   function sourceStats() {
@@ -1690,6 +1847,13 @@ var FlowStore = (() => {
       skipcash: sourceVolume("skipcash"),
       shopify: sourceVolume("shopify")
     };
+  }
+  function bankLogoSrc(bank) {
+    const key = String(bank || "").toLowerCase();
+    if (key.includes("ahli")) return "/banks/ahli.png";
+    if (key.includes("qatar national") || /\bqnb\b/.test(key)) return "/banks/qnb.png";
+    if (key.includes("dukhan")) return "/banks/dukhan.png";
+    return null;
   }
   function bankView() {
     const account = db2().bankAccounts[0];
@@ -1699,6 +1863,7 @@ var FlowStore = (() => {
     return {
       name,
       initials: (account?.bank ?? "").split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+      logo: account ? bankLogoSrc(account.bank) : null,
       activity: formatMoney(cashOnHand, currency),
       activityCaption: "Cash on hand",
       note: account ? formatMoney(opening, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset) : "No bank account is stored.",
@@ -1706,6 +1871,7 @@ var FlowStore = (() => {
         id: row.id,
         name: row.bank + ", " + row.label,
         initials: row.bank.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+        logo: bankLogoSrc(row.bank),
         sample: !!row.sample,
         note: row.sample ? "Sample data. Live bank feeds arrive in a later phase." : formatMoney(row.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(row.asOfOffset)
       }))
@@ -2069,6 +2235,53 @@ var FlowStore = (() => {
   }
   function paymentLinkById(id) {
     return getStore().paymentLinks.find((row) => row.id === id);
+  }
+  function invoicePayLinkStatus(invoice) {
+    const status = getInvoiceStatus(invoice.id);
+    if (status === "draft") return null;
+    if (status === "paid" || status === "refunded") return "paid";
+    if (status === "awaiting settlement") return "pending";
+    return "active";
+  }
+  function ensureInvoicePaymentLink(invoice) {
+    const wanted = invoicePayLinkStatus(invoice);
+    if (!wanted) return void 0;
+    const existing = getStore().paymentLinks.find((row) => row.id === invoice.number);
+    const client = getStore().clients.find((row) => row.id === invoice.clientId);
+    const email = (client?.email || ownerContact().email || "").trim() || null;
+    const description = "Invoice " + invoice.number;
+    if (existing) {
+      const patch = {};
+      if (existing.status === "active") {
+        if (existing.amountMinor !== invoice.amountMinor) patch.amountMinor = invoice.amountMinor;
+        if (existing.description !== description) patch.description = description;
+        if (!!existing.partialPayment !== !!invoice.partialPayment) patch.partialPayment = !!invoice.partialPayment;
+      }
+      if (existing.invoiceId !== invoice.id) patch.invoiceId = invoice.id;
+      if (existing.clientId !== invoice.clientId) patch.clientId = invoice.clientId;
+      if (existing.referenceId !== invoice.number) patch.referenceId = invoice.number;
+      if (wanted !== "active" && existing.status === "active") patch.status = wanted;
+      if (Object.keys(patch).length) return replacePaymentLink(existing.id, patch) || existing;
+      return existing;
+    }
+    const link = {
+      id: invoice.number,
+      payUrl: hostedLinkUrl(invoice.number),
+      amountMinor: invoice.amountMinor,
+      description,
+      clientId: invoice.clientId,
+      invoiceId: invoice.id,
+      status: wanted,
+      createdOffset: 0,
+      uses: wanted === "active" ? 0 : 1,
+      expiry: "-",
+      txnId: null,
+      customerEmail: email,
+      referenceId: invoice.number,
+      partialPayment: !!invoice.partialPayment
+    };
+    appendPaymentLink(link);
+    return getStore().paymentLinks.find((row) => row.id === invoice.number) || link;
   }
   function ensureGatewayPayment(link) {
     getGateway().ensurePayment({
@@ -2498,21 +2711,40 @@ var FlowStore = (() => {
     const name = String(input.name || "").trim();
     if (!name) throw new Error("Client name is required");
     const address = String(input.address || "").trim();
+    const email = String(input.email || "").trim();
+    const phone = String(input.phone || "").trim();
     const existing = getStore().clients.find((client) => client.name === name);
     if (existing) {
-      if (address && existing.address !== address) {
-        return replaceClient(existing.id, { address }) || existing;
-      }
+      const patch = {};
+      if (address && existing.address !== address) patch.address = address;
+      if (email && existing.email !== email) patch.email = email;
+      if (phone && existing.phone !== phone) patch.phone = phone;
+      if (Object.keys(patch).length) return replaceClient(existing.id, patch) || existing;
       return existing;
     }
     const row = {
       id: "cli_" + Date.now().toString(36),
       name,
-      email: input.email || "",
+      email,
       branchId: input.branchId || getStore().branches[0]?.id || "br_01"
     };
+    if (phone) row.phone = phone;
     if (address) row.address = address;
     return appendClient(row);
+  }
+  function updateClient(id, patch) {
+    const current = getStore().clients.find((row) => row.id === id);
+    if (!current) throw new Error("Client not found: " + id);
+    const next = {};
+    if (typeof patch.name === "string") {
+      const name = patch.name.trim();
+      if (!name) throw new Error("Client name is required");
+      next.name = name;
+    }
+    if (typeof patch.email === "string") next.email = patch.email.trim();
+    if (typeof patch.phone === "string") next.phone = patch.phone.trim();
+    if (typeof patch.address === "string") next.address = patch.address.trim();
+    return replaceClient(id, next) || current;
   }
   function resolveInvoiceClient(input) {
     if (input.clientId) {
@@ -2574,6 +2806,7 @@ var FlowStore = (() => {
       actor: getStore().merchant.ownerName,
       what: draft ? "Invoice " + invoice.number + " saved as draft" : "Invoice " + invoice.number + " sent"
     });
+    if (!draft) ensureInvoicePaymentLink(invoice);
     return invoice;
   }
   function duplicateInvoice(invoiceId) {
@@ -2671,6 +2904,49 @@ var FlowStore = (() => {
     });
     return { alreadyPosted: false, period, txnId: txn.id };
   }
+  function payrollDeductionRate() {
+    const run = getStore().payrollRuns[0];
+    return run && Number.isFinite(run.deductionRate) ? run.deductionRate : 0;
+  }
+  function payslipId(employeeId, period) {
+    return "slip_" + employeeId + "_" + period.replace(/\s+/g, "_");
+  }
+  function payslipsForPeriod(period) {
+    const wanted = String(period || "").trim();
+    return getStore().payslips.filter((row) => row.period === wanted);
+  }
+  function generatePayslips(periodLabel2, employeeIds) {
+    const period = String(periodLabel2 || "").trim();
+    if (!period) throw new Error("Period is required");
+    const store = getStore();
+    const wanted = employeeIds && employeeIds.length ? new Set(employeeIds) : null;
+    const targets = store.employees.filter((employee) => wanted ? wanted.has(employee.id) : true);
+    if (!targets.length) throw new Error("No employees on payroll");
+    const rate = payrollDeductionRate();
+    const slips = targets.map((employee) => {
+      const grossMinor = Math.round(employee.monthlySalary);
+      const deductionMinor = Math.round(grossMinor * rate);
+      return {
+        id: payslipId(employee.id, period),
+        period,
+        employeeId: employee.id,
+        employeeName: employee.name,
+        grossMinor,
+        deductionMinor,
+        netMinor: grossMinor - deductionMinor,
+        generatedOffset: 0
+      };
+    });
+    appendPayslips(slips);
+    appendActivity({
+      id: "act_slip_" + Date.now().toString(36),
+      kind: "edits",
+      dayOffset: 0,
+      actor: store.merchant.ownerName,
+      what: "Payslips generated for " + period + ", " + slips.length + (slips.length === 1 ? " employee" : " employees")
+    });
+    return slips;
+  }
   function connectSampleBank(bankId) {
     const sample = SAMPLE_BANKS.find((row) => row.id === bankId);
     if (!sample) throw new Error("Sample bank not found: " + bankId);
@@ -2686,6 +2962,256 @@ var FlowStore = (() => {
       asOfOffset: 0,
       sample: true
     });
+  }
+  var INTERVAL_DAYS = { Week: 7, Month: 30, Quarter: 90 };
+  function createRecurringInvoice(input) {
+    if (!Number.isFinite(input.amountMinor) || input.amountMinor <= 0) throw new Error("Amount is required");
+    const client = resolveInvoiceClient(input);
+    const interval = input.interval || "Month";
+    const row = appendRecurringInvoice({
+      id: "rec_" + Date.now().toString(36),
+      clientId: client.id,
+      amountMinor: Math.round(input.amountMinor),
+      interval,
+      nextOffset: 0,
+      endsAfter: input.endsAfter != null && Number.isFinite(input.endsAfter) ? Math.round(input.endsAfter) : null,
+      sentCount: 0,
+      status: "active"
+    });
+    appendActivity({
+      id: "act_" + row.id,
+      kind: "edits",
+      dayOffset: 0,
+      actor: getStore().merchant.ownerName,
+      what: "Recurring invoice scheduled for " + client.name
+    });
+    return row;
+  }
+  function recurringNextOffsets(row) {
+    const step = INTERVAL_DAYS[row.interval] || 30;
+    const remaining = row.endsAfter == null ? 3 : Math.max(0, row.endsAfter - row.sentCount);
+    const count = Math.min(3, remaining);
+    const offsets = [];
+    for (let i = 0; i < count; i++) offsets.push(row.nextOffset + i * step);
+    return offsets;
+  }
+  function sendRecurringInvoice(id) {
+    const row = getStore().recurringInvoices.find((item) => item.id === id);
+    if (!row) throw new Error("Recurring invoice not found");
+    if (row.status !== "active") throw new Error("Schedule is not running");
+    if (row.endsAfter != null && row.sentCount >= row.endsAfter) throw new Error("Schedule has ended");
+    const invoice = createInvoice({
+      clientId: row.clientId,
+      amountMinor: row.amountMinor,
+      dueOffset: 14
+    });
+    const step = INTERVAL_DAYS[row.interval] || 30;
+    const sentCount = row.sentCount + 1;
+    const ended = row.endsAfter != null && sentCount >= row.endsAfter;
+    replaceRecurringInvoice(id, {
+      sentCount,
+      nextOffset: row.nextOffset + step,
+      status: ended ? "canceled" : "active"
+    });
+    return invoice;
+  }
+  function pauseRecurringInvoice(id) {
+    const next = replaceRecurringInvoice(id, { status: "paused" });
+    if (!next) throw new Error("Recurring invoice not found");
+    return next;
+  }
+  function cancelRecurringInvoice(id) {
+    const next = replaceRecurringInvoice(id, { status: "canceled" });
+    if (!next) throw new Error("Recurring invoice not found");
+    return next;
+  }
+  function setRolePermission(area, role, level) {
+    const current = getStore().rolePermissions.length ? getStore().rolePermissions : DEFAULT_ROLE_PERMISSIONS.map((row) => ({ ...row }));
+    const rows = current.map((row) => row.area === area ? { ...row, [role]: level } : row);
+    replaceRolePermissions(rows);
+    appendActivity({
+      id: "act_perm_" + Date.now().toString(36),
+      kind: "access",
+      dayOffset: 0,
+      actor: getStore().merchant.ownerName,
+      what: "Updated " + role + " access for " + area + " to " + level
+    });
+    return rows;
+  }
+  function setApprovalLimit(memberId, amountMinor) {
+    const next = { ...getStore().approvalLimits, [memberId]: amountMinor };
+    replaceApprovalLimits(next);
+    const member = getStore().teamMembers.find((row) => row.id === memberId);
+    appendActivity({
+      id: "act_lim_" + Date.now().toString(36),
+      kind: "access",
+      dayOffset: 0,
+      actor: getStore().merchant.ownerName,
+      what: member ? amountMinor == null ? "Cleared approval limit for " + member.name : "Set approval limit for " + member.name : "Updated an approval limit"
+    });
+    return next;
+  }
+  function resolveApproval(id, action) {
+    const next = replaceApprovalRequest(id, { status: action });
+    if (!next) throw new Error("Approval request not found");
+    appendActivity({
+      id: "act_apv_" + id,
+      kind: "access",
+      dayOffset: 0,
+      actor: getStore().merchant.ownerName,
+      what: (action === "approved" ? "Approved" : "Declined") + " a request"
+    });
+    return next;
+  }
+  function tagKey(name) {
+    return String(name || "").trim().toLowerCase();
+  }
+  function catalogHas(name) {
+    const key = tagKey(name);
+    return !!key && getStore().tags.some((row) => tagKey(row) === key);
+  }
+  function catalogMatch(name) {
+    const key = tagKey(name);
+    return getStore().tags.find((row) => tagKey(row) === key);
+  }
+  function isTopLevelTag(name) {
+    const parent = getStore().tagParents[name];
+    return !parent || !catalogHas(parent);
+  }
+  function tagHasChildren(name) {
+    const parents = getStore().tagParents;
+    return Object.keys(parents).some((child) => parents[child] === name && catalogHas(child));
+  }
+  function writeTagParents(next) {
+    const tags = getStore().tags;
+    const set = new Set(tags);
+    const clean = {};
+    Object.keys(next).forEach((child) => {
+      const parent = next[child];
+      if (!set.has(child) || !set.has(parent) || child === parent) return;
+      if (next[parent] && set.has(next[parent])) return;
+      clean[child] = parent;
+    });
+    return replaceTagParents(clean);
+  }
+  function createTag(name, parentTag) {
+    const trimmed = String(name || "").trim();
+    if (!trimmed) throw new Error("Tag name is required");
+    if (catalogHas(trimmed)) throw new Error("That tag already exists");
+    const parent = String(parentTag || "").trim();
+    if (parent) {
+      const parentName = catalogMatch(parent);
+      if (!parentName) throw new Error("Parent tag was not found");
+      if (!isTopLevelTag(parentName)) throw new Error("Parent must be a top-level tag");
+      if (tagKey(parentName) === tagKey(trimmed)) throw new Error("A tag cannot be its own parent");
+      replaceTags(getStore().tags.concat([trimmed]));
+      writeTagParents({ ...getStore().tagParents, [trimmed]: parentName });
+    } else {
+      replaceTags(getStore().tags.concat([trimmed]));
+    }
+    appendActivity({
+      id: "act_tag_" + Date.now().toString(36),
+      kind: "edits",
+      dayOffset: 0,
+      actor: getStore().merchant.ownerName,
+      what: parent ? "Created tag " + trimmed + " under " + catalogMatch(parent) : "Created tag " + trimmed
+    });
+    return trimmed;
+  }
+  function setTagParent(tag, parentTag) {
+    const name = catalogMatch(tag);
+    if (!name) throw new Error("Tag was not found");
+    const parent = String(parentTag || "").trim();
+    const current = getStore().tagParents[name] || "";
+    if (!parent) {
+      if (!current) return { tag: name, parent: null };
+      const next = { ...getStore().tagParents };
+      delete next[name];
+      writeTagParents(next);
+      appendActivity({
+        id: "act_tag_" + Date.now().toString(36),
+        kind: "edits",
+        dayOffset: 0,
+        actor: getStore().merchant.ownerName,
+        what: "Cleared parent of tag " + name
+      });
+      return { tag: name, parent: null };
+    }
+    const parentName = catalogMatch(parent);
+    if (!parentName) throw new Error("Parent tag was not found");
+    if (tagKey(parentName) === tagKey(name)) throw new Error("A tag cannot be its own parent");
+    if (!isTopLevelTag(parentName)) throw new Error("Parent must be a top-level tag");
+    if (tagHasChildren(name)) throw new Error("A tag with sub-tags cannot be nested");
+    if (current === parentName) return { tag: name, parent: parentName };
+    writeTagParents({ ...getStore().tagParents, [name]: parentName });
+    appendActivity({
+      id: "act_tag_" + Date.now().toString(36),
+      kind: "edits",
+      dayOffset: 0,
+      actor: getStore().merchant.ownerName,
+      what: "Moved tag " + name + " under " + parentName
+    });
+    return { tag: name, parent: parentName };
+  }
+  function renameTag(from, to, parentTag) {
+    const next = String(to || "").trim();
+    if (!next) throw new Error("Tag name is required");
+    const existing = catalogMatch(next);
+    if (existing && tagKey(existing) !== tagKey(from)) throw new Error("That tag already exists");
+    let count = 0;
+    if (from !== next) {
+      getStore().transactions.forEach((txn) => {
+        if (txn.tag === from) {
+          replaceTransaction(txn.id, { tag: next });
+          count += 1;
+        }
+      });
+      replaceTags(getStore().tags.map((row) => row === from ? next : row));
+      const parents = { ...getStore().tagParents };
+      const remapped = {};
+      Object.keys(parents).forEach((child) => {
+        const childName = child === from ? next : child;
+        const parentName = parents[child] === from ? next : parents[child];
+        remapped[childName] = parentName;
+      });
+      writeTagParents(remapped);
+      appendActivity({
+        id: "act_tag_" + Date.now().toString(36),
+        kind: "edits",
+        dayOffset: 0,
+        actor: getStore().merchant.ownerName,
+        what: "Renamed tag " + from + " to " + next
+      });
+    } else if (parentTag === void 0) {
+      return { from, to: next, count: 0 };
+    }
+    let parent;
+    if (parentTag !== void 0) {
+      parent = setTagParent(next, parentTag).parent;
+    }
+    return { from, to: next, count, parent };
+  }
+  function removeTag(tag) {
+    const count = getStore().transactions.filter((txn) => txn.tag === tag).length;
+    if (count > 0) {
+      throw new Error("Can't remove " + tag + ": " + count + (count === 1 ? " item still uses it" : " items still use it"));
+    }
+    if (!catalogHas(tag)) return { tag, count: 0 };
+    const parents = { ...getStore().tagParents };
+    delete parents[tag];
+    Object.keys(parents).forEach((child) => {
+      if (parents[child] === tag) delete parents[child];
+    });
+    replaceTags(getStore().tags.filter((row) => row !== tag));
+    writeTagParents(parents);
+    appendActivity({
+      id: "act_tag_" + Date.now().toString(36),
+      kind: "edits",
+      dayOffset: 0,
+      actor: getStore().merchant.ownerName,
+      what: "Removed tag " + tag
+    });
+    return { tag, count: 0 };
   }
 
   // lib/data/tally-export.ts

@@ -1,0 +1,89 @@
+{
+  "nav": {
+    "dashboard": "Home",
+    "payments": "Get Paid",
+    "transactions": "Money In & Out",
+    "invoicing": "Invoices",
+    "accounting": "Sync to Books",
+    "connections": "Connected Apps",
+    "reports": "Reports",
+    "team": "Your Team",
+    "payroll": "Payroll",
+    "settings": "Settings"
+  },
+  "navGroup": {
+    "paid": "Get paid & track money",
+    "business": "Your business",
+    "account": "Account"
+  },
+  "search": {
+    "placeholder": "Search payments, invoices…"
+  },
+  "back": "Back",
+  "signOut": "Sign out",
+  "sandbox": "SANDBOX",
+  "sandboxTip": "Simulated gateway. Live payment processing pending Qatar commercial registration.",
+  "planBadge": "FLOW PLAN",
+  "mobile": {
+    "overview": "Overview",
+    "home": "Home",
+    "activity": "Activity",
+    "invoices": "Invoices",
+    "pay": "Pay",
+    "more": "More"
+  },
+  "user": {
+    "business": "Business",
+    "branch": "Branch",
+    "limit": "Approval limit",
+    "lastLogin": "Last sign-in",
+    "owner": "Owner",
+    "noLimit": "No limit",
+    "profile": "Business profile",
+    "security": "Security & devices",
+    "billing": "Plan & billing"
+  },
+  "lang": {
+    "switcher": "Language",
+    "english": "English",
+    "arabic": "Arabic"
+  },
+  "modal": {
+    "cancel": "Cancel"
+  },
+  "toast": {
+    "saved": "Changes saved",
+    "signedOut": "Signed out of this sandbox",
+    "accountUpdated": "Account updated",
+    "accountPasswordUpdated": "Account and password updated",
+    "emailInvalid": "That email does not look right",
+    "passwordShort": "Password needs at least 8 characters",
+    "demoRestored": "Demo data restored",
+    "tagUpdated": "Tag updated",
+    "tagRenamed": "Tag renamed",
+    "tagRemoved": "Tag removed",
+    "tagUnchanged": "Nothing to save",
+    "tagRequired": "Tag name is required",
+    "tagRenameFailed": "Could not rename tag",
+    "tagRemoveFailed": "Could not remove tag",
+    "tagRenamedTo": "Renamed {{from}} to {{to}}",
+    "tagInUse": "Can't remove {{name}}: {{count}} items still use it",
+    "tagInUse_one": "Can't remove {{name}}: 1 item still uses it",
+    "tagCreated": "Created {{name}}",
+    "tagCreatedUnder": "Created {{name}} under {{parent}}",
+    "tagCreateFailed": "Could not create tag",
+    "tagParentSet": "Moved {{name}} under {{parent}}",
+    "tagParentCleared": "{{name}} is now a top-level tag",
+    "tagParentFailed": "Could not update tag parent",
+    "linkedTo": "Linked to {{inv}}",
+    "matchConfirmed": "Match confirmed",
+    "sentBack": "Sent back for review",
+    "matchUndone": "Match undone",
+    "linkCopied": "Link copied to clipboard",
+    "noLink": "No link to copy",
+    "linkCreated": "Payment link created",
+    "linkCreatedCopied": "Payment link created and copied",
+    "reminderSent": "Reminder sent to {{name}}",
+    "reminderSentClient": "Reminder sent to the client"
+  }
+}

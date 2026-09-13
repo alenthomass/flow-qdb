@@ -2,6 +2,7 @@
 
 import { Fragment } from "react";
 import { sx } from "./chrome";
+import { translateStatus } from "../../lib/i18n";
 
 export type InvoicePreviewLine = {
   label: string;
@@ -43,6 +44,8 @@ export type InvoicePreviewProps = {
   iban?: string;
   accountNumber?: string;
   swiftCode?: string;
+  t?: (key: string, vars?: Record<string, string | number>) => string;
+  display?: (text: string | number) => string;
 };
 
 function brandInitials(name: string) {
@@ -64,8 +67,8 @@ function locationFromAddress(address: string) {
 
 function statusTone(status?: string) {
   const label = String(status || "");
-  if (/paid|settled|success/i.test(label)) return { fg: "var(--pos)", bg: "var(--pos-soft)" };
-  if (/overdue|refunded|error|canceled/i.test(label)) return { fg: "var(--neg)", bg: "var(--neg-soft)" };
+  if (/paid|settled|success|مدفوعة|مسوّاة|ناجحة/i.test(label)) return { fg: "var(--pos)", bg: "var(--pos-soft)" };
+  if (/overdue|refunded|error|canceled|متأخرة|مستردّة|خطأ|ملغاة/i.test(label)) return { fg: "var(--neg)", bg: "var(--neg-soft)" };
   return { fg: "var(--warn)", bg: "var(--warn-soft)" };
 }
 
@@ -103,8 +106,12 @@ export function InvoicePreview({
   iban,
   accountNumber,
   swiftCode,
-  payUrl
+  payUrl,
+  t,
+  display
 }: InvoicePreviewProps) {
+  const L = (key: string, en: string) => (t ? t(key) : en);
+  const D = (text: string | number) => (display ? display(text) : String(text ?? ""));
   const rows = Array.isArray(lines) ? lines : [];
   const trn = String(taxReg || "").trim();
   const cr = String(crNumber || "").trim();
@@ -130,8 +137,8 @@ export function InvoicePreview({
   const billedPlaceholder = !billedName || /^select or add a client$/i.test(billedName);
 
   return (
-    <div className="flow-invoice-live" style={sx("background:var(--divider); border:1px solid var(--line); border-radius:11px; padding:26px")}>
-      <div style={sx("font-size:12px; font-weight:650; color:var(--ink-4); letter-spacing:.04em")}>WHAT YOUR CLIENT SEES</div>
+    <div className="flow-invoice-live" dir="ltr" style={sx("background:var(--divider); border:1px solid var(--line); border-radius:11px; padding:26px")}>
+      <div style={sx("font-size:12px; font-weight:650; color:var(--ink-4); letter-spacing:.04em")}>{L("ui.invPrev.clientSees", "WHAT YOUR CLIENT SEES")}</div>
       <div className="flow-invoice-doc">
         <header className="flow-invoice-band">
           <span className="flow-invoice-glow is-band" aria-hidden="true" />
@@ -147,14 +154,14 @@ export function InvoicePreview({
             </div>
           </div>
           <div className="flow-invoice-id">
-            <div className="flow-invoice-eyebrow">Invoice</div>
+            <div className="flow-invoice-eyebrow">{L("ui.invPrev.invoice", "Invoice")}</div>
             <div className="flow-invoice-number">{number}</div>
             {!!status && (
               <span
                 className="flow-invoice-status"
                 style={sx("color:" + tone.fg + "; background:" + tone.bg)}
               >
-                {status}
+                {t ? translateStatus(t, status) : status}
               </span>
             )}
           </div>
@@ -163,37 +170,37 @@ export function InvoicePreview({
         <div className="flow-invoice-body">
           <section className="flow-invoice-meta">
             <div>
-              <div className="flow-invoice-kicker">Billed to</div>
+              <div className="flow-invoice-kicker">{L("ui.invPrev.billed", "Billed to")}</div>
               <div className="flow-invoice-meta-name">{billedPlaceholder ? "—" : billedName}</div>
               {!!billedAddress && <div className="flow-invoice-meta-copy">{billedAddress}</div>}
             </div>
             <div>
               {!!po && (
                 <>
-                  <div className="flow-invoice-kicker">Reference</div>
+                  <div className="flow-invoice-kicker">{L("ui.invPrev.ref", "Reference")}</div>
                   <div className="flow-invoice-meta-name">{po}</div>
                 </>
               )}
             </div>
             <div className="flow-invoice-dates">
-              <div className="flow-invoice-kicker">Dates</div>
+              <div className="flow-invoice-kicker">{L("ui.invPrev.dates", "Dates")}</div>
               <div className="flow-invoice-date-row">
-                <span>Invoice date</span>
-                <span className="flow-invoice-num">{issued || "—"}</span>
+                <span>{L("ui.invPrev.invDate", "Invoice date")}</span>
+                <span className="flow-invoice-num">{issued ? D(issued) : "—"}</span>
               </div>
               <div className="flow-invoice-date-row">
-                <span>Due date</span>
-                <span className="flow-invoice-num">{due || "—"}</span>
+                <span>{L("ui.invPrev.due", "Due date")}</span>
+                <span className="flow-invoice-num">{due ? D(due) : "—"}</span>
               </div>
             </div>
           </section>
 
-          <section className="flow-invoice-table" aria-label="Line items">
+          <section className="flow-invoice-table" aria-label={L("ui.invPrev.lines", "Line items")}>
             <div className="flow-invoice-thead">
-              <span>Description</span>
-              <span>Qty</span>
-              <span>Unit price</span>
-              <span>Amount</span>
+              <span>{L("ui.invPrev.desc", "Description")}</span>
+              <span>{L("ui.invPrev.qty", "Qty")}</span>
+              <span>{L("ui.invPrev.unit", "Unit price")}</span>
+              <span>{L("ui.invPrev.amount", "Amount")}</span>
             </div>
             {rows.map((row, idx) => (
               <Fragment key={row.label + idx}>
@@ -204,9 +211,9 @@ export function InvoicePreview({
                       <span className="flow-invoice-tnote">{row.note}</span>
                     )}
                   </span>
-                  <span className="flow-invoice-num">{row.qty || "1"}</span>
-                  <span className="flow-invoice-num">{row.unit || row.amt}</span>
-                  <span className="flow-invoice-num">{row.amt}</span>
+                  <span className="flow-invoice-num">{row.qty ? D(row.qty) : D("1")}</span>
+                  <span className="flow-invoice-num">{D(row.unit || row.amt)}</span>
+                  <span className="flow-invoice-num">{D(row.amt)}</span>
                 </div>
               </Fragment>
             ))}
@@ -214,81 +221,81 @@ export function InvoicePreview({
 
           <section className="flow-invoice-close">
             <div className="flow-invoice-paynote">
-              <p>Please settle by the due date above. Bank details are listed below.</p>
+              <p>{L("ui.invPrev.please", "Please settle by the due date above. Bank details are listed below.")}</p>
               {!!partialPayment && (
-                <span className="flow-invoice-partial">Partial payments allowed</span>
+                <span className="flow-invoice-partial">{L("ui.invPrev.partial", "Partial payments allowed")}</span>
               )}
             </div>
             <aside className="flow-invoice-total">
               <span className="flow-invoice-glow is-total" aria-hidden="true" />
               {!!subtotal && (
                 <div className="flow-invoice-total-row">
-                  <span>Subtotal</span>
-                  <span className="flow-invoice-num">{subtotal}</span>
+                  <span>{L("ui.invPrev.subtotal", "Subtotal")}</span>
+                  <span className="flow-invoice-num">{D(subtotal)}</span>
                 </div>
               )}
               {!!disc && (
                 <div className="flow-invoice-total-row is-discount">
-                  <span>Discount</span>
-                  <span className="flow-invoice-num">−{disc}</span>
+                  <span>{L("ui.invPrev.discount", "Discount")}</span>
+                  <span className="flow-invoice-num">−{D(disc)}</span>
                 </div>
               )}
               <div className="flow-invoice-total-due">
-                <span>Total due</span>
-                <strong className="flow-invoice-num">{total}</strong>
+                <span>{L("ui.invPrev.total", "Total due")}</span>
+                <strong className="flow-invoice-num">{D(total)}</strong>
               </div>
             </aside>
           </section>
 
           <footer className="flow-invoice-foot">
             <div>
-              <div className="flow-invoice-kicker">Payment details</div>
+              <div className="flow-invoice-kicker">{L("ui.invPrev.payDetails", "Payment details")}</div>
               {!!bank && (
                 <div className="flow-invoice-payline">
-                  <span>Bank</span>
+                  <span>{L("ui.invPrev.bank", "Bank")}</span>
                   <span>{bank}</span>
                 </div>
               )}
               {!!account && (
                 <div className="flow-invoice-payline">
-                  <span>Account name</span>
+                  <span>{L("ui.invPrev.acctName", "Account name")}</span>
                   <span>{account}</span>
                 </div>
               )}
               {!!accountNo && (
                 <div className="flow-invoice-payline">
-                  <span>Account number</span>
+                  <span>{L("ui.invPrev.acctNo", "Account number")}</span>
                   <span className="flow-invoice-num">{accountNo}</span>
                 </div>
               )}
               {!!ibanValue && (
                 <div className="flow-invoice-payline">
-                  <span>IBAN</span>
+                  <span>{L("ui.invPrev.iban", "IBAN")}</span>
                   <span className="flow-invoice-num">{ibanValue}</span>
                 </div>
               )}
               {!!swift && (
                 <div className="flow-invoice-payline">
-                  <span>SWIFT / BIC</span>
+                  <span>{L("ui.invPrev.swift", "SWIFT / BIC")}</span>
                   <span className="flow-invoice-num">{swift}</span>
                 </div>
               )}
               {!!payLink && (
                 <div className="flow-invoice-payline">
-                  <span>Pay online</span>
+                  <span>{L("ui.invPrev.payOnline", "Pay online")}</span>
                   <span><a href={payLink}>{payLink}</a></span>
                 </div>
               )}
             </div>
             <div>
-              <div className="flow-invoice-kicker">Notes</div>
+              <div className="flow-invoice-kicker">{L("ui.invPrev.notes", "Notes")}</div>
               <div className="flow-invoice-meta-copy">{memo || "—"}</div>
             </div>
           </footer>
 
           {!!terms && (
             <div className="flow-invoice-terms">
-              <div className="flow-invoice-kicker">Terms & conditions</div>
+              <div className="flow-invoice-kicker">{L("ui.invPrev.terms", "Terms & conditions")}</div>
               <div className="flow-invoice-terms-copy">{terms}</div>
             </div>
           )}
@@ -303,7 +310,7 @@ export function InvoicePreview({
                 </>
               )}
             </span>
-            <span>Generated by Flow</span>
+            <span>{L("ui.invPrev.generated", "Generated by Flow")}</span>
           </div>
         </div>
       </div>

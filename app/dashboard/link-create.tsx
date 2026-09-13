@@ -36,7 +36,8 @@ function shareUrl(link: PaymentLink): string {
   return link.payUrl || "/pay/" + link.id;
 }
 
-export function LinkCreateForm({ onClose }: { onClose: () => void }) {
+export function LinkCreateForm({ onClose, t }: { onClose: () => void; t?: (key: string, vars?: Record<string, string | number>) => string }) {
+  const L = (key: string, en: string, vars?: Record<string, string | number>) => (t ? t(key, vars) : en);
   const store = getStore();
   const currency = store.merchant.currency;
   const chip = currency === "QAR" ? "QR" : currency;
@@ -99,18 +100,18 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
     setNewError("");
     const dueOffset = offsetFromLabel(newDue);
     if (dueOffset == null) {
-      setNewError("Due date is required");
+      setNewError(L("ui.link.dueRequired", "Due date is required"));
       return;
     }
     const amountMinor = parseMoneyInput(newAmount);
     if (!amountMinor) {
-      setNewError("Amount is required");
+      setNewError(L("ui.link.amountRequired", "Amount is required"));
       return;
     }
     const existingId = newClientId || clientId;
     const typedName = newClientName.trim();
     if (!existingId && !typedName) {
-      setNewError("Client is required");
+      setNewError(L("ui.link.clientRequired", "Client is required"));
       return;
     }
     try {
@@ -120,7 +121,7 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
         amountMinor,
         dueOffset,
         lines: [{
-          description: description.trim() || "Invoice",
+          description: description.trim() || L("ui.link.defaultInv", "Invoice"),
           quantity: 1,
           unitMinor: amountMinor
         }]
@@ -135,7 +136,7 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
       setNewOpen(false);
       setNewClientName("");
     } catch (err) {
-      setNewError(err instanceof Error ? err.message : "Could not create invoice");
+      setNewError(err instanceof Error ? err.message : L("ui.link.createInvFail", "Could not create invoice"));
     }
   }
 
@@ -169,7 +170,7 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
       publishDashStore();
       setCreated(link);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create payment link");
+      setError(err instanceof Error ? err.message : L("ui.link.createFail", "Could not create payment link"));
     } finally {
       setBusy(false);
     }
@@ -188,21 +189,21 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
     return (
       <div style={sx("display:flex; flex-direction:column; gap:16px")}>
         <div>
-          <div style={sx("font-size:13px; font-weight:650")}>Link ready to share</div>
+          <div style={sx("font-size:13px; font-weight:650")}>{L("ui.link.ready", "Link ready to share")}</div>
           <div style={sx("font-size:12.5px; color:var(--ink-4); margin-top:4px")}>{formatMoney(created.amountMinor, currency)}{created.description ? " · " + created.description : ""}</div>
         </div>
         <div style={sx("display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:10px; padding:4px 4px 4px 12px; background:var(--surface)")}>
           <div style={sx("flex:1; min-width:0; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap")}>{url}</div>
-          <button type="button" onClick={() => { void copy(); }} style={sx("flex:0 0 auto; font-size:12.5px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); padding:8px 12px; border-radius:8px")}>{copied ? "Copied" : "Copy"}</button>
+          <button type="button" onClick={() => { void copy(); }} style={sx("flex:0 0 auto; font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); padding:8px 12px; border-radius:8px")}>{copied ? L("ui.link.copied", "Copied") : L("ui.link.copy", "Copy")}</button>
         </div>
         <div>
-          <div style={sx(label)}>Share</div>
+          <div style={sx(label)}>{L("ui.link.share", "Share")}</div>
           <div style={sx("display:flex; gap:8px; flex-wrap:wrap")}>
             <a href={waHref} target="_blank" rel="noopener noreferrer" style={sx("font-size:12.5px; font-weight:600; padding:9px 14px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light); color:var(--ink); text-decoration:none")}>WhatsApp</a>
-            <a href={mailHref} style={sx("font-size:12.5px; font-weight:600; padding:9px 14px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light); color:var(--ink); text-decoration:none")}>Email</a>
+            <a href={mailHref} style={sx("font-size:12.5px; font-weight:600; padding:9px 14px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light); color:var(--ink); text-decoration:none")}>{L("ui.link.email", "Email")}</a>
           </div>
         </div>
-        <button type="button" onClick={onClose} style={sx("font-size:13px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 20px; border-radius:9px")}>Done</button>
+        <button type="button" onClick={onClose} style={sx("font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 20px; border-radius:9px")}>{L("ui.link.done", "Done")}</button>
       </div>
     );
   }
@@ -210,7 +211,7 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
   return (
     <form onSubmit={submit} style={sx("display:flex; flex-direction:column; gap:16px")} noValidate>
       <label style={sx("display:block")}>
-        <div style={sx(label)}>Amount<span style={sx("color:var(--neg)")}> *</span></div>
+        <div style={sx(label)}>{L("ui.link.amount", "Amount")}<span style={sx("color:var(--neg)")}> *</span></div>
         <div style={sx("display:flex; align-items:center; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--panel)")}>
           <span style={sx("padding:11px 12px; font-size:12.5px; font-weight:700; color:var(--ink-3); background:var(--chip); border-right:1px solid var(--divider)")}>{chip}</span>
           <input style={sx("flex:1; min-width:0; border:none; outline:none; background:transparent; padding:11px 13px; font-size:13.5px; font-family:inherit")} inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" aria-required="true" />
@@ -218,25 +219,25 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
       </label>
 
       <label style={sx("display:block")}>
-        <div style={sx(label)}>Payment For</div>
-        <input style={sx(field)} value={description} onChange={e => setDescription(e.target.value)} placeholder="What is this for?" />
+        <div style={sx(label)}>{L("ui.link.payFor", "Payment For")}</div>
+        <input style={sx(field)} value={description} onChange={e => setDescription(e.target.value)} placeholder={L("ui.link.whatFor", "What is this for?")} />
       </label>
 
       <div>
-        <div style={sx("font-size:12px; font-weight:650; color:var(--ink-2); margin-bottom:10px")}>Customer Details</div>
+        <div style={sx("font-size:12px; font-weight:650; color:var(--ink-2); margin-bottom:10px")}>{L("ui.link.cust", "Customer Details")}</div>
         <div style={sx("display:flex; flex-direction:column; gap:12px")}>
           <label style={sx("display:block")}>
-            <div style={sx(label)}>Email</div>
+            <div style={sx(label)}>{L("ui.link.email", "Email")}</div>
             <input style={sx(field)} type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@company.com" />
           </label>
           <label style={sx("display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--ink-2)")}>
             <input type="checkbox" checked={notifyEmail} disabled={!email.trim()} onChange={e => setNotifyEmail(e.target.checked)} />
-            Notify via Email
+            {L("ui.link.notifyEmail", "Notify via Email")}
           </label>
           <label style={sx("display:block")}>
-            <div style={sx(label)}>Phone</div>
+            <div style={sx(label)}>{L("ui.link.phone", "Phone")}</div>
             <div style={sx("display:flex; gap:8px")}>
-              <select aria-label="Country code" style={sx("width:118px; padding:11px 8px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13px; background:var(--panel)")} value={dial} onChange={e => setDial(e.target.value)}>
+              <select aria-label={L("ui.link.countryCode", "Country code")} style={sx("width:118px; padding:11px 8px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13px; background:var(--panel)")} value={dial} onChange={e => setDial(e.target.value)}>
                 {GCC_DIALS.map(row => <option key={row.dial} value={row.dial}>{row.label}</option>)}
               </select>
               <input style={sx(field)} type="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="0000 0000" />
@@ -244,61 +245,61 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
           </label>
           <label style={sx("display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--ink-2)")}>
             <input type="checkbox" checked={notifySms} disabled={!phone.trim()} onChange={e => setNotifySms(e.target.checked)} />
-            Notify via SMS
+            {L("ui.link.notifySms", "Notify via SMS")}
           </label>
         </div>
       </div>
 
       <label style={sx("display:block")}>
-        <div style={sx(label)}>Reference ID</div>
-        <input style={sx(field)} value={referenceId} onChange={e => setReferenceId(e.target.value)} placeholder="Invoice or job number" />
+        <div style={sx(label)}>{L("ui.link.ref", "Reference ID")}</div>
+        <input style={sx(field)} value={referenceId} onChange={e => setReferenceId(e.target.value)} placeholder={L("ui.link.invoiceOrJob", "Invoice or job number")} />
         <div style={sx("font-size:11.5px; color:var(--ink-4); margin-top:5px")}>Used for matching. An invoice number (e.g. INV-0144) links this payment automatically.</div>
       </label>
 
       <div>
-        <div style={sx(label)}>Link Expiry</div>
+        <div style={sx(label)}>{L("ui.link.expiry", "Link Expiry")}</div>
         <label style={sx("display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--ink-2); margin-bottom:8px")}>
           <input type="checkbox" checked={noExpiry} onChange={e => setNoExpiry(e.target.checked)} />
-          No Expiry
+          {L("ui.link.noExpiry", "No Expiry")}
         </label>
         {!noExpiry && <input style={sx(field)} type="date" value={expiry} onChange={e => setExpiry(e.target.value)} />}
       </div>
 
       <div style={sx("display:flex; align-items:center; gap:12px")}>
         <div style={sx("flex:1")}>
-          <div style={sx("font-size:13px; font-weight:600")}>Partial Payment</div>
-          <div style={sx("font-size:12px; color:var(--ink-4); margin-top:2px")}>Allow the customer to pay less than the full amount</div>
+          <div style={sx("font-size:13px; font-weight:600")}>{L("ui.link.partial", "Partial Payment")}</div>
+          <div style={sx("font-size:12px; color:var(--ink-4); margin-top:2px")}>{L("ui.link.partialSub", "Allow the customer to pay less than the full amount")}</div>
         </div>
-        <Switch on={partialPayment} onClick={() => setPartialPayment(v => !v)} label="Partial Payment" />
+        <Switch on={partialPayment} onClick={() => setPartialPayment(v => !v)} label={L("ui.link.partial", "Partial Payment")} />
       </div>
 
       <div>
-        <div style={sx(label)}>Notes</div>
+        <div style={sx(label)}>{L("ui.link.notes", "Notes")}</div>
         <div style={sx("display:flex; flex-direction:column; gap:8px")}>
           {notes.map((note, index) => (
             <div key={index} style={sx("display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 32px; gap:8px")}>
-              <input style={sx(field)} value={note.key} onChange={e => setNote(index, { key: e.target.value })} placeholder="Key" />
-              <input style={sx(field)} value={note.value} onChange={e => setNote(index, { value: e.target.value })} placeholder="Value" />
-              <Hoverable as="button" type="button" aria-label="Remove note" onClick={() => setNotes(current => current.length === 1 ? [{ key: "", value: "" }] : current.filter((_, i) => i !== index))} style={sx("border-radius:9px; border:1px solid var(--line); color:var(--ink-4)")}>×</Hoverable>
+              <input style={sx(field)} value={note.key} onChange={e => setNote(index, { key: e.target.value })} placeholder={L("ui.link.key", "Key")} />
+              <input style={sx(field)} value={note.value} onChange={e => setNote(index, { value: e.target.value })} placeholder={L("ui.link.value", "Value")} />
+              <Hoverable as="button" type="button" aria-label={L("ui.link.removeNote", "Remove note")} onClick={() => setNotes(current => current.length === 1 ? [{ key: "", value: "" }] : current.filter((_, i) => i !== index))} style={sx("border-radius:9px; border:1px solid var(--line); color:var(--ink-4)")}>×</Hoverable>
             </div>
           ))}
         </div>
-        <button type="button" onClick={() => setNotes(current => current.concat({ key: "", value: "" }))} style={sx("margin-top:8px; font-size:12.5px; font-weight:600; color:var(--ink-2)")}>Add note</button>
+        <button type="button" onClick={() => setNotes(current => current.concat({ key: "", value: "" }))} style={sx("margin-top:8px; font-size:12.5px; font-weight:600; color:var(--ink-2)")}>{L("ui.link.addNote", "Add note")}</button>
       </div>
 
       <label style={sx("display:block")}>
-        <div style={sx(label)}>Client (optional)</div>
+        <div style={sx(label)}>{L("ui.link.clientOpt", "Client (optional)")}</div>
         <select style={sx(field)} value={clientId} onChange={e => onClient(e.target.value)}>
-          <option value="">None</option>
+          <option value="">{L("ui.link.none", "None")}</option>
           {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
         </select>
       </label>
       <div>
         <label style={sx("display:block")}>
-          <div style={sx(label)}>Invoice (optional)</div>
+          <div style={sx(label)}>{L("ui.link.invOpt", "Invoice (optional)")}</div>
           <select style={sx(field)} value={invoiceId} onChange={e => onInvoice(e.target.value)}>
-            <option value="">None</option>
-            <option value="__new__">+ New invoice</option>
+            <option value="">{L("ui.link.none", "None")}</option>
+            <option value="__new__">{L("ui.link.newInv", "+ New invoice")}</option>
             {invoices.map(invoice => {
               const name = clients.find(client => client.id === invoice.clientId)?.name || "";
               return <option key={invoice.id} value={invoice.id}>{invoice.number} · {name} · {formatMoney(invoice.amountMinor, currency, { trimWhole: true })}</option>;
@@ -307,34 +308,34 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
         </label>
         {newOpen && (
           <div style={sx("margin-top:10px; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--panel-2); display:flex; flex-direction:column; gap:12px")}>
-            <div style={sx("font-size:12.5px; font-weight:650")}>Create invoice and attach</div>
+            <div style={sx("font-size:12.5px; font-weight:650")}>{L("ui.link.createAttach", "Create invoice and attach")}</div>
             <label style={sx("display:block")}>
-              <div style={sx(label)}>Client</div>
+              <div style={sx(label)}>{L("ui.link.client", "Client")}</div>
               <select style={sx(field)} value={newClientId || clientId} onChange={e => { setNewClientId(e.target.value); setNewClientName(""); }}>
-                <option value="">Select a client</option>
+                <option value="">{L("ui.link.selectClient", "Select a client")}</option>
                 {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
               </select>
             </label>
             {!(newClientId || clientId) && (
               <label style={sx("display:block")}>
-                <div style={sx(label)}>Or add a client</div>
-                <input style={sx(field)} value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="Client name" />
+                <div style={sx(label)}>{L("ui.link.orAdd", "Or add a client")}</div>
+                <input style={sx(field)} value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder={L("ui.link.clientName", "Client name")} />
               </label>
             )}
             <div style={sx("display:grid; grid-template-columns:1fr 1fr; gap:10px")}>
               <label>
-                <div style={sx(label)}>Amount ({chip})</div>
+                <div style={sx(label)}>{L("ui.link.amountChip", "Amount (" + chip + ")", { chip })}</div>
                 <input style={sx(field)} value={newAmount} onChange={e => setNewAmount(e.target.value)} placeholder="0.00" inputMode="decimal" />
               </label>
               <label>
-                <div style={sx(label)}>Due date</div>
+                <div style={sx(label)}>{L("ui.link.due", "Due date")}</div>
                 <input style={sx(field)} type="date" value={newDue} onChange={e => setNewDue(e.target.value)} />
               </label>
             </div>
             {newError && <div role="alert" style={sx("font-size:12.5px; color:var(--neg)")}>{newError}</div>}
             <div style={sx("display:flex; gap:8px")}>
-              <button type="button" onClick={saveNewInvoice} style={sx("font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); padding:9px 14px; border-radius:9px")}>Create and attach</button>
-              <button type="button" onClick={() => { setNewOpen(false); setNewError(""); }} style={sx("font-size:12.5px; font-weight:600; padding:9px 14px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light)")}>Cancel</button>
+              <button type="button" onClick={saveNewInvoice} style={sx("font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); padding:9px 14px; border-radius:9px")}>{L("ui.link.create", "Create and attach")}</button>
+              <button type="button" onClick={() => { setNewOpen(false); setNewError(""); }} style={sx("font-size:12.5px; font-weight:600; padding:9px 14px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light)")}>{L("pages.common.cancel", "Cancel")}</button>
             </div>
           </div>
         )}
@@ -343,7 +344,7 @@ export function LinkCreateForm({ onClose }: { onClose: () => void }) {
       {error && <div role="alert" style={sx("font-size:12.5px; color:var(--neg)")}>{error}</div>}
 
       <button type="submit" disabled={!canSubmit} style={sx(
-        "font-size:13px; font-weight:650; color:var(--on-accent); background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 6px 16px var(--accent-shadow); padding:11px 20px; border-radius:9px; opacity:" +
+        "font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:11px 20px; border-radius:9px; opacity:" +
         (canSubmit ? "1" : ".45") + "; cursor:" + (canSubmit ? "pointer" : "default")
       )}>{busy ? "Creating…" : "Create Payment Link"}</button>
     </form>

@@ -13,40 +13,55 @@ export {
   extractedBillForm
 } from "./sample-bill";
 export { SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS, SAMPLE_SHOPIFY_ORDER } from "./sample-checkout";
-export { offsetFromLabel, dateInputValue, previousMonthLabel } from "../format";
+export { offsetFromLabel, dateInputValue, previousMonthLabel, formatDate } from "../format";
 export {
   SETTLEMENT_DELAY_MS,
   addClient,
   addSubscriber,
+  cancelRecurringInvoice,
   cancelSubscriber,
   cancelSubscriptionPlan,
   checkoutPageBySlug,
   confirmMatch,
   connectSampleBank,
+  createTag,
   connectShopify,
   createInvoice,
   createPaymentLink,
+  createRecurringInvoice,
   peekNextInvoiceNumber,
   createSubscriptionPlan,
+  generatePayslips,
   deactivatePaymentLink,
   defaultPayrollPeriod,
   duplicateInvoice,
   ingestShopifyOrder,
+  pauseRecurringInvoice,
   pauseSubscriber,
   paymentLinkById,
   payPublishedCheckout,
   payrollPostedFor,
+  payslipsForPeriod,
   checkoutPageUnavailable,
   postPayroll,
   publishCheckoutPage,
+  recurringNextOffsets,
+  removeTag,
+  renameTag,
+  setTagParent,
+  resolveApproval,
   saveCheckoutSettings,
   saveMerchantProfile,
   runSimulatedBilling,
+  sendRecurringInvoice,
+  setApprovalLimit,
+  setRolePermission,
   setSmartCheckout,
   settleBilling,
   settleCheckoutPayment,
   settlePayment,
-  simulatePayment
+  simulatePayment,
+  updateClient
 } from "./spine";
 export { exportTallyXml, simulateZohoSync } from "./tally-export";
 export { resetGateway } from "../gateway/index";

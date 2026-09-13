@@ -10,6 +10,7 @@ import type {
   MatchProposal,
   Merchant,
   PaymentLink,
+  Payslip,
   RecurringInvoice,
   RolePermissionRow,
   Seed,
@@ -43,7 +44,7 @@ function cloneSeed(): Seed {
 
 function emptyExtras(): Pick<
   Seed,
-  "checkoutPages" | "subscriptionPlans" | "subscribers" | "upcomingCharges" | "shopify" | "smartCheckout" | "recurringInvoices" | "approvalRequests" | "rolePermissions" | "approvalLimits"
+  "checkoutPages" | "subscriptionPlans" | "subscribers" | "upcomingCharges" | "shopify" | "smartCheckout" | "recurringInvoices" | "approvalRequests" | "rolePermissions" | "approvalLimits" | "payslips" | "tags" | "tagParents"
 > {
   return {
     checkoutPages: [],
@@ -55,7 +56,10 @@ function emptyExtras(): Pick<
     recurringInvoices: [],
     approvalRequests: [],
     rolePermissions: DEFAULT_ROLE_PERMISSIONS.map(row => ({ ...row })),
-    approvalLimits: {}
+    approvalLimits: {},
+    payslips: [],
+    tags: [],
+    tagParents: {}
   };
 }
 
@@ -78,8 +82,39 @@ function withDefaults(row: Seed): Seed {
     recurringInvoices: row.recurringInvoices || [],
     approvalRequests: row.approvalRequests || [],
     rolePermissions: (row.rolePermissions && row.rolePermissions.length) ? row.rolePermissions : emptyExtras().rolePermissions,
-    approvalLimits: row.approvalLimits || {}
+    approvalLimits: row.approvalLimits || {},
+    payslips: row.payslips || [],
+    tags: mergedTags(row, base),
+    tagParents: cleanTagParents(mergedTags(row, base), row.tagParents || {})
   };
+}
+
+function mergedTags(row: Seed, base: Seed): string[] {
+  const listed = (row.tags && row.tags.length) ? row.tags : base.tags;
+  const extras = (row.transactions || []).map(txn => txn.tag);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const name of listed.concat(extras)) {
+    const tag = String(name || "").trim();
+    if (!tag) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(tag);
+  }
+  return out;
+}
+
+function cleanTagParents(tags: string[], parents: Record<string, string>): Record<string, string> {
+  const set = new Set(tags);
+  const next: Record<string, string> = {};
+  Object.keys(parents || {}).forEach(child => {
+    const parent = parents[child];
+    if (!set.has(child) || !set.has(parent) || child === parent) return;
+    if (parents[parent] && set.has(parents[parent])) return;
+    next[child] = parent;
+  });
+  return next;
 }
 
 let live: Seed = cloneSeed();
@@ -378,10 +413,29 @@ export function replaceRolePermissions(rows: RolePermissionRow[]): RolePermissio
   return live.rolePermissions;
 }
 
+export function replaceTags(tags: string[]): string[] {
+  live.tags = tags.slice();
+  persist();
+  return live.tags;
+}
+
+export function replaceTagParents(map: Record<string, string>): Record<string, string> {
+  live.tagParents = { ...map };
+  persist();
+  return live.tagParents;
+}
+
 export function replaceApprovalLimits(limits: Record<string, number | null>): Record<string, number | null> {
   live.approvalLimits = { ...limits };
   persist();
   return live.approvalLimits;
+}
+
+export function appendPayslips(slips: Payslip[]): Payslip[] {
+  const ids = new Set(slips.map(row => row.id));
+  live.payslips = [...slips, ...live.payslips.filter(row => !ids.has(row.id))];
+  persist();
+  return slips;
 }
 
 export function appendApprovalRequest(row: ApprovalRequest): ApprovalRequest {

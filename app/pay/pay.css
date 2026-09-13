@@ -49,7 +49,7 @@
   .copy-inner { width: 100%; max-width: 400px; }
   .brand, h1, .desc, .meta, .flow { max-width: none; }
   .pay-col { position: relative; z-index: 1; display: flex; align-items: flex-start; justify-content: center;
-    padding: 72px clamp(28px, 5vw, 80px); min-height: 100vh; }
+    padding: 140px clamp(28px, 5vw, 80px) 72px; min-height: 100vh; }
   .link-pay { position: relative; z-index: 1; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
   .brand { display: flex; align-items: center; gap: 14px; }
   .logo { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 12px; border: none; display: flex;

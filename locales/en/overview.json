@@ -1,0 +1,120 @@
+{
+  "greet": {
+    "morning": "Good morning, {{name}}",
+    "afternoon": "Good afternoon, {{name}}",
+    "evening": "Good evening, {{name}}",
+    "subOpen": "{{count}} things need a quick look. The rest is running itself.",
+    "subOpen_one": "1 thing needs a quick look. The rest is running itself.",
+    "subClear": "Everything is settled. Nothing needs you right now."
+  },
+  "actions": {
+    "paymentLink": "Payment link",
+    "newInvoice": "New invoice"
+  },
+  "kpi": {
+    "moneyIn": "Money In",
+    "moneyOut": "Money Out",
+    "outstanding": "Outstanding",
+    "autoMatched": "Auto-matched",
+    "invoice": "{{count}} invoice",
+    "invoices": "{{count}} invoices",
+    "invoices_one": "1 invoice",
+    "open": "{{count}} open",
+    "open_one": "1 open"
+  },
+  "chart": {
+    "net": "Net this period",
+    "pending": "{{amount}} pending settlement"
+  },
+  "tf": {
+    "day": "Day",
+    "week": "Week",
+    "month": "Month"
+  },
+  "period": {
+    "today": "Today",
+    "last7": "Last 7 days",
+    "last30": "Last 30 days",
+    "thisMonth": "This month"
+  },
+  "trend": {
+    "yesterday": "{{pct}} vs yesterday",
+    "lastWeek": "{{pct}} vs last week",
+    "lastMonth": "{{pct}} vs last month"
+  },
+  "quick": {
+    "title": "Quick Actions",
+    "sendLink": "Send Payment Link",
+    "scanBill": "Scan Bill",
+    "logExpense": "Log Expense",
+    "createInvoice": "Create Invoice"
+  },
+  "match": {
+    "title": "Matching Status",
+    "auto": "Matched automatically",
+    "of": "{{matched}} of {{total}}",
+    "review": "Review",
+    "lookZero": "Everything is matched",
+    "lookOne": "1 still needs a look",
+    "lookMany": "{{count}} still need a look",
+    "line": "{{matched}} matched automatically · {{open}} need a quick look",
+    "line_one": "{{matched}} matched automatically · 1 needs a quick look"
+  },
+  "recent": {
+    "title": "Recent Activity",
+    "viewAll": "View all →"
+  },
+  "att": {
+    "title": "Needs Your Attention",
+    "reject": "Reject",
+    "confirm": "Confirm",
+    "match": "{{conf}} match",
+    "caughtUp": "You're all caught up",
+    "caughtUpSub": "Nothing needs your review right now.",
+    "suggested": "Suggested match: {{detail}}"
+  },
+  "src": {
+    "link": "Link",
+    "skipcash": "SkipCash",
+    "bank": "Bank",
+    "cash": "Cash",
+    "shopify": "Shopify"
+  },
+  "tag": {
+    "Sales": "Sales",
+    "Fees": "Fees",
+    "Utilities": "Utilities",
+    "Supplies": "Supplies",
+    "Marketing": "Marketing",
+    "Salaries": "Salaries",
+    "Rent": "Rent"
+  },
+  "usage": {
+    "line": "{{used}} of {{limit}} transactions used"
+  },
+  "plan": {
+    "line": "{{tier}} · {{price}}/mo",
+    "limit": "{{limit}} transactions",
+    "tier": {
+      "Starter": "Starter"
+    }
+  },
+  "mob": {
+    "pending": "{{amount}} pending",
+    "needsLook": "Needs a look",
+    "ok": "OK",
+    "needMatching": "Need matching",
+    "outstandingInv": "Outstanding, {{count}} invoices",
+    "seeAll": "See all",
+    "recent": "Recent activity",
+    "txnsTitle": "Money in and out",
+    "txnsSub": "Latest movement. The full ledger stays on desktop.",
+    "invoices": "Invoices",
+    "openOutstanding": "{{count}} open · {{amount}} outstanding",
+    "new": "New",
+    "request": "Request",
+    "invoice": "Invoice",
+    "scan": "Scan",
+    "expense": "Expense"
+  }
+}

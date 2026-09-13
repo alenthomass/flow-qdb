@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { getStore } from "../../lib/data/store";
-import type { CheckoutField, CheckoutPage, PaymentLink } from "../../lib/data/types";
+import type { CheckoutField, CheckoutPage, PaymentLink, PlanInterval, SubscriptionPlan } from "../../lib/data/types";
 import { absoluteHttpUrl, formatMoney, parseMoneyInput } from "../../lib/format";
 import { defaultDial, GCC_DIALS } from "../../lib/pay/gcc";
 import {
   checkoutBySlug, emailError, getPayRevision, getServerPayRevision,
-  initializePayStore, linkUnavailable, sandboxOutcome, submitPayment, subscribePayStore
+  initializePayStore, linkUnavailable, planUnavailable, sandboxOutcome, submitPayment, subscribePayStore, subscribeToPlan
 } from "../../lib/pay/session";
 import { checkoutPageUnavailable } from "../../lib/data/spine";
 import type { PayResult } from "../../lib/pay/session";
@@ -409,10 +409,117 @@ function PaymentForm({ slug, fields, amountMinor, payLabel, unavailable, outcome
   </>;
 }
 
+function planIntervalLabel(interval: PlanInterval): string {
+  if (interval === "Week") return "week";
+  if (interval === "Quarter") return "quarter";
+  if (interval === "Year") return "year";
+  return "month";
+}
+
+function PlanSubscribe({ plan }: { plan: SubscriptionPlan }) {
+  const currency = getStore().merchant.currency;
+  const merchant = getStore().merchant.businessName;
+  const blocked = planUnavailable(plan);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dial, setDial] = useState(defaultDial(getStore().merchant.country));
+  const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string; form?: string }>({});
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState<{ name: string; email: string } | null>(null);
+  const price = formatMoney(plan.amountMinor, currency, { trimWhole: true }) + " / " + planIntervalLabel(plan.interval);
+
+  if (blocked) {
+    return <StatusCard title="No longer active" message={blocked} amountMinor={plan.amountMinor} merchant={merchant} detail={plan.name} />;
+  }
+  if (done) {
+    return <div className="card paid-card" role="status">
+      <div className="paid-hero">
+        <span className="paid-check" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M5 10.6 8.3 14 15.2 6.6" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <h2>Subscribed</h2>
+        <div className="rule" />
+        <div className="note ok">Signup recorded</div>
+        <div className="paid-amt">{price}</div>
+      </div>
+      <div className="paid-meta">
+        <div className="paid-row"><span className="paid-k">Plan</span><span className="paid-v">{plan.name}</span></div>
+        <div className="paid-row"><span className="paid-k">Subscriber</span><span className="paid-v">{done.name}</span></div>
+        <div className="paid-row"><span className="paid-k">Email</span><span className="paid-v">{done.email}</span></div>
+        <div className="paid-row"><span className="paid-k">Merchant</span><span className="paid-v">{merchant}</span></div>
+      </div>
+      <div className="paid-foot">Secured by Flow · SkipCash · SANDBOX</div>
+    </div>;
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    const next: typeof errors = {};
+    if (!name.trim()) next.name = "Enter a name";
+    const mailErr = emailError(email);
+    if (mailErr) next.email = mailErr;
+    if (!phone.trim()) next.phone = "Enter a phone number";
+    setErrors(next);
+    if (next.name || next.email || next.phone) return;
+    setBusy(true);
+    try {
+      subscribeToPlan(plan.slug, name, email);
+      setDone({ name: name.trim(), email: email.trim() });
+    } catch (error) {
+      setErrors({ form: error instanceof Error ? error.message : "Could not subscribe" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <form className="card pay-card" noValidate onSubmit={submit} aria-busy={busy}>
+    <CardHeading>Subscription</CardHeading>
+    <div className="fields">
+      <div className="field">
+        <label>Plan</label>
+        <div className="box locked"><span>{plan.name}</span></div>
+      </div>
+      <div className="field">
+        <label>Amount</label>
+        <div className="box locked"><span className="chip">{currency === "QAR" ? "QR" : currency}</span><span>{price.replace(/^(QR|AED) /, "")}</span></div>
+      </div>
+      <div className="field">
+        <label htmlFor="sub-name">Name<span className="req">*</span></label>
+        <div className="box"><input id="sub-name" type="text" autoComplete="name" required disabled={busy} value={name} aria-invalid={!!errors.name} onChange={event => { setName(event.target.value); setErrors(current => ({ ...current, name: "", form: "" })); }} /></div>
+        {errors.name && <div className="note err" role="alert">{errors.name}</div>}
+      </div>
+      <div className="field">
+        <label htmlFor="sub-email">Email<span className="req">*</span></label>
+        <div className="box"><input id="sub-email" type="email" placeholder="name@company.com" autoComplete="email" required disabled={busy} value={email} aria-invalid={!!errors.email} onChange={event => { setEmail(event.target.value); setErrors(current => ({ ...current, email: "", form: "" })); }} /></div>
+        {errors.email && <div className="note err" role="alert">{errors.email}</div>}
+      </div>
+      <div className="field">
+        <label htmlFor="sub-phone">Phone<span className="req">*</span></label>
+        <div className="box phone-box">
+          <select aria-label="Country code" disabled={busy} value={dial} onChange={event => setDial(event.target.value)}>
+            {GCC_DIALS.map(row => <option key={row.dial} value={row.dial}>{row.label}</option>)}
+          </select>
+          <input id="sub-phone" type="tel" placeholder="0000 0000" autoComplete="tel" required disabled={busy} value={phone} aria-invalid={!!errors.phone} onChange={event => { setPhone(event.target.value); setErrors(current => ({ ...current, phone: "", form: "" })); }} />
+        </div>
+        {errors.phone && <div className="note err" role="alert">{errors.phone}</div>}
+      </div>
+      {errors.form && <div className="note err" role="alert">{errors.form}</div>}
+    </div>
+    <div className="foot stacked">
+      <CardBrands />
+      <span className="secured">Secured by SkipCash · SANDBOX</span>
+      <button className="pay" type="submit" disabled={busy}>{busy ? "Processing…" : "Subscribe " + price}</button>
+    </div>
+  </form>;
+}
+
 export default function PayCheckout({ slug, outcome, receipt = false }: { slug: string; outcome?: string; receipt?: boolean }) {
   const revision = useSyncExternalStore(subscribePayStore, getPayRevision, getServerPayRevision);
   useEffect(() => { initializePayStore(); }, []);
-  const { page, link } = revision ? checkoutBySlug(slug) : { page: undefined, link: undefined };
+  const { page, link, plan } = revision ? checkoutBySlug(slug) : { page: undefined, link: undefined, plan: undefined };
   useEffect(() => {
     if (typeof document === "undefined") return;
     if (!revision) return;
@@ -435,11 +542,11 @@ export default function PayCheckout({ slug, outcome, receipt = false }: { slug: 
   const merchant = store.merchant.businessName;
   const email = store.teamMembers.find(member => member.role === "Owner")?.email || "";
   const branding: Branding = page ? { ...page, supportEmail: page.supportEmail || email } : { supportEmail: email, supportPhone: "", logoDataUrl: null };
-  const title = page?.productName || link?.description || "Page not found";
-  const description = page?.description || (!link && !page ? "This simulated checkout is not in this browser. Open the link from the same Flow session, or it was created in another profile." : "");
-  const amountMinor = page?.amountMinor ?? link?.amountMinor ?? 0;
+  const title = page?.productName || link?.description || plan?.name || "Page not found";
+  const description = page?.description || plan?.description || (!link && !page && !plan ? "This simulated checkout is not in this browser. Open the link from the same Flow session, or it was created in another profile." : "");
+  const amountMinor = page?.amountMinor ?? link?.amountMinor ?? plan?.amountMinor ?? 0;
   const fields = page?.fields.length ? page.fields : defaultFields;
-  const unavailable = page ? checkoutPageUnavailable(page) : link ? linkUnavailable(link.id) : "No payment is available on this link.";
+  const unavailable = page ? checkoutPageUnavailable(page) : link ? linkUnavailable(link.id) : plan ? planUnavailable(plan) : "No payment is available on this link.";
   const settledId = link?.txnId || (receipt ? page?.txnIds.at(-1) : undefined);
   const receiptTxn = settledId ? store.transactions.find(txn => txn.id === settledId && txn.status !== "pending") : undefined;
   const receiptProps = {
@@ -447,6 +554,17 @@ export default function PayCheckout({ slug, outcome, receipt = false }: { slug: 
     showCustomer: !!page?.receiptCustomer,
     showRef: page ? !!page.receiptRef : true
   };
+  if (plan && !page && !link) {
+    return <div className="grid">
+      <div className="copy-col">
+        <MerchantCopy branding={branding} merchant={merchant} title={title} description={description} />
+        <FlowFooter email={branding.supportEmail} />
+      </div>
+      <div className="pay-col">
+        <PlanSubscribe plan={plan} />
+      </div>
+    </div>;
+  }
   if (link && !page) {
     return <LinkPay slug={slug} link={link} outcome={outcome} receiptTxn={receiptTxn} merchant={merchant} />;
   }

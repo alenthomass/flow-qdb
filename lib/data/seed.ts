@@ -189,12 +189,15 @@ export const seed: Seed = {
   teamMembers: [
     { id: "tm_00", employeeId: "", name: ownerName, email: ownerName.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "") + "@albidda.qa", role: "Owner", lastSeenOffset: 0 },
     { id: "tm_01", employeeId: "emp_01", name: "Rashid Al-Mannai", email: emailFor("Rashid Al-Mannai"), role: "Staff", lastSeenOffset: -1 },
-    { id: "tm_02", employeeId: "emp_02", name: accountantName, email: emailFor(accountantName), role: "Staff", lastSeenOffset: -2 },
+    { id: "tm_02", employeeId: "emp_02", name: accountantName, email: emailFor(accountantName), role: "Accountant", lastSeenOffset: -2 },
     { id: "tm_03", employeeId: "emp_03", name: "Samir Haddad", email: emailFor("Samir Haddad"), role: "Staff", lastSeenOffset: -3 }
   ],
   activityLog,
   recurringInvoices: [],
   approvalRequests: [],
   rolePermissions: [],
-  approvalLimits: {}
+  approvalLimits: {},
+  payslips: [],
+  tags: ["Sales", "Supplies", "Rent", "Salaries", "Utilities", "Marketing", "Fees"],
+  tagParents: {}
 };

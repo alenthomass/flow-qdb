@@ -64,6 +64,17 @@ export interface PayrollRun {
   transactionId: string;
 }
 
+export interface Payslip {
+  id: string;
+  period: string;
+  employeeId: string;
+  employeeName: string;
+  grossMinor: number;
+  deductionMinor: number;
+  netMinor: number;
+  generatedOffset: number;
+}
+
 export interface Transaction {
   id: string;
   dayOffset: number;
@@ -113,6 +124,7 @@ export interface Client {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   address?: string;
   branchId: string;
 }
@@ -333,6 +345,7 @@ export interface Seed {
   branches: Branch[];
   employees: Employee[];
   payrollRuns: PayrollRun[];
+  payslips: Payslip[];
   transactions: Transaction[];
   invoices: Invoice[];
   clients: Client[];
@@ -353,6 +366,8 @@ export interface Seed {
   approvalRequests: ApprovalRequest[];
   rolePermissions: RolePermissionRow[];
   approvalLimits: Record<string, number | null>;
+  tags: string[];
+  tagParents: Record<string, string>;
 }
 
 export interface MoneyTotal {

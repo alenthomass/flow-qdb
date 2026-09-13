@@ -601,6 +601,7 @@ export function dashboardState() {
       name: account.bank + ", " + account.label,
       label: account.label,
       initials: account.bank.split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(),
+      logo: bankLogoSrc(account.bank),
       sample: !!account.sample,
       note: account.sample
         ? "Sample data. Live bank feeds arrive in a later phase."
@@ -620,7 +621,7 @@ export function dashboardState() {
         name: client.name,
         email: client.email,
         address: client.address || "",
-        phone: "",
+        phone: client.phone || "",
         invoiceCount: rows.length,
         total: major(rows.reduce((sum, invoice) => sum + invoice.amountMinor, 0))
       };
@@ -639,6 +640,21 @@ export function dashboardState() {
       salary: major(employee.monthlySalary),
       method: "Bank transfer"
     })),
+    payslips: db().payslips.map(row => {
+      const employee = db().employees.find(item => item.id === row.employeeId);
+      return {
+        id: row.id,
+        period: row.period,
+        employeeId: row.employeeId,
+        employeeName: row.employeeName,
+        role: employee?.role || "",
+        method: "Bank transfer",
+        gross: major(row.grossMinor),
+        deduction: major(row.deductionMinor),
+        net: major(row.netMinor),
+        generatedOffset: row.generatedOffset
+      };
+    }),
     history: db().activityLog.map(entry => ({
       id: entry.id,
       kind: entry.kind,
@@ -731,7 +747,9 @@ export function dashboardState() {
         when: formatDate(row.dayOffset)
       };
     }),
-    ledgerTags: [...new Set(db().transactions.map(txn => txn.tag))].sort()
+    ledgerTags: [...new Set(db().transactions.map(txn => txn.tag))].sort(),
+    tags: db().tags.slice(),
+    tagParents: { ...db().tagParents }
   };
 }
 
@@ -748,11 +766,11 @@ function sourceVolume(source: string) {
   const pending = rows
     .filter(txn => txn.status === "pending")
     .reduce((sum, txn) => sum + txn.amountMinor, 0);
-  const settledCount = rows.filter(txn => txn.status === "settled").length;
+  const volume = settledIn + pending;
   return {
     month: formatMoney(settledIn, currency as CurrencyCode),
     settling: formatMoney(pending, currency as CurrencyCode),
-    success: rows.length ? Math.round((settledCount / rows.length) * 100) + "%" : ""
+    success: volume ? Math.round((settledIn / volume) * 100) + "%" : ""
   };
 }
 
@@ -763,6 +781,14 @@ function sourceStats() {
   };
 }
 
+function bankLogoSrc(bank: string): string | null {
+  const key = String(bank || "").toLowerCase();
+  if (key.includes("ahli")) return "/banks/ahli.png";
+  if (key.includes("qatar national") || /\bqnb\b/.test(key)) return "/banks/qnb.png";
+  if (key.includes("dukhan")) return "/banks/dukhan.png";
+  return null;
+}
+
 export function bankView() {
   const account = db().bankAccounts[0];
   const cashOnHand = getCashOnHand();
@@ -771,6 +797,7 @@ export function bankView() {
   return {
     name,
     initials: (account?.bank ?? "").split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(),
+    logo: account ? bankLogoSrc(account.bank) : null,
     activity: formatMoney(cashOnHand, currency as CurrencyCode),
     activityCaption: "Cash on hand",
     note: account
@@ -780,6 +807,7 @@ export function bankView() {
       id: row.id,
       name: row.bank + ", " + row.label,
       initials: row.bank.split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(),
+      logo: bankLogoSrc(row.bank),
       sample: !!row.sample,
       note: row.sample
         ? "Sample data. Live bank feeds arrive in a later phase."

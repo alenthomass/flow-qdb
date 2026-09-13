@@ -9,6 +9,7 @@ import {
   appendInvoice,
   appendMatchProposal,
   appendPaymentLink,
+  appendPayslips,
   appendRecurringInvoice,
   appendSubscriber,
   appendSubscriptionPlan,
@@ -22,6 +23,8 @@ import {
   replacePaymentLink,
   replaceRecurringInvoice,
   replaceRolePermissions,
+  replaceTagParents,
+  replaceTags,
   replaceShopify,
   replaceSmartCheckout,
   replaceSubscriber,
@@ -49,6 +52,7 @@ import type {
   Merchant,
   PaymentLink,
   PaymentLinkNote,
+  Payslip,
   PlanInterval,
   RecurringInterval,
   RecurringInvoice,
@@ -755,25 +759,45 @@ export function peekNextInvoiceNumber(): string {
   return nextInvoiceIdentity().number;
 }
 
-export function addClient(input: { name: string; email?: string; branchId?: string; address?: string }): Client {
+export function addClient(input: { name: string; email?: string; phone?: string; branchId?: string; address?: string }): Client {
   const name = String(input.name || "").trim();
   if (!name) throw new Error("Client name is required");
   const address = String(input.address || "").trim();
+  const email = String(input.email || "").trim();
+  const phone = String(input.phone || "").trim();
   const existing = getStore().clients.find(client => client.name === name);
   if (existing) {
-    if (address && existing.address !== address) {
-      return replaceClient(existing.id, { address }) || existing;
-    }
+    const patch: Partial<Client> = {};
+    if (address && existing.address !== address) patch.address = address;
+    if (email && existing.email !== email) patch.email = email;
+    if (phone && existing.phone !== phone) patch.phone = phone;
+    if (Object.keys(patch).length) return replaceClient(existing.id, patch) || existing;
     return existing;
   }
   const row: Client = {
     id: "cli_" + Date.now().toString(36),
     name,
-    email: input.email || "",
+    email,
     branchId: input.branchId || getStore().branches[0]?.id || "br_01"
   };
+  if (phone) row.phone = phone;
   if (address) row.address = address;
   return appendClient(row);
+}
+
+export function updateClient(id: string, patch: { name?: string; email?: string; phone?: string; address?: string }): Client {
+  const current = getStore().clients.find(row => row.id === id);
+  if (!current) throw new Error("Client not found: " + id);
+  const next: Partial<Client> = {};
+  if (typeof patch.name === "string") {
+    const name = patch.name.trim();
+    if (!name) throw new Error("Client name is required");
+    next.name = name;
+  }
+  if (typeof patch.email === "string") next.email = patch.email.trim();
+  if (typeof patch.phone === "string") next.phone = patch.phone.trim();
+  if (typeof patch.address === "string") next.address = patch.address.trim();
+  return replaceClient(id, next) || current;
 }
 
 function resolveInvoiceClient(input: { clientId?: string | null; clientName?: string }): Client {
@@ -959,6 +983,53 @@ export function postPayroll(periodLabel?: string): { alreadyPosted: boolean; per
   return { alreadyPosted: false, period, txnId: txn.id };
 }
 
+function payrollDeductionRate(): number {
+  const run = getStore().payrollRuns[0];
+  return run && Number.isFinite(run.deductionRate) ? run.deductionRate : 0;
+}
+
+function payslipId(employeeId: string, period: string): string {
+  return "slip_" + employeeId + "_" + period.replace(/\s+/g, "_");
+}
+
+export function payslipsForPeriod(period: string): Payslip[] {
+  const wanted = String(period || "").trim();
+  return getStore().payslips.filter(row => row.period === wanted);
+}
+
+export function generatePayslips(periodLabel?: string, employeeIds?: string[]): Payslip[] {
+  const period = String(periodLabel || "").trim();
+  if (!period) throw new Error("Period is required");
+  const store = getStore();
+  const wanted = employeeIds && employeeIds.length ? new Set(employeeIds) : null;
+  const targets = store.employees.filter(employee => wanted ? wanted.has(employee.id) : true);
+  if (!targets.length) throw new Error("No employees on payroll");
+  const rate = payrollDeductionRate();
+  const slips = targets.map(employee => {
+    const grossMinor = Math.round(employee.monthlySalary);
+    const deductionMinor = Math.round(grossMinor * rate);
+    return {
+      id: payslipId(employee.id, period),
+      period,
+      employeeId: employee.id,
+      employeeName: employee.name,
+      grossMinor,
+      deductionMinor,
+      netMinor: grossMinor - deductionMinor,
+      generatedOffset: 0
+    };
+  });
+  appendPayslips(slips);
+  appendActivity({
+    id: "act_slip_" + Date.now().toString(36),
+    kind: "edits",
+    dayOffset: 0,
+    actor: store.merchant.ownerName,
+    what: "Payslips generated for " + period + ", " + slips.length + (slips.length === 1 ? " employee" : " employees")
+  });
+  return slips;
+}
+
 export function connectSampleBank(bankId: string) {
   const sample = SAMPLE_BANKS.find(row => row.id === bankId);
   if (!sample) throw new Error("Sample bank not found: " + bankId);
@@ -1108,25 +1179,141 @@ export function requestApproval(input: { memberId: string; amountMinor: number; 
   });
 }
 
-export function renameTag(from: string, to: string) {
-  const next = String(to || "").trim();
-  if (!next) throw new Error("Tag name is required");
-  if (from === next) return { from, to: next, count: 0 };
-  let count = 0;
-  getStore().transactions.forEach(txn => {
-    if (txn.tag === from) {
-      replaceTransaction(txn.id, { tag: next });
-      count += 1;
-    }
+function tagKey(name: string): string {
+  return String(name || "").trim().toLowerCase();
+}
+
+function catalogHas(name: string): boolean {
+  const key = tagKey(name);
+  return !!key && getStore().tags.some(row => tagKey(row) === key);
+}
+
+function catalogMatch(name: string): string | undefined {
+  const key = tagKey(name);
+  return getStore().tags.find(row => tagKey(row) === key);
+}
+
+function isTopLevelTag(name: string): boolean {
+  const parent = getStore().tagParents[name];
+  return !parent || !catalogHas(parent);
+}
+
+function tagHasChildren(name: string): boolean {
+  const parents = getStore().tagParents;
+  return Object.keys(parents).some(child => parents[child] === name && catalogHas(child));
+}
+
+function writeTagParents(next: Record<string, string>): Record<string, string> {
+  const tags = getStore().tags;
+  const set = new Set(tags);
+  const clean: Record<string, string> = {};
+  Object.keys(next).forEach(child => {
+    const parent = next[child];
+    if (!set.has(child) || !set.has(parent) || child === parent) return;
+    if (next[parent] && set.has(next[parent])) return;
+    clean[child] = parent;
   });
+  return replaceTagParents(clean);
+}
+
+export function createTag(name: string, parentTag?: string | null): string {
+  const trimmed = String(name || "").trim();
+  if (!trimmed) throw new Error("Tag name is required");
+  if (catalogHas(trimmed)) throw new Error("That tag already exists");
+  const parent = String(parentTag || "").trim();
+  if (parent) {
+    const parentName = catalogMatch(parent);
+    if (!parentName) throw new Error("Parent tag was not found");
+    if (!isTopLevelTag(parentName)) throw new Error("Parent must be a top-level tag");
+    if (tagKey(parentName) === tagKey(trimmed)) throw new Error("A tag cannot be its own parent");
+    replaceTags(getStore().tags.concat([trimmed]));
+    writeTagParents({ ...getStore().tagParents, [trimmed]: parentName });
+  } else {
+    replaceTags(getStore().tags.concat([trimmed]));
+  }
   appendActivity({
     id: "act_tag_" + Date.now().toString(36),
     kind: "edits",
     dayOffset: 0,
     actor: getStore().merchant.ownerName,
-    what: "Renamed tag " + from + " to " + next
+    what: parent ? "Created tag " + trimmed + " under " + catalogMatch(parent) : "Created tag " + trimmed
   });
-  return { from, to: next, count };
+  return trimmed;
+}
+
+export function setTagParent(tag: string, parentTag?: string | null): { tag: string; parent: string | null } {
+  const name = catalogMatch(tag);
+  if (!name) throw new Error("Tag was not found");
+  const parent = String(parentTag || "").trim();
+  const current = getStore().tagParents[name] || "";
+  if (!parent) {
+    if (!current) return { tag: name, parent: null };
+    const next = { ...getStore().tagParents };
+    delete next[name];
+    writeTagParents(next);
+    appendActivity({
+      id: "act_tag_" + Date.now().toString(36),
+      kind: "edits",
+      dayOffset: 0,
+      actor: getStore().merchant.ownerName,
+      what: "Cleared parent of tag " + name
+    });
+    return { tag: name, parent: null };
+  }
+  const parentName = catalogMatch(parent);
+  if (!parentName) throw new Error("Parent tag was not found");
+  if (tagKey(parentName) === tagKey(name)) throw new Error("A tag cannot be its own parent");
+  if (!isTopLevelTag(parentName)) throw new Error("Parent must be a top-level tag");
+  if (tagHasChildren(name)) throw new Error("A tag with sub-tags cannot be nested");
+  if (current === parentName) return { tag: name, parent: parentName };
+  writeTagParents({ ...getStore().tagParents, [name]: parentName });
+  appendActivity({
+    id: "act_tag_" + Date.now().toString(36),
+    kind: "edits",
+    dayOffset: 0,
+    actor: getStore().merchant.ownerName,
+    what: "Moved tag " + name + " under " + parentName
+  });
+  return { tag: name, parent: parentName };
+}
+
+export function renameTag(from: string, to: string, parentTag?: string | null) {
+  const next = String(to || "").trim();
+  if (!next) throw new Error("Tag name is required");
+  const existing = catalogMatch(next);
+  if (existing && tagKey(existing) !== tagKey(from)) throw new Error("That tag already exists");
+  let count = 0;
+  if (from !== next) {
+    getStore().transactions.forEach(txn => {
+      if (txn.tag === from) {
+        replaceTransaction(txn.id, { tag: next });
+        count += 1;
+      }
+    });
+    replaceTags(getStore().tags.map(row => row === from ? next : row));
+    const parents = { ...getStore().tagParents };
+    const remapped: Record<string, string> = {};
+    Object.keys(parents).forEach(child => {
+      const childName = child === from ? next : child;
+      const parentName = parents[child] === from ? next : parents[child];
+      remapped[childName] = parentName;
+    });
+    writeTagParents(remapped);
+    appendActivity({
+      id: "act_tag_" + Date.now().toString(36),
+      kind: "edits",
+      dayOffset: 0,
+      actor: getStore().merchant.ownerName,
+      what: "Renamed tag " + from + " to " + next
+    });
+  } else if (parentTag === undefined) {
+    return { from, to: next, count: 0 };
+  }
+  let parent: string | null | undefined;
+  if (parentTag !== undefined) {
+    parent = setTagParent(next, parentTag).parent;
+  }
+  return { from, to: next, count, parent };
 }
 
 export function removeTag(tag: string) {
@@ -1134,6 +1321,21 @@ export function removeTag(tag: string) {
   if (count > 0) {
     throw new Error("Can't remove " + tag + ": " + count + (count === 1 ? " item still uses it" : " items still use it"));
   }
+  if (!catalogHas(tag)) return { tag, count: 0 };
+  const parents = { ...getStore().tagParents };
+  delete parents[tag];
+  Object.keys(parents).forEach(child => {
+    if (parents[child] === tag) delete parents[child];
+  });
+  replaceTags(getStore().tags.filter(row => row !== tag));
+  writeTagParents(parents);
+  appendActivity({
+    id: "act_tag_" + Date.now().toString(36),
+    kind: "edits",
+    dayOffset: 0,
+    actor: getStore().merchant.ownerName,
+    what: "Removed tag " + tag
+  });
   return { tag, count: 0 };
 }
 

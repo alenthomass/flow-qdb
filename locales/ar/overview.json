@@ -1,0 +1,129 @@
+{
+  "greet": {
+    "morning": "صباح الخير، {{name}}",
+    "afternoon": "مساء الخير، {{name}}",
+    "evening": "مساء الخير، {{name}}",
+    "subOpen": "{{count}} أمور تحتاج نظرة سريعة. الباقي يسير من تلقاء نفسه.",
+    "subOpen_one": "أمر واحد يحتاج نظرة سريعة. الباقي يسير من تلقاء نفسه.",
+    "subOpen_two": "أمران يحتاجان نظرة سريعة. الباقي يسير من تلقاء نفسه.",
+    "subOpen_few": "{{count}} أمور تحتاج نظرة سريعة. الباقي يسير من تلقاء نفسه.",
+    "subOpen_other": "{{count}} أمراً تحتاج نظرة سريعة. الباقي يسير من تلقاء نفسه.",
+    "subClear": "كل شيء محسوم. لا شيء يحتاجك الآن."
+  },
+  "actions": {
+    "paymentLink": "رابط دفع",
+    "newInvoice": "فاتورة جديدة"
+  },
+  "kpi": {
+    "moneyIn": "الأموال الداخلة",
+    "moneyOut": "الأموال الخارجة",
+    "outstanding": "المستحقات",
+    "autoMatched": "مطابقة تلقائية",
+    "invoice": "{{count}} فاتورة",
+    "invoices": "{{count}} فاتورة",
+    "invoices_one": "فاتورة واحدة",
+    "invoices_two": "فاتورتان",
+    "invoices_few": "{{count}} فواتير",
+    "invoices_other": "{{count}} فاتورة",
+    "open": "{{count}} مفتوحة",
+    "open_one": "واحدة مفتوحة",
+    "open_two": "اثنتان مفتوحتان",
+    "open_few": "{{count}} مفتوحة",
+    "open_other": "{{count}} مفتوحة"
+  },
+  "chart": {
+    "net": "صافي هذه الفترة",
+    "pending": "{{amount}} بانتظار التسوية"
+  },
+  "tf": {
+    "day": "يوم",
+    "week": "أسبوع",
+    "month": "شهر"
+  },
+  "period": {
+    "today": "اليوم",
+    "last7": "آخر ٧ أيام",
+    "last30": "آخر ٣٠ يوماً",
+    "thisMonth": "هذا الشهر"
+  },
+  "trend": {
+    "yesterday": "{{pct}} مقابل أمس",
+    "lastWeek": "{{pct}} مقابل الأسبوع الماضي",
+    "lastMonth": "{{pct}} مقابل الشهر الماضي"
+  },
+  "quick": {
+    "title": "إجراءات سريعة",
+    "sendLink": "إرسال رابط دفع",
+    "scanBill": "مسح فاتورة",
+    "logExpense": "تسجيل مصروف",
+    "createInvoice": "إنشاء فاتورة"
+  },
+  "match": {
+    "title": "حالة المطابقة",
+    "auto": "مطابقة تلقائية",
+    "of": "{{matched}} من {{total}}",
+    "review": "مراجعة",
+    "lookZero": "كل شيء مطابق",
+    "lookOne": "واحد ما زال يحتاج نظرة",
+    "lookMany": "{{count}} ما زالت تحتاج نظرة",
+    "line": "{{matched}} مطابقة تلقائياً · {{open}} تحتاج نظرة سريعة",
+    "line_one": "{{matched}} مطابقة تلقائياً · واحدة تحتاج نظرة سريعة"
+  },
+  "recent": {
+    "title": "النشاط الأخير",
+    "viewAll": "عرض الكل ←"
+  },
+  "att": {
+    "title": "يحتاج انتباهك",
+    "reject": "رفض",
+    "confirm": "تأكيد",
+    "match": "مطابقة {{conf}}",
+    "caughtUp": "أنت مواكب لكل شيء",
+    "caughtUpSub": "لا شيء يحتاج مراجعتك الآن.",
+    "suggested": "مطابقة مقترحة: {{detail}}"
+  },
+  "src": {
+    "link": "رابط",
+    "skipcash": "SkipCash",
+    "bank": "بنك",
+    "cash": "نقد",
+    "shopify": "Shopify"
+  },
+  "tag": {
+    "Sales": "مبيعات",
+    "Fees": "رسوم",
+    "Utilities": "مرافق",
+    "Supplies": "مستلزمات",
+    "Marketing": "تسويق",
+    "Salaries": "رواتب",
+    "Rent": "إيجار"
+  },
+  "usage": {
+    "line": "{{used}} من {{limit}} معاملة مستخدمة"
+  },
+  "plan": {
+    "line": "{{tier}} · {{price}}/شهر",
+    "limit": "{{limit}} معاملة",
+    "tier": {
+      "Starter": "الأساسية"
+    }
+  },
+  "mob": {
+    "pending": "{{amount}} معلّق",
+    "needsLook": "يحتاج نظرة",
+    "ok": "حسناً",
+    "needMatching": "تحتاج مطابقة",
+    "outstandingInv": "مستحقات، {{count}} فواتير",
+    "seeAll": "عرض الكل",
+    "recent": "النشاط الأخير",
+    "txnsTitle": "الأموال الداخلة والخارجة",
+    "txnsSub": "آخر الحركة. الدفتر الكامل يبقى على سطح المكتب.",
+    "invoices": "الفواتير",
+    "openOutstanding": "{{count}} مفتوحة · {{amount}} مستحقة",
+    "new": "جديد",
+    "request": "طلب",
+    "invoice": "فاتورة",
+    "scan": "مسح",
+    "expense": "مصروف"
+  }
+}

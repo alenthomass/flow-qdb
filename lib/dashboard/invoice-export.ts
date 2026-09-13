@@ -73,6 +73,8 @@ function flattenComputedColors(source: HTMLElement, clone: HTMLElement) {
   clone.style.marginTop = "0";
   clone.style.minHeight = "0";
   clone.style.height = "auto";
+  clone.style.aspectRatio = "auto";
+  clone.style.overflow = "visible";
 }
 
 function prepareExportClone(source: HTMLElement): HTMLElement {
@@ -85,6 +87,8 @@ function prepareExportClone(source: HTMLElement): HTMLElement {
   clone.style.borderRadius = "0";
   clone.style.minHeight = "0";
   clone.style.height = "auto";
+  clone.style.aspectRatio = "auto";
+  clone.style.overflow = "visible";
   return clone;
 }
 
@@ -114,7 +118,7 @@ async function withExportClone<T>(source: HTMLElement, run: (node: HTMLElement) 
 
 export async function downloadInvoicePdf(number?: string, client?: string, node?: HTMLElement | null): Promise<string> {
   const source = node || invoiceDoc();
-  if (!source) throw new Error("Invoice preview is not ready");
+  if (!source) throw new Error("Document preview is not ready");
   const filename = invoicePdfFilename(number, client);
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
     import("html2canvas"),

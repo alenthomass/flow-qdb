@@ -1,8 +1,9 @@
 import { getStore } from "../data/store";
 import { hydrateStore } from "../data/hydrate";
-import { checkoutPageBySlug, checkoutPageUnavailable, ensureInvoicePaymentLink, paymentLinkById, payPublishedCheckout, settleCheckoutPayment, settlePayment, simulatePayment } from "../data/spine";
+import { addSubscriber, checkoutPageBySlug, checkoutPageUnavailable, ensureInvoicePaymentLink, paymentLinkById, payPublishedCheckout, settleCheckoutPayment, settlePayment, simulatePayment } from "../data/spine";
 import { offsetFromLabel } from "../format";
 import type { PaymentOutcome } from "../gateway/index";
+import type { SubscriptionPlan } from "../data/types";
 
 // The legacy store mutates in place. Publish a stable revision after each
 // operation rather than passing a mutable Seed object to useSyncExternalStore.
@@ -32,13 +33,38 @@ export function emailError(value: string): string {
 
 export function checkoutBySlug(slug: string) {
   const page = checkoutPageBySlug(slug);
-  if (page) return { page, link: undefined };
+  if (page) return { page, link: undefined, plan: undefined };
   let link = paymentLinkById(slug);
   if (!link) {
     const invoice = getStore().invoices.find(row => row.number === slug);
     if (invoice) link = ensureInvoicePaymentLink(invoice);
   }
-  return { page: undefined, link };
+  if (!link) {
+    const plan = getStore().subscriptionPlans.find(row => row.slug === slug);
+    if (plan) return { page: undefined, link: undefined, plan };
+  }
+  return { page: undefined, link, plan: undefined };
+}
+
+export function planUnavailable(plan: SubscriptionPlan): string | null {
+  if (plan.status === "canceled") {
+    return "This simulated subscription is no longer accepting signups.";
+  }
+  return null;
+}
+
+export function subscribeToPlan(slug: string, name: string, email: string) {
+  const plan = getStore().subscriptionPlans.find(row => row.slug === slug);
+  if (!plan) throw new Error("This simulated checkout is not in this browser.");
+  const blocked = planUnavailable(plan);
+  if (blocked) throw new Error(blocked);
+  const trimmed = String(name || "").trim();
+  if (!trimmed) throw new Error("Enter a name");
+  const mailErr = emailError(email);
+  if (mailErr) throw new Error(mailErr);
+  const subscriber = addSubscriber(plan.id, trimmed, String(email || "").trim());
+  publish();
+  return { subscriber, plan };
 }
 
 export function linkUnavailable(slug: string): string | null {
@@ -74,7 +100,8 @@ export function submitPayment(slug: string, email: string, outcome: PaymentOutco
 
 async function runPayment(slug: string, outcome: PaymentOutcome, paidMinor?: number): Promise<PayResult> {
   try {
-    const { page, link } = checkoutBySlug(slug);
+    const { page, link, plan } = checkoutBySlug(slug);
+    if (plan) return { status: "error", message: "Use Subscribe to start this plan." };
     if (!page && !link) return { status: "error", message: "Checkout is not available." };
     if (link) {
       const message = linkUnavailable(link.id);
