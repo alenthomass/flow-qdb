@@ -39,7 +39,7 @@ All identity checks passed.
 - PASS week chart includes every completed transaction on its day: 7 cumulative points checked, including refunds
 - PASS week pending excluded from Money In: pending QR 6,300.00 sits outside Money In QR 21,240.00
 - PASS week refunds line sits under revenue: revenue QR 21,240.00, refunds QR 0, net QR 19,990.00
-- PASS Month chart thins labels only: 30 data points; ticks 15 Aug, 20 Aug, 25 Aug, 30 Aug, 4 Sept, 9 Sept
+- PASS Month chart thins labels only: 30 data points; ticks 19 Aug, 24 Aug, 29 Aug, 3 Sept, 8 Sept, 13 Sept
 - PASS month Money In vs completed inflow rows: QR 56,010.00 vs ledger QR 56,010.00
 - PASS month Money Out vs completed outflow rows: QR 33,365.00 vs ledger QR 33,365.00
 - PASS month Net equals Money In minus Money Out: QR 22,645.00 = QR 56,010.00 - QR 33,365.00
@@ -83,8 +83,8 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Completed refunded outflow reduces live cash: QR 106,465.00
 - PASS Matched automatically list equals getMatchRate().matched: 11 listed · 11 matched
 - PASS Reminders list is sent, viewed, overdue or awaiting settlement: 3 remindable · INV-0142, INV-0147, INV-0148
-- PASS INV-0147 timeline dates follow invoice offsets: created 24 Aug 2026 · sent 24 Aug 2026 · viewed 28 Aug 2026
-- PASS Invoice detail timeline binds derived dates: 24 Aug 2026 / 24 Aug 2026 / 28 Aug 2026
+- PASS INV-0147 timeline dates follow invoice offsets: created 28 Aug 2026 · sent 28 Aug 2026 · viewed 1 Sept 2026
+- PASS Invoice detail timeline binds derived dates: 28 Aug 2026 / 28 Aug 2026 / 1 Sept 2026
 - PASS Send reminder toasts the client, not the clipboard: Reminder sent to Lusail Hospitality
 - PASS peekNextInvoiceNumber matches the number assigned on save: INV-0151 vs INV-0151
 - PASS Invoice notes and termsAndConditions persist separately: notes Thanks for your business. · terms Payment due within 14 days of issue.
@@ -95,10 +95,10 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS getInvoiceStatus returns overdue for a new unpaid past-due invoice: INV-0152 overdue
 - PASS Blank due date is blocked with an inline error: Due date is required · invoices 9
 - PASS Duplicate copies client and amount as a draft due in 14 days: INV-0151 draft due +14
-- PASS Seed payroll is already posted for the payslip period: August 2026
-- PASS Post to Transactions is labelled already posted for the seed period: Already posted for August 2026
-- PASS Posting the seed period does not append another salaries row: August 2026
-- PASS Generate payslips writes one slip per seed employee for the period: 3 slips · August 2026
+- PASS Seed payroll is already posted for the payslip period: September 2026
+- PASS Post to Transactions is labelled already posted for the seed period: Already posted for September 2026
+- PASS Posting the seed period does not append another salaries row: September 2026
+- PASS Generate payslips writes one slip per seed employee for the period: 3 slips · September 2026
 - PASS Generated payslip totals match payroll run gross / deduction / net: QR 20,700.00 / QR 1,035.00 / QR 19,665.00
 - PASS Generating the same period replaces slips instead of duplicating: 3 stored
 - PASS Payslips page lists generated slips for the selected period: 3
@@ -107,12 +107,12 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Seeded payment links match the four paid counterparties: Noor Interiors, Mohammed Rashid, Fatima Al-Kuwari, Msheireb Boutiques
 - PASS Collected via links is QR 6,540 across 4 payments: QR 6,540.00 · times paid 4
 - PASS Page settings slug is derived, not a leftover default: empty slug · Fleet Deposit → fleet-deposit
-- PASS Sample bill is distinct from seed Kahramaa: Barzan Water 13 Sept 2026 offset 0
+- PASS Sample bill is distinct from seed Kahramaa: Barzan Water 17 Sept 2026 offset 0
 - PASS Two sample bills ship in the repo: barzan-water.pdf, al-maha-stationery.svg
 - PASS Extraction returns vendor, date, total, tax, lines and tag: Barzan Water / Al Maha Stationery
 - PASS Scan accepts an image or PDF: file input accept image/*,application/pdf
 - PASS Extraction delay is 1.5-2.5s: 1800ms
-- PASS Scan shows extraction in progress: 2072ms
+- PASS Scan shows extraction in progress: 1616ms
 - PASS Extracted fields are correctable with confidence: Barzan Water tax QR 0 · vendor 96%
 - PASS Scan save recomputes Money Out: Money Out QR 34,545 (was QR 33,365.00)
 - PASS Scan save drops Reports net profit: net profit QR 21,465 (was QR 22,645.00)
@@ -120,12 +120,12 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Tally after Barzan scan is 22 settled rows: 22 items (23 would include pending txn_13)
 - PASS Second sample bill saves through selectors: Money Out QR 33,705.00 · Al Maha Stationery
 - PASS Payment link copies to clipboard: submitModal writes the pay URL
-- PASS Payment link URL stays on Flow, not SkipCash test: /pay/pl_25b12c35e3
+- PASS Payment link URL stays on Flow, not SkipCash test: /pay/pl_0f7d4fe113
 - PASS Copied payment links open Flow checkout: React /pay handles payment links
 - PASS Spine create leaves Money In unchanged: Money In QR 56,010.00
 - PASS Home Net equals Reports after creating a link: QR 22,645.00
 - PASS Who owes me equals Outstanding after creating a link: QR 20,900.00 across 3
-- PASS Spine success appends a pending ledger row: txn_link_pl_25b12c3 pending
+- PASS Spine success appends a pending ledger row: txn_link_pl_0f7d4fe pending
 - PASS Pending payment is excluded from Money In: Money In QR 56,010.00; pending QR 11,700.00
 - PASS Linked invoice awaits settlement while pending: awaiting settlement
 - PASS Needs Your Attention includes the new proposal: 4 open
@@ -143,26 +143,29 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Home Net equals Reports after confirm: QR 28,045.00
 - PASS Simulate decline marks the link rejected without a ledger row: rejected
 - PASS Simulate timeout marks the link failed without a ledger row: failed
-- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_pl_3ad9565
+- PASS Simulate partial posts half the amount and a match proposal: QR 100.00 · txn_link_pl_c5d8882
 - PASS Reference ID matches an outstanding invoice for reconciliation: inv_0144
-- PASS simulatePayment still works after gateway reset: txn_link_pl_d86d2a1
+- PASS simulatePayment still works after gateway reset: txn_link_pl_820ac42
 - PASS Tally export uses ENVELOPE / HEADER / BODY: envelope present
 - PASS Tally export is one voucher per settled transaction in the last 30 days: 21 vouchers; pending txn_13 omitted
 - PASS Tally vouchers tag the cost centre: COSTCENTREALLOCATIONS.LIST NAME = transaction tag
 - PASS Tally amounts are major units: txn_01 1540.00
-- PASS Tally filename uses from and to stamps: flow-tally-export-20260815-20260913.xml
-- PASS Tally range is editable: 5 vouchers from 7 Sept 2026 to 13 Sept 2026
+- PASS Tally filename uses from and to stamps: flow-tally-export-20260819-20260917.xml
+- PASS Tally range is editable: 5 vouchers from 11 Sept 2026 to 17 Sept 2026
 - PASS Tally export is recorded in history: 1 tally row(s)
 - PASS Zoho sync is labelled simulated and recorded: Zoho Books (simulated) · 21 items
 - PASS From and To inputs are bound: periodFrom / periodTo onChange
 - PASS Export XML downloads a file: runTallyExport writes XML
+- PASS Zoho sync log empty state matches Tally export history: No sync history is stored.
 - PASS Tally export history appears in the UI: 2 history row(s)
-- PASS Zoho sync success is visible: Last push simulated · 21 items · 13 Sept 2026
+- PASS Zoho sync success is visible: Last push simulated · 21 items · 17 Sept 2026
+- PASS Zoho sync log lists rows after Sync now: 1 log row(s)
+- PASS Zoho sync log detail still opens from a row: Zoho Books (simulated)
 - PASS Hosted checkout publishes a shareable /pay/ slug: React route + UI URL
 - PASS Public payment page matches the builder without edit chrome: customer checkout chrome
 - PASS Public pay page validates email and shows a receipt: email + success card
 - PASS Published checkout stores product name, QAR price and slug: eid-hamper QR 250.00
-- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_572d3a23d2
+- PASS Hosted checkout pay appends a pending SkipCash row: txn_chk_6483d635a6
 - PASS Hosted checkout pending is excluded from Money In: QR 56,010.00
 - PASS Hosted checkout settle lifts Money In by the page price: Money In QR 56,260.00
 - PASS Home Net equals Reports after hosted checkout: QR 22,895.00
@@ -179,9 +182,9 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Publish with no amount names the missing field: Amount is required
 - PASS Publish with no title names the missing field: Page title is required
 - PASS Payment link deactivate updates status: Deactivated
-- PASS Payment links expose expiry, uses and copy URL: 20 Sept 2026 · uses 0
+- PASS Payment links expose expiry, uses and copy URL: 24 Sept 2026 · uses 0
 - PASS Subscription plan creates a customer and upcoming charge: 1 upcoming · QR 400.00
-- PASS Simulated billing appends a pending ledger row: txn_sub_06f8fe231a
+- PASS Simulated billing appends a pending ledger row: txn_sub_ca4d6154ec
 - PASS Simulated billing settle lifts Money In: QR 56,410.00
 - PASS Cancel stops further upcoming charges: 0 upcoming
 - PASS Smart Checkout lives on Get Paid overview: overview toggle card
@@ -192,13 +195,60 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS matched + open after Shopify sample: 12 + 3 = 15
 - PASS Seed Shopify rows were not rewritten: 8 seed shopify rows
 - PASS Sample bank connect is labelled and does not change cash: QR 107,645.00
-- PASS Bank onboarding is wired in the UI: onboarding steps
+- PASS Connected banking is a static preview, not a wizard: preview card + demo
+- PASS Upload statement is the primary bank action: upload first + csv modal
+- PASS Live bank connect is labelled Coming soon: dest coming soon + preview-only copy
+- PASS Connected banking preview is not a store account: QR 128,400.00
+- PASS Statement upload bank picker uses Qatar majors: QNB, Doha Bank, CBQ, QIB, QIIB, Dukhan Bank, Ahli Bank, Masraf Al Rayan
+- PASS Qatar bank picker logos map every catalog name: /banks/qnb.png, /banks/doha.jpg, /banks/cbq.png, /banks/qib.png, /banks/qiib.png, /banks/dukhan.png, /banks/ahli.png, /banks/alrayan.png
+- PASS Statement bank picker selected row is high-contrast: 1.5px ink-6 border + check
+- PASS Bank pages have Accounts and Statements nested tabs: bankView accounts|statements
+- PASS Statement CSV accepts debit and credit columns: 2 rows · skipped 1
+- PASS Statement date parser accepts Gulf and English bank dates: ISO -12 · Sep -12 · Sept -12
+- PASS Statement import names unreadable dates in the toast: stmtBadDate toast + parseStatementDate
+- PASS Seed statement history is empty: no imports
+- PASS Bank statement import writes settled bank rows: 3 imported · skipped 1 · badDate 1
+- PASS Statement import updates lastImportOffset and importHistory: lastImport 0 · history 1
+- PASS Statements tab groups seed-empty then imported history by month: September 2026 · 1 row
+- PASS Statement amount match uses open invoices: Statement amount matches invoice INV-0147
+- PASS Statement import keeps matched + open = total: 11 + 5 = 16
+- PASS Statement import lifts Money In and Out from the ledger: In QR 65,335.50 · Out QR 33,445.00
+- PASS Statement import writes one activity summary: Bank statement imported, 3 transactions, 1 matched automatically
+- PASS New statement bank account is appended like sample banks: bank_mu5udgdl
+- PASS Statements tab flattens imports across accounts in one month: bank_mu5udgdl · bank_01
+- PASS Statements tab sorts months and rows newest-first: September 2026 → August 2026
+- PASS Statement import accepts DD/MM/YYYY and 5 Sep 2026: 2 imported · skipped 2 · offsets -12/-12
+- PASS Statement period falls back to imported row offsets: period -12..-12
+- PASS Statement import stores the submitted period when provided: from -20 · to -1
+- PASS Seed current account is sample and has no reminder: null
+- PASS Sample bank accounts never get a statement reminder status: bank_qnb, bank_dukhan, bank_01
+- PASS removeBankAccount removes extra sample accounts from the old wizard: bank_qnb · bank_dukhan
+- PASS An account importing today is current, not overdue: Up to date · last upload 17 Sept 2026
+- PASS Statement reminder is overdue after 30 days: 1 overdue
+- PASS removeBankAccount refuses to remove a non-sample account: bank_mu5udgsi
+- PASS removeBankAccount removes a sample account: bank_01
+- PASS Upload statement defaults to New account on a fresh demo: __new__
+- PASS Upload statement defaults to the most recently imported live account: bank_mu5udhfm
+- PASS Upload statement confirmation follows the selected account: Updating Qatar National Bank · New 1
+- PASS Per-account Upload statement locks the modal to that account: bank_mu5udhfk
+- PASS Per-account Upload statement can target a different live account: bank_mu5udhfm
+- PASS Generic upload still defaults to the most recently imported live account: bank_mu5udhfm
+- PASS Connected banking demo is UI-only and does not write the store: step 4 · accounts 3
+- PASS Connected banking demo Got it closes without persisting: null
+- PASS Connected banking demo restarts at step 0 after close: step 0
+- PASS Flow AI insights are derived from spend and runway: 2 month · 1 day
+- PASS Reports Overview Flow AI panel is local and period-specific: month 4 · week 3 · day 1
+- PASS Match cards label reasoning as Flow AI: 3 open · 94%
+- PASS Forecast summary narrates projected cash-forecast buckets: in QR 3,774.17
+- PASS Reminder drafts change tone for overdue vs upcoming: Overdue vs Viewed
+- PASS Remind opens an editable preview then the existing toast: Reminder sent to Gulf Petro Services
+- PASS Flow AI chat answers from live Flow data, not an external model: spend month vs day · thinking delay · chips
 - PASS Phase 1 invariants hold on the seed: Home Net / Outstanding / match / payroll / cash / invoice status
 - PASS applyStore copies team and employees from the ledger: 4 members · 3 employees
 - PASS Recurring invoice next three offsets: 0, 30, 60
 - PASS Sending a recurring invoice appends an invoice: INV-0151 · sentCount 1
-- PASS Recurring Start schedule writes the store: rec_mtzhvop8 · 0, 30, 60
-- PASS Recurring UI shows the next three sends: 13 Sept 2026 / 13 Oct 2026 / 12 Nov 2026
+- PASS Recurring Start schedule writes the store: rec_mu5udi4o · 0, 30, 60
+- PASS Recurring UI shows the next three sends: 17 Sept 2026 / 17 Oct 2026 / 16 Nov 2026
 - PASS Tag rename updates ledger rows: 26 rows
 - PASS Tag list counts come from the ledger: 26 items
 - PASS Removing a used tag fails loudly: Can't remove Sales renamed: 26 items still use it
@@ -224,7 +274,7 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS A child cannot be used as a parent: Parent must be a top-level tag
 - PASS Permission write persists: view
 - PASS Approval limit write persists: QR 5,000.00
-- PASS Approval request waits on the owner: apv_mtzhvp8r
+- PASS Approval request waits on the owner: apv_mu5udijp
 - PASS Approval resolve writes the store: approved
 - PASS Recurring / tags / approvals are bound in the view: start + rename + limits
 - PASS Reset demo data asks for confirm: modal open, Money In still QR 61,410.00
@@ -234,17 +284,20 @@ Computed figures (month window, minor units stored, displayed as QR):
 - PASS Reset disconnects Shopify: disconnected
 - PASS Reset keeps the Tally date range: 3 Sept 2026 → 9 Sept 2026
 - PASS HTML has Reset demo data and confirm modal: button + confirm modal
+- PASS Search overlay clicks stay inside the panel: stopPropagation on search pop
 - PASS SANDBOX tooltip string present: SANDBOX hover tooltip
 - PASS No Peppol or VAT in public HTML: React dashboard and pay route
 - PASS Simulated labels on Payment Setup and Connected Apps: Payment Setup / Connected Apps
 - PASS getVatRate still 0 after Stage 6: 0
+- PASS Older saved ledgers omit later seed rows: QR 46,510.00
+- PASS Hydrate restores missing seed rows and vs-prior %: In QR 56,010.00 +40% · Out QR 33,365.00 -2%
 
 ## Not stored in the seed
 
 - Merchant profile in the seed: CR-114820, phone +974 4012 8800, accounts@albidda.qa, Ahli Bank, account 001234567890, SWIFT AHLBQAQA. Opening balance is stored on bank_01 (QR 85,000 as of ANCHOR_DATE minus 30 days).
 - Four paid payment links are in the seed (collected QR 6,540, times paid 4). Subscription plans, checkout product price and saved report packs are not, so those lists start empty. Checkout drop-off uses labelled sample analytics in lib/data/sample-checkout.ts.
 - Shopify starts disconnected. Seed shopify transactions stay as historical rows; only new incoming after connect are tagged by the plugin.
-- Extra bank connections are labelled sample and store opening QR 0 so cash on hand does not change.
+- Extra sample bank rows from connectSampleBank are labelled sample and store opening QR 0 so cash on hand does not change. Connected-banking UI is a static preview plus a UI-only walkthrough that does not write bankAccounts. Statement import history starts empty and is listed on the Banks Statements tab. Upload Statement defaults to the most recently imported live account, or New account when none exist. Live account cards open the same modal locked to that account.
 - Recurring invoice schedules, sync payloads and approval caps are not in the seed.
 - Other Flow billing tiers besides the current Starter plan are not in the seed.
 - Reports profit and loss, the four stat cards and the branch table use their own 30-day period. They do not follow the Home 24h / 7 days / 30 days toggle.

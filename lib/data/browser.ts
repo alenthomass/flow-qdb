@@ -1,9 +1,9 @@
 import { hydrateStore as hydrateFromStorage } from "./hydrate";
 import { dashboardState } from "./view";
 
-export { appendTransaction, persistStore, resetStore } from "./store";
+export { appendTransaction, persistStore, removeBankAccount, resetStore } from "./store";
 export { hydrateStore as hydrateFromStorage } from "./hydrate";
-export { bankView, dashboardSnapshot, dashboardState } from "./view";
+export { bankView, dashboardSnapshot, dashboardState, bankLogoSrc } from "./view";
 export {
   EXTRACT_DELAY_MS,
   SAMPLE_BILL,
@@ -12,7 +12,7 @@ export {
   extractDelayMs,
   extractedBillForm
 } from "./sample-bill";
-export { SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS, SAMPLE_SHOPIFY_ORDER } from "./sample-checkout";
+export { CONNECTED_BANKING_PREVIEW, QATAR_BANKS, SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS, SAMPLE_SHOPIFY_ORDER } from "./sample-checkout";
 export { offsetFromLabel, dateInputValue, previousMonthLabel, formatDate } from "../format";
 export {
   SETTLEMENT_DELAY_MS,
@@ -24,6 +24,7 @@ export {
   checkoutPageBySlug,
   confirmMatch,
   connectSampleBank,
+  importBankStatement,
   createTag,
   connectShopify,
   createInvoice,

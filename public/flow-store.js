@@ -21,7 +21,9 @@ var FlowStore = (() => {
   // lib/data/browser.ts
   var browser_exports = {};
   __export(browser_exports, {
+    CONNECTED_BANKING_PREVIEW: () => CONNECTED_BANKING_PREVIEW,
     EXTRACT_DELAY_MS: () => EXTRACT_DELAY_MS,
+    QATAR_BANKS: () => QATAR_BANKS,
     SAMPLE_BANKS: () => SAMPLE_BANKS,
     SAMPLE_BILL: () => SAMPLE_BILL,
     SAMPLE_BILLS: () => SAMPLE_BILLS,
@@ -31,6 +33,7 @@ var FlowStore = (() => {
     addClient: () => addClient,
     addSubscriber: () => addSubscriber,
     appendTransaction: () => appendTransaction,
+    bankLogoSrc: () => bankLogoSrc,
     bankView: () => bankView,
     cancelRecurringInvoice: () => cancelRecurringInvoice,
     cancelSubscriber: () => cancelSubscriber,
@@ -58,6 +61,7 @@ var FlowStore = (() => {
     formatDate: () => formatDate,
     generatePayslips: () => generatePayslips,
     hydrateFromStorage: () => hydrateStore,
+    importBankStatement: () => importBankStatement,
     ingestShopifyOrder: () => ingestShopifyOrder,
     offsetFromLabel: () => offsetFromLabel,
     pauseRecurringInvoice: () => pauseRecurringInvoice,
@@ -72,6 +76,7 @@ var FlowStore = (() => {
     previousMonthLabel: () => previousMonthLabel,
     publishCheckoutPage: () => publishCheckoutPage,
     recurringNextOffsets: () => recurringNextOffsets,
+    removeBankAccount: () => removeBankAccount,
     removeTag: () => removeTag,
     renameTag: () => renameTag,
     resetGateway: () => resetGateway,
@@ -261,7 +266,7 @@ var FlowStore = (() => {
       { id: "mp_03", transactionId: "txn_10", invoiceId: null, confidence: 0.52, reason: "Payment link with no matching invoice. Log as a direct sale?", status: "open" }
     ],
     bankAccounts: [
-      { id: "bank_01", bank: "Ahli Bank", label: "Ahli Bank current account", currency: "QAR", openingBalanceMinor: 85e5, asOfOffset: -30 }
+      { id: "bank_01", bank: "Ahli Bank", label: "Ahli Bank current account", currency: "QAR", openingBalanceMinor: 85e5, asOfOffset: -30, sample: true }
     ],
     gatewayAccounts: [
       { id: "gw_01", provider: "SkipCash", label: "SkipCash", status: "live" },
@@ -323,10 +328,12 @@ var FlowStore = (() => {
     return {
       ...base,
       ...row,
-      invoices: row.invoices && row.invoices.length ? row.invoices : base.invoices,
-      clients: row.clients && row.clients.length ? row.clients : base.clients,
+      transactions: mergeMissingById(row.transactions, base.transactions),
+      invoices: mergeMissingById(row.invoices, base.invoices),
+      clients: mergeMissingById(row.clients, base.clients),
       merchant: { ...base.merchant, ...row.merchant || {} },
-      paymentLinks: row.paymentLinks && row.paymentLinks.length ? row.paymentLinks : base.paymentLinks,
+      paymentLinks: mergeMissingById(row.paymentLinks, base.paymentLinks),
+      matchProposals: mergeMissingById(row.matchProposals, base.matchProposals),
       checkoutPages: row.checkoutPages || [],
       subscriptionPlans: row.subscriptionPlans || [],
       subscribers: row.subscribers || [],
@@ -368,6 +375,12 @@ var FlowStore = (() => {
       next[child] = parent;
     });
     return next;
+  }
+  function mergeMissingById(saved, base) {
+    if (!saved || !saved.length) return base.slice();
+    const have = new Set(saved.map((row) => row.id));
+    const missing = base.filter((row) => !have.has(row.id));
+    return missing.length ? saved.concat(missing) : saved;
   }
   var live = cloneSeed();
   var afterPersist = null;
@@ -573,6 +586,23 @@ var FlowStore = (() => {
     live.bankAccounts = [...live.bankAccounts, account];
     persist();
     return account;
+  }
+  function updateBankAccount(id, patch) {
+    let next;
+    live.bankAccounts = live.bankAccounts.map((row) => {
+      if (row.id !== id) return row;
+      next = Object.assign({}, row, patch, { id: row.id });
+      return next;
+    });
+    persist();
+    return next;
+  }
+  function removeBankAccount(id) {
+    const row = live.bankAccounts.find((account) => account.id === id);
+    if (!row || row.sample !== true) return void 0;
+    live.bankAccounts = live.bankAccounts.filter((account) => account.id !== id);
+    persist();
+    return row;
   }
   function appendRecurringInvoice(row) {
     live.recurringInvoices = [row, ...live.recurringInvoices];
@@ -857,6 +887,22 @@ var FlowStore = (() => {
     { id: "bank_qnb", bank: "Qatar National Bank", label: "QNB current account (sample)" },
     { id: "bank_dukhan", bank: "Dukhan Bank", label: "Dukhan current account (sample)" }
   ];
+  var CONNECTED_BANKING_PREVIEW = {
+    bank: "Qatar National Bank",
+    label: "Current account",
+    ibanMasked: "QA\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 4821",
+    balanceMinor: 1284e4
+  };
+  var QATAR_BANKS = [
+    { id: "qnb", bank: "Qatar National Bank", short: "QNB" },
+    { id: "doha", bank: "Doha Bank" },
+    { id: "cbq", bank: "Commercial Bank of Qatar", short: "CBQ" },
+    { id: "qib", bank: "Qatar Islamic Bank", short: "QIB" },
+    { id: "qiib", bank: "Qatar International Islamic Bank", short: "QIIB" },
+    { id: "dukhan", bank: "Dukhan Bank" },
+    { id: "ahli", bank: "Ahli Bank" },
+    { id: "rayan", bank: "Masraf Al Rayan" }
+  ];
 
   // lib/data/selectors.ts
   function db() {
@@ -1120,7 +1166,10 @@ var FlowStore = (() => {
       const label = period === "week" ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dateFor(start).getUTCDay()] ?? "" : dateFor(start).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
       buckets.push({ label, start, end, inflow, outflow, projected: false });
     }
-    buckets.push({ label: "Next", start: 1, end: 1, inflow: 0, outflow: 0, projected: true });
+    const histN = buckets.length;
+    const avgIn = histN ? Math.round(buckets.reduce((sum, b) => sum + b.inflow, 0) / histN) : 0;
+    const avgOut = histN ? Math.round(buckets.reduce((sum, b) => sum + b.outflow, 0) / histN) : 0;
+    buckets.push({ label: "Next", start: 1, end: 1, inflow: avgIn, outflow: avgOut, projected: true });
     return buckets;
   }
   function assertInvoiceStatuses() {
@@ -1230,6 +1279,18 @@ var FlowStore = (() => {
       outBg: bucket.projected ? "transparent" : "var(--ink-6)",
       border: bucket.projected ? "1.5px dashed var(--ink-6)" : "none"
     }));
+  }
+  function forecastSummaryView(period) {
+    const buckets = getCashForecast(period);
+    const projected = buckets.filter((b) => b.projected);
+    if (!projected.length) return { hasProjection: false, netMinor: 0, netText: "", positive: true };
+    const netMinor = projected.reduce((sum, b) => sum + (b.inflow - b.outflow), 0);
+    return {
+      hasProjection: true,
+      netMinor,
+      netText: formatMoney(Math.abs(netMinor), currency, { trimWhole: true }),
+      positive: netMinor >= 0
+    };
   }
   function daysLateOf(invoice) {
     const status = getInvoiceStatus(invoice.id);
@@ -1357,7 +1418,8 @@ var FlowStore = (() => {
       range: periodRangeLabel(period),
       runway: runwayView(period),
       spend: spendView(period),
-      forecast: forecastView(period)
+      forecast: forecastView(period),
+      forecastSummary: forecastSummaryView(period)
     };
   }
   function dashboardState() {
@@ -1674,16 +1736,23 @@ var FlowStore = (() => {
         analytics: SAMPLE_CHECKOUT_ANALYTICS
       },
       sampleBanks: SAMPLE_BANKS,
-      banks: db2().bankAccounts.map((account) => ({
-        id: account.id,
-        bank: account.bank,
-        name: account.bank + ", " + account.label,
-        label: account.label,
-        initials: account.bank.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
-        logo: bankLogoSrc(account.bank),
-        sample: !!account.sample,
-        note: account.sample ? "Sample data. Live bank feeds arrive in a later phase." : formatMoney(account.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset)
+      bankPreview: {
+        name: CONNECTED_BANKING_PREVIEW.bank + ", " + CONNECTED_BANKING_PREVIEW.label,
+        initials: bankInitials(CONNECTED_BANKING_PREVIEW.bank),
+        logo: bankLogoSrc(CONNECTED_BANKING_PREVIEW.bank),
+        iban: CONNECTED_BANKING_PREVIEW.ibanMasked,
+        balance: formatMoney(CONNECTED_BANKING_PREVIEW.balanceMinor, currency)
+      },
+      qatarBanks: QATAR_BANKS.map((row) => Object.assign({}, row, {
+        initials: bankInitials(row.bank),
+        logo: bankLogoSrc(row.bank)
       })),
+      banks: db2().bankAccounts.map((account) => Object.assign(bankCardFields(account), {
+        bank: account.bank,
+        label: account.label
+      })),
+      overdueBankCount: db2().bankAccounts.filter((account) => bankReminderView(account).status === "overdue").length,
+      statementMonths: bankStatementMonthsView(),
       linkClients: db2().clients.map((client) => ({ id: client.id, name: client.name })),
       linkInvoices: getOutstandingInvoices().map((invoice) => ({
         id: invoice.id,
@@ -1848,33 +1917,109 @@ var FlowStore = (() => {
       shopify: sourceVolume("shopify")
     };
   }
+  function bankInitials(bank) {
+    return String(bank || "").split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  }
+  function bankReminderView(account) {
+    if (account.sample) return { status: null, label: "" };
+    if (account.lastImportOffset == null) {
+      return { status: "never", label: "No statement uploaded yet" };
+    }
+    const daysSince = 0 - account.lastImportOffset;
+    if (daysSince < 25) {
+      return { status: "current", label: "Up to date \xB7 last upload " + formatDate(account.lastImportOffset) };
+    }
+    if (daysSince < 30) {
+      return { status: "due-soon", label: "Statement due soon \xB7 last upload " + formatDate(account.lastImportOffset) };
+    }
+    return { status: "overdue", label: daysSince + " days since last upload" };
+  }
+  function bankCardFields(account) {
+    const reminder = bankReminderView(account);
+    const history = account.importHistory || [];
+    const last = history[0];
+    return {
+      id: account.id,
+      name: account.bank + ", " + account.label,
+      initials: bankInitials(account.bank),
+      logo: bankLogoSrc(account.bank),
+      sample: !!account.sample,
+      lastImportOffset: account.lastImportOffset == null ? null : account.lastImportOffset,
+      note: account.sample ? "Sample data. Live bank feeds arrive in a later phase." : formatMoney(account.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset),
+      reminder,
+      lastUpload: account.lastImportOffset == null ? "" : formatDate(account.lastImportOffset),
+      daysSince: account.lastImportOffset == null ? 0 : 0 - account.lastImportOffset,
+      historyOn: history.length > 0,
+      importCount: history.length,
+      lastImportDate: last ? formatDate(last.importedOffset) : "",
+      lastImportedRows: last ? last.rowsImported : 0,
+      historyLine: last ? history.length + " statements imported \xB7 last: " + formatDate(last.importedOffset) + " (" + last.rowsImported + " transactions)" : ""
+    };
+  }
+  function bankStatementMonthsView() {
+    const rows = db2().bankAccounts.flatMap((account) => (account.importHistory || []).map((record) => ({
+      id: record.id,
+      accountId: account.id,
+      name: account.bank + ", " + account.label,
+      initials: bankInitials(account.bank),
+      logo: bankLogoSrc(account.bank),
+      importedOffset: record.importedOffset,
+      importedDate: formatDate(record.importedOffset),
+      rowsImported: record.rowsImported,
+      rowsSkipped: record.rowsSkipped,
+      periodOn: record.periodFromOffset != null && record.periodToOffset != null,
+      periodFrom: record.periodFromOffset != null ? formatDate(record.periodFromOffset) : "",
+      periodTo: record.periodToOffset != null ? formatDate(record.periodToOffset) : "",
+      monthKey: monthYearLabel(record.importedOffset)
+    })));
+    rows.sort((a, b) => b.importedOffset - a.importedOffset || String(b.id).localeCompare(String(a.id)));
+    const months = [];
+    const byMonth = /* @__PURE__ */ new Map();
+    rows.forEach((row) => {
+      let group = byMonth.get(row.monthKey);
+      if (!group) {
+        group = [];
+        byMonth.set(row.monthKey, group);
+        months.push({ id: row.monthKey, label: row.monthKey, rows: group });
+      }
+      group.push(row);
+    });
+    return { empty: rows.length === 0, months };
+  }
   function bankLogoSrc(bank) {
     const key = String(bank || "").toLowerCase();
     if (key.includes("ahli")) return "/banks/ahli.png";
     if (key.includes("qatar national") || /\bqnb\b/.test(key)) return "/banks/qnb.png";
     if (key.includes("dukhan")) return "/banks/dukhan.png";
+    if (key.includes("doha")) return "/banks/doha.jpg";
+    if (key.includes("commercial bank") || /\bcbq\b/.test(key)) return "/banks/cbq.png";
+    if (key.includes("international islamic") || /\bqiib\b/.test(key)) return "/banks/qiib.png";
+    if (key.includes("qatar islamic") || /\bqib\b/.test(key)) return "/banks/qib.png";
+    if (key.includes("rayan") || key.includes("masraf")) return "/banks/alrayan.png";
     return null;
   }
   function bankView() {
-    const account = db2().bankAccounts[0];
+    const accounts = db2().bankAccounts;
+    const account = accounts[0];
     const cashOnHand = getCashOnHand();
-    const name = account ? account.bank + ", " + account.label : "";
-    const opening = account ? account.openingBalanceMinor : 0;
+    const card = account ? bankCardFields(account) : null;
     return {
-      name,
-      initials: (account?.bank ?? "").split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
-      logo: account ? bankLogoSrc(account.bank) : null,
+      name: card ? card.name : "",
+      initials: card ? card.initials : bankInitials(""),
+      logo: card ? card.logo : null,
       activity: formatMoney(cashOnHand, currency),
       activityCaption: "Cash on hand",
-      note: account ? formatMoney(opening, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset) : "No bank account is stored.",
-      extra: db2().bankAccounts.slice(1).map((row) => ({
-        id: row.id,
-        name: row.bank + ", " + row.label,
-        initials: row.bank.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
-        logo: bankLogoSrc(row.bank),
-        sample: !!row.sample,
-        note: row.sample ? "Sample data. Live bank feeds arrive in a later phase." : formatMoney(row.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(row.asOfOffset)
-      }))
+      note: card ? card.note : "No bank account is stored.",
+      reminder: card ? card.reminder : { status: null, label: "" },
+      lastUpload: card ? card.lastUpload : "",
+      daysSince: card ? card.daysSince : 0,
+      historyOn: card ? card.historyOn : false,
+      importCount: card ? card.importCount : 0,
+      lastImportDate: card ? card.lastImportDate : "",
+      lastImportedRows: card ? card.lastImportedRows : 0,
+      historyLine: card ? card.historyLine : "",
+      sample: card ? card.sample : false,
+      extra: accounts.slice(1).map(bankCardFields)
     };
   }
   function scanSample() {
@@ -1928,7 +2073,11 @@ var FlowStore = (() => {
       shopify: data.shopify,
       smartCheckout: data.smartCheckout,
       sampleBanks: data.sampleBanks,
-      banks: data.banks
+      bankPreview: data.bankPreview,
+      qatarBanks: data.qatarBanks,
+      banks: data.banks,
+      overdueBankCount: data.overdueBankCount,
+      statementMonths: data.statementMonths
     };
   }
   function emailFromName(name) {
@@ -2151,6 +2300,141 @@ var FlowStore = (() => {
   function resetGateway() {
     instance = null;
     clearMockSkipCashStorage();
+  }
+
+  // lib/data/statement.ts
+  var STATEMENT_MONTHS = {
+    jan: 1,
+    feb: 2,
+    mar: 3,
+    apr: 4,
+    may: 5,
+    jun: 6,
+    jul: 7,
+    aug: 8,
+    sep: 9,
+    sept: 9,
+    oct: 10,
+    nov: 11,
+    dec: 12
+  };
+  function offsetFromUtcParts(year, month, day) {
+    if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+      return null;
+    }
+    return Math.round((date.getTime() - dateFor(0).getTime()) / 864e5);
+  }
+  function monthFromToken(raw) {
+    const key = String(raw || "").toLowerCase();
+    if (key.length !== 3 && key !== "sept") return null;
+    const month = STATEMENT_MONTHS[key];
+    return month || null;
+  }
+  function parseStatementDate(raw) {
+    const trimmed = String(raw || "").trim();
+    if (!trimmed) return null;
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+    if (iso) return offsetFromUtcParts(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+    const numbered = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(trimmed);
+    if (numbered) return offsetFromUtcParts(Number(numbered[3]), Number(numbered[2]), Number(numbered[1]));
+    const dayMonthYear = /^(\d{1,2})\s+([A-Za-z]{3,4})\s+(\d{4})$/.exec(trimmed);
+    if (dayMonthYear) {
+      const month = monthFromToken(dayMonthYear[2]);
+      if (month) return offsetFromUtcParts(Number(dayMonthYear[3]), month, Number(dayMonthYear[1]));
+    }
+    const monthDayYear = /^([A-Za-z]{3,4})\s+(\d{1,2}),\s*(\d{4})$/.exec(trimmed);
+    if (monthDayYear) {
+      const month = monthFromToken(monthDayYear[1]);
+      if (month) return offsetFromUtcParts(Number(monthDayYear[3]), month, Number(monthDayYear[2]));
+    }
+    return offsetFromLabel(trimmed);
+  }
+  function splitCsvLine(line) {
+    const out = [];
+    let cur = "";
+    let quoted = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (quoted) {
+        if (ch === '"') {
+          if (line[i + 1] === '"') {
+            cur += '"';
+            i += 1;
+          } else {
+            quoted = false;
+          }
+        } else {
+          cur += ch;
+        }
+      } else if (ch === '"') {
+        quoted = true;
+      } else if (ch === ",") {
+        out.push(cur.trim());
+        cur = "";
+      } else {
+        cur += ch;
+      }
+    }
+    out.push(cur.trim());
+    return out;
+  }
+  function headerKey(raw) {
+    return String(raw || "").replace(/^\uFEFF/, "").trim().toLowerCase().replace(/[\s_]+/g, "");
+  }
+  function signedMinor(raw) {
+    const text = String(raw || "").trim();
+    if (!text) return null;
+    const wrapped = /^\(.*\)$/.test(text);
+    const digits = text.replace(/[^0-9.]/g, "");
+    if (!digits || !/[0-9]/.test(digits)) return null;
+    const n = Math.round(Math.abs(parseFloat(digits)) * 100);
+    if (!Number.isFinite(n) || n === 0) return null;
+    const leadingMinus = /^-/.test(text.replace(/\s/g, ""));
+    return wrapped || leadingMinus ? -n : n;
+  }
+  function unsignedMinor(raw) {
+    const n = signedMinor(raw);
+    if (n == null) return null;
+    return Math.abs(n);
+  }
+  function parseBankStatementCsv(text) {
+    const lines = String(text || "").replace(/^\uFEFF/, "").split(/\r\n|\n|\r/);
+    const nonempty = lines.map((line) => line.trim()).filter((line) => line.length > 0);
+    if (!nonempty.length) return { rows: [], skipped: 0 };
+    const header = splitCsvLine(nonempty[0]).map(headerKey);
+    const dateIdx = header.indexOf("date");
+    const descIdx = header.indexOf("description") >= 0 ? header.indexOf("description") : header.indexOf("desc");
+    const amountIdx = header.indexOf("amount") >= 0 ? header.indexOf("amount") : header.indexOf("amt");
+    const debitIdx = header.indexOf("debit");
+    const creditIdx = header.indexOf("credit");
+    const hasHeader = dateIdx >= 0 && descIdx >= 0 && (amountIdx >= 0 || debitIdx >= 0 || creditIdx >= 0);
+    const body = hasHeader ? nonempty.slice(1) : nonempty;
+    const col = hasHeader ? { date: dateIdx, desc: descIdx, amount: amountIdx, debit: debitIdx, credit: creditIdx } : { date: 0, desc: 1, amount: 2, debit: -1, credit: -1 };
+    const rows = [];
+    let skipped = 0;
+    for (const line of body) {
+      const cells = splitCsvLine(line);
+      const dateRaw = String(cells[col.date] || "").trim();
+      const description = String(cells[col.desc] || "").trim();
+      let signed = null;
+      if (col.amount >= 0) {
+        signed = signedMinor(cells[col.amount] || "");
+      } else {
+        const debit = col.debit >= 0 ? unsignedMinor(cells[col.debit] || "") : null;
+        const credit = col.credit >= 0 ? unsignedMinor(cells[col.credit] || "") : null;
+        if (debit != null && credit != null) signed = null;
+        else if (credit != null) signed = credit;
+        else if (debit != null) signed = -debit;
+      }
+      if (!dateRaw || !description || signed == null) {
+        skipped += 1;
+        continue;
+      }
+      rows.push({ dateRaw, description, signedMinor: signed });
+    }
+    return { rows, skipped };
   }
 
   // lib/data/spine.ts
@@ -2962,6 +3246,103 @@ var FlowStore = (() => {
       asOfOffset: 0,
       sample: true
     });
+  }
+  function importBankStatement(input) {
+    const parsed = parseBankStatementCsv(input.csvText);
+    const skippedReasons = { missingFields: parsed.skipped, badDate: 0 };
+    let skipped = parsed.skipped;
+    let accountId = String(input.accountId || "").trim();
+    const existing = accountId ? getStore().bankAccounts.find((row) => row.id === accountId) : void 0;
+    if (!existing) {
+      const bank = String(input.bankName || "").trim();
+      const label = String(input.label || "").trim() || bank;
+      if (!bank) throw new Error("Bank name is required");
+      const created = appendBankAccount({
+        id: "bank_" + Date.now().toString(36),
+        bank,
+        label,
+        currency: getStore().merchant.currency,
+        openingBalanceMinor: 0,
+        asOfOffset: 0
+      });
+      accountId = created.id;
+    } else {
+      accountId = existing.id;
+    }
+    const stamp = Date.now().toString(36);
+    let imported = 0;
+    let matched = 0;
+    const importedOffsets = [];
+    parsed.rows.forEach((row, index) => {
+      const dayOffset = parseStatementDate(row.dateRaw);
+      if (dayOffset == null) {
+        skippedReasons.badDate += 1;
+        skipped += 1;
+        return;
+      }
+      importedOffsets.push(dayOffset);
+      const inflow = row.signedMinor > 0;
+      const amountMinor = Math.round(Math.abs(row.signedMinor));
+      const refund = !inflow && /refund/i.test(row.description);
+      const txnId = "txn_stmt_" + stamp + "_" + index;
+      const invoice = inflow ? getOutstandingInvoices().find((item) => item.amountMinor === amountMinor) || null : null;
+      appendTransaction({
+        id: txnId,
+        dayOffset,
+        counterparty: row.description,
+        source: "bank",
+        direction: inflow ? "in" : "out",
+        type: inflow ? "sale" : refund ? "refund" : "expense",
+        tag: inflow || refund ? "Sales" : "Fees",
+        status: "settled",
+        amountMinor,
+        branchId: "br_01",
+        invoiceId: invoice ? invoice.id : null
+      });
+      imported += 1;
+      if (!getMatchUniverse().some((item) => item.id === txnId)) return;
+      if (invoice) matched += 1;
+      appendMatchProposal({
+        id: "mp_" + txnId,
+        transactionId: txnId,
+        invoiceId: invoice ? invoice.id : null,
+        confidence: invoice ? 0.9 : 0.4,
+        reason: invoice ? "Statement amount matches invoice " + invoice.number : "No matching invoice found for this amount, log as a direct transaction?",
+        status: "open"
+      });
+    });
+    appendActivity({
+      id: "act_stmt_" + stamp,
+      kind: "payments",
+      dayOffset: 0,
+      actor: "System",
+      what: "Bank statement imported, " + imported + " transactions, " + matched + " matched automatically"
+    });
+    const parsedFrom = input.periodFromRaw ? parseStatementDate(input.periodFromRaw) : null;
+    const parsedTo = input.periodToRaw ? parseStatementDate(input.periodToRaw) : null;
+    let periodFromOffset = parsedFrom;
+    let periodToOffset = parsedTo;
+    if (importedOffsets.length) {
+      const minOff = Math.min.apply(null, importedOffsets);
+      const maxOff = Math.max.apply(null, importedOffsets);
+      if (periodFromOffset == null) periodFromOffset = minOff;
+      if (periodToOffset == null) periodToOffset = maxOff;
+    }
+    const current = getStore().bankAccounts.find((row) => row.id === accountId);
+    updateBankAccount(accountId, {
+      lastImportOffset: 0,
+      periodFromOffset,
+      periodToOffset,
+      importHistory: [{
+        id: "stmt_" + stamp,
+        importedOffset: 0,
+        periodFromOffset,
+        periodToOffset,
+        rowsImported: imported,
+        rowsSkipped: skipped
+      }].concat(current && current.importHistory ? current.importHistory : [])
+    });
+    return { imported, skipped, matched, accountId, skippedReasons };
   }
   var INTERVAL_DAYS = { Week: 7, Month: 30, Quarter: 90 };
   function createRecurringInvoice(input) {

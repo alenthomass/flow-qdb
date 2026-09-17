@@ -1,6 +1,6 @@
-import { appendTransaction, persistStore, resetStore } from "../data/store";
+import { appendTransaction, persistStore, removeBankAccount, resetStore } from "../data/store";
 import { hydrateStore } from "../data/hydrate";
-import { bankView, dashboardSnapshot, dashboardState } from "../data/view";
+import { bankLogoSrc, bankView, dashboardSnapshot, dashboardState } from "../data/view";
 import {
   EXTRACT_DELAY_MS,
   SAMPLE_BILL,
@@ -9,7 +9,7 @@ import {
   extractDelayMs,
   extractedBillForm
 } from "../data/sample-bill";
-import { SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS, SAMPLE_SHOPIFY_ORDER } from "../data/sample-checkout";
+import { CONNECTED_BANKING_PREVIEW, QATAR_BANKS, SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS, SAMPLE_SHOPIFY_ORDER } from "../data/sample-checkout";
 import { dateInputValue, formatDate, offsetFromLabel, previousMonthLabel } from "../format";
 import {
   SETTLEMENT_DELAY_MS,
@@ -22,6 +22,7 @@ import {
   checkoutPageUnavailable,
   confirmMatch,
   connectSampleBank,
+  importBankStatement,
   connectShopify,
   createInvoice,
   createPaymentLink,
@@ -68,11 +69,13 @@ export const FlowStore = {
   SETTLEMENT_DELAY_MS,
   appendTransaction,
   persistStore,
+  removeBankAccount,
   resetStore,
   hydrateFromStorage: hydrateStore,
   dashboardState,
   dashboardSnapshot,
   bankView,
+  bankLogoSrc,
   EXTRACT_DELAY_MS,
   SAMPLE_BILL,
   SAMPLE_BILLS,
@@ -80,6 +83,8 @@ export const FlowStore = {
   extractDelayMs,
   extractedBillForm,
   SAMPLE_BANKS,
+  CONNECTED_BANKING_PREVIEW,
+  QATAR_BANKS,
   SAMPLE_CHECKOUT_ANALYTICS,
   SAMPLE_SHOPIFY_ORDER,
   dateInputValue,
@@ -95,6 +100,7 @@ export const FlowStore = {
   checkoutPageUnavailable,
   confirmMatch,
   connectSampleBank,
+  importBankStatement,
   connectShopify,
   createInvoice,
   createPaymentLink,

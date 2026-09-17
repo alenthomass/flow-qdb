@@ -1,10 +1,10 @@
-import { dateInputValue, formatDate, formatMoney, offsetFromLabel } from "../format";
+import { dateInputValue, formatDate, formatMoney, monthYearLabel, offsetFromLabel } from "../format";
 import { chartScale } from "../chart";
 import { dateFor, seed } from "./seed";
 import { getStore } from "./store";
 import { SAMPLE_BILL, SAMPLE_BILLS } from "./sample-bill";
-import { SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS } from "./sample-checkout";
-import type { Period } from "./types";
+import { CONNECTED_BANKING_PREVIEW, QATAR_BANKS, SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS } from "./sample-checkout";
+import type { BankAccount, Period } from "./types";
 import {
   getBranchComparison,
   getCashForecast,
@@ -122,6 +122,19 @@ function forecastView(period: Period) {
     outBg: bucket.projected ? "transparent" : "var(--ink-6)",
     border: bucket.projected ? "1.5px dashed var(--ink-6)" : "none"
   }));
+}
+
+function forecastSummaryView(period: Period) {
+  const buckets = getCashForecast(period);
+  const projected = buckets.filter(b => b.projected);
+  if (!projected.length) return { hasProjection: false, netMinor: 0, netText: "", positive: true };
+  const netMinor = projected.reduce((sum, b) => sum + (b.inflow - b.outflow), 0);
+  return {
+    hasProjection: true,
+    netMinor,
+    netText: formatMoney(Math.abs(netMinor), currency, { trimWhole: true }),
+    positive: netMinor >= 0
+  };
 }
 
 function daysLateOf(invoice: { id: string; dueOffset: number }): number {
@@ -253,7 +266,8 @@ function periodBlock(period: Period) {
     range: periodRangeLabel(period),
     runway: runwayView(period),
     spend: spendView(period),
-    forecast: forecastView(period)
+    forecast: forecastView(period),
+    forecastSummary: forecastSummaryView(period)
   };
 }
 
@@ -595,18 +609,23 @@ export function dashboardState() {
       analytics: SAMPLE_CHECKOUT_ANALYTICS
     },
     sampleBanks: SAMPLE_BANKS,
-    banks: db().bankAccounts.map(account => ({
-      id: account.id,
-      bank: account.bank,
-      name: account.bank + ", " + account.label,
-      label: account.label,
-      initials: account.bank.split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(),
-      logo: bankLogoSrc(account.bank),
-      sample: !!account.sample,
-      note: account.sample
-        ? "Sample data. Live bank feeds arrive in a later phase."
-        : formatMoney(account.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset)
+    bankPreview: {
+      name: CONNECTED_BANKING_PREVIEW.bank + ", " + CONNECTED_BANKING_PREVIEW.label,
+      initials: bankInitials(CONNECTED_BANKING_PREVIEW.bank),
+      logo: bankLogoSrc(CONNECTED_BANKING_PREVIEW.bank),
+      iban: CONNECTED_BANKING_PREVIEW.ibanMasked,
+      balance: formatMoney(CONNECTED_BANKING_PREVIEW.balanceMinor, currency as CurrencyCode)
+    },
+    qatarBanks: QATAR_BANKS.map(row => Object.assign({}, row, {
+      initials: bankInitials(row.bank),
+      logo: bankLogoSrc(row.bank)
     })),
+    banks: db().bankAccounts.map(account => Object.assign(bankCardFields(account), {
+      bank: account.bank,
+      label: account.label
+    })),
+    overdueBankCount: db().bankAccounts.filter(account => bankReminderView(account).status === "overdue").length,
+    statementMonths: bankStatementMonthsView(),
     linkClients: db().clients.map(client => ({ id: client.id, name: client.name })),
     linkInvoices: getOutstandingInvoices().map(invoice => ({
       id: invoice.id,
@@ -781,38 +800,118 @@ function sourceStats() {
   };
 }
 
-function bankLogoSrc(bank: string): string | null {
+function bankInitials(bank: string): string {
+  return String(bank || "").split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase();
+}
+
+export function bankReminderView(account: BankAccount): { status: "never" | "current" | "due-soon" | "overdue" | null; label: string } {
+  if (account.sample) return { status: null, label: "" };
+  if (account.lastImportOffset == null) {
+    return { status: "never", label: "No statement uploaded yet" };
+  }
+  const daysSince = 0 - account.lastImportOffset;
+  if (daysSince < 25) {
+    return { status: "current", label: "Up to date · last upload " + formatDate(account.lastImportOffset) };
+  }
+  if (daysSince < 30) {
+    return { status: "due-soon", label: "Statement due soon · last upload " + formatDate(account.lastImportOffset) };
+  }
+  return { status: "overdue", label: daysSince + " days since last upload" };
+}
+
+function bankCardFields(account: BankAccount) {
+  const reminder = bankReminderView(account);
+  const history = account.importHistory || [];
+  const last = history[0];
+  return {
+    id: account.id,
+    name: account.bank + ", " + account.label,
+    initials: bankInitials(account.bank),
+    logo: bankLogoSrc(account.bank),
+    sample: !!account.sample,
+    lastImportOffset: account.lastImportOffset == null ? null : account.lastImportOffset,
+    note: account.sample
+      ? "Sample data. Live bank feeds arrive in a later phase."
+      : formatMoney(account.openingBalanceMinor, currency, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset),
+    reminder,
+    lastUpload: account.lastImportOffset == null ? "" : formatDate(account.lastImportOffset),
+    daysSince: account.lastImportOffset == null ? 0 : 0 - account.lastImportOffset,
+    historyOn: history.length > 0,
+    importCount: history.length,
+    lastImportDate: last ? formatDate(last.importedOffset) : "",
+    lastImportedRows: last ? last.rowsImported : 0,
+    historyLine: last
+      ? history.length + " statements imported · last: " + formatDate(last.importedOffset) + " (" + last.rowsImported + " transactions)"
+      : ""
+  };
+}
+
+export function bankStatementMonthsView() {
+  const rows = db().bankAccounts.flatMap(account => (account.importHistory || []).map(record => ({
+    id: record.id,
+    accountId: account.id,
+    name: account.bank + ", " + account.label,
+    initials: bankInitials(account.bank),
+    logo: bankLogoSrc(account.bank),
+    importedOffset: record.importedOffset,
+    importedDate: formatDate(record.importedOffset),
+    rowsImported: record.rowsImported,
+    rowsSkipped: record.rowsSkipped,
+    periodOn: record.periodFromOffset != null && record.periodToOffset != null,
+    periodFrom: record.periodFromOffset != null ? formatDate(record.periodFromOffset) : "",
+    periodTo: record.periodToOffset != null ? formatDate(record.periodToOffset) : "",
+    monthKey: monthYearLabel(record.importedOffset)
+  })));
+  rows.sort((a, b) => (b.importedOffset - a.importedOffset) || String(b.id).localeCompare(String(a.id)));
+  const months: { id: string; label: string; rows: typeof rows }[] = [];
+  const byMonth = new Map<string, typeof rows>();
+  rows.forEach(row => {
+    let group = byMonth.get(row.monthKey);
+    if (!group) {
+      group = [];
+      byMonth.set(row.monthKey, group);
+      months.push({ id: row.monthKey, label: row.monthKey, rows: group });
+    }
+    group.push(row);
+  });
+  return { empty: rows.length === 0, months };
+}
+
+export function bankLogoSrc(bank: string): string | null {
   const key = String(bank || "").toLowerCase();
   if (key.includes("ahli")) return "/banks/ahli.png";
   if (key.includes("qatar national") || /\bqnb\b/.test(key)) return "/banks/qnb.png";
   if (key.includes("dukhan")) return "/banks/dukhan.png";
+  if (key.includes("doha")) return "/banks/doha.jpg";
+  if (key.includes("commercial bank") || /\bcbq\b/.test(key)) return "/banks/cbq.png";
+  if (key.includes("international islamic") || /\bqiib\b/.test(key)) return "/banks/qiib.png";
+  if (key.includes("qatar islamic") || /\bqib\b/.test(key)) return "/banks/qib.png";
+  if (key.includes("rayan") || key.includes("masraf")) return "/banks/alrayan.png";
   return null;
 }
 
 export function bankView() {
-  const account = db().bankAccounts[0];
+  const accounts = db().bankAccounts;
+  const account = accounts[0];
   const cashOnHand = getCashOnHand();
-  const name = account ? account.bank + ", " + account.label : "";
-  const opening = account ? account.openingBalanceMinor : 0;
+  const card = account ? bankCardFields(account) : null;
   return {
-    name,
-    initials: (account?.bank ?? "").split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(),
-    logo: account ? bankLogoSrc(account.bank) : null,
+    name: card ? card.name : "",
+    initials: card ? card.initials : bankInitials(""),
+    logo: card ? card.logo : null,
     activity: formatMoney(cashOnHand, currency as CurrencyCode),
     activityCaption: "Cash on hand",
-    note: account
-      ? formatMoney(opening, currency as CurrencyCode, { trimWhole: true }) + " opening as of " + formatDate(account.asOfOffset)
-      : "No bank account is stored.",
-    extra: db().bankAccounts.slice(1).map(row => ({
-      id: row.id,
-      name: row.bank + ", " + row.label,
-      initials: row.bank.split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(),
-      logo: bankLogoSrc(row.bank),
-      sample: !!row.sample,
-      note: row.sample
-        ? "Sample data. Live bank feeds arrive in a later phase."
-        : formatMoney(row.openingBalanceMinor, currency as CurrencyCode, { trimWhole: true }) + " opening as of " + formatDate(row.asOfOffset)
-    }))
+    note: card ? card.note : "No bank account is stored.",
+    reminder: card ? card.reminder : { status: null, label: "" },
+    lastUpload: card ? card.lastUpload : "",
+    daysSince: card ? card.daysSince : 0,
+    historyOn: card ? card.historyOn : false,
+    importCount: card ? card.importCount : 0,
+    lastImportDate: card ? card.lastImportDate : "",
+    lastImportedRows: card ? card.lastImportedRows : 0,
+    historyLine: card ? card.historyLine : "",
+    sample: card ? card.sample : false,
+    extra: accounts.slice(1).map(bankCardFields)
   };
 }
 
@@ -869,7 +968,11 @@ export function dashboardSnapshot() {
     shopify: data.shopify,
     smartCheckout: data.smartCheckout,
     sampleBanks: data.sampleBanks,
-    banks: data.banks
+    bankPreview: data.bankPreview,
+    qatarBanks: data.qatarBanks,
+    banks: data.banks,
+    overdueBankCount: data.overdueBankCount,
+    statementMonths: data.statementMonths
   };
 }
 

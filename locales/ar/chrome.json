@@ -49,7 +49,8 @@
     "arabic": "العربية"
   },
   "modal": {
-    "cancel": "إلغاء"
+    "cancel": "إلغاء",
+    "continue": "متابعة"
   },
   "toast": {
     "saved": "تم حفظ التغييرات",
@@ -84,6 +85,13 @@
     "linkCreated": "تم إنشاء رابط الدفع",
     "linkCreatedCopied": "تم إنشاء رابط الدفع ونسخه",
     "reminderSent": "أُرسل تذكير إلى {{name}}",
-    "reminderSentClient": "أُرسل تذكير إلى العميل"
+    "reminderSentClient": "أُرسل تذكير إلى العميل",
+    "stmtImported": "تم استيراد {{count}} حركة. تم تخطي {{skipped}} صفوف.",
+    "stmtBadDate": "تم استيراد {{count}} حركة. {{skipped}} صفوف كان لها تنسيق تاريخ تعذّر قراءته — جرّب DD/MM/YYYY أو YYYY-MM-DD.",
+    "stmtNoFile": "اختر ملف CSV",
+    "stmtFailed": "تعذّر استيراد الكشف",
+    "bankSoon": "الربط البنكي المباشر قريباً. هذا يضيف حساباً تجريبياً فقط، ولا يستورد حركات حقيقية.",
+    "sampleRemoved": "تمت إزالة الحساب التجريبي",
+    "sampleRemoveDenied": "لا يمكن إزالة حساب بنكي غير تجريبي"
   }
 }

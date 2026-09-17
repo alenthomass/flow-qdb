@@ -4,6 +4,7 @@ import {
   appendActivity,
   appendApprovalRequest,
   appendBankAccount,
+  updateBankAccount,
   appendCheckoutPage,
   appendClient,
   appendInvoice,
@@ -36,7 +37,8 @@ import {
   DEFAULT_ROLE_PERMISSIONS
 } from "./store";
 import { SAMPLE_BANKS, SAMPLE_SHOPIFY_ORDER } from "./sample-checkout";
-import { getInvoiceStatus, getPayrollNet } from "./selectors";
+import { getInvoiceStatus, getMatchUniverse, getOutstandingInvoices, getPayrollNet } from "./selectors";
+import { parseBankStatementCsv, parseStatementDate, type StatementSkipReasons } from "./statement";
 import { absoluteHttpUrl, monthYearLabel, offsetFromLabel } from "../format";
 import type {
   AccessLevel,
@@ -1045,6 +1047,118 @@ export function connectSampleBank(bankId: string) {
     asOfOffset: 0,
     sample: true
   });
+}
+
+export function importBankStatement(input: {
+  csvText: string;
+  accountId?: string | null;
+  bankName?: string;
+  label?: string;
+  periodFromRaw?: string;
+  periodToRaw?: string;
+}): { imported: number; skipped: number; matched: number; accountId: string; skippedReasons: StatementSkipReasons } {
+  const parsed = parseBankStatementCsv(input.csvText);
+  const skippedReasons: StatementSkipReasons = { missingFields: parsed.skipped, badDate: 0 };
+  let skipped = parsed.skipped;
+  let accountId = String(input.accountId || "").trim();
+  const existing = accountId ? getStore().bankAccounts.find(row => row.id === accountId) : undefined;
+  if (!existing) {
+    const bank = String(input.bankName || "").trim();
+    const label = String(input.label || "").trim() || bank;
+    if (!bank) throw new Error("Bank name is required");
+    const created = appendBankAccount({
+      id: "bank_" + Date.now().toString(36),
+      bank,
+      label,
+      currency: getStore().merchant.currency,
+      openingBalanceMinor: 0,
+      asOfOffset: 0
+    });
+    accountId = created.id;
+  } else {
+    accountId = existing.id;
+  }
+
+  const stamp = Date.now().toString(36);
+  let imported = 0;
+  let matched = 0;
+  const importedOffsets: number[] = [];
+  parsed.rows.forEach((row, index) => {
+    const dayOffset = parseStatementDate(row.dateRaw);
+    if (dayOffset == null) {
+      skippedReasons.badDate += 1;
+      skipped += 1;
+      return;
+    }
+    importedOffsets.push(dayOffset);
+    const inflow = row.signedMinor > 0;
+    const amountMinor = Math.round(Math.abs(row.signedMinor));
+    const refund = !inflow && /refund/i.test(row.description);
+    const txnId = "txn_stmt_" + stamp + "_" + index;
+    const invoice = inflow
+      ? getOutstandingInvoices().find(item => item.amountMinor === amountMinor) || null
+      : null;
+    appendTransaction({
+      id: txnId,
+      dayOffset,
+      counterparty: row.description,
+      source: "bank",
+      direction: inflow ? "in" : "out",
+      type: inflow ? "sale" : (refund ? "refund" : "expense"),
+      tag: inflow || refund ? "Sales" : "Fees",
+      status: "settled",
+      amountMinor,
+      branchId: "br_01",
+      invoiceId: invoice ? invoice.id : null
+    });
+    imported += 1;
+    if (!getMatchUniverse().some(item => item.id === txnId)) return;
+    if (invoice) matched += 1;
+    appendMatchProposal({
+      id: "mp_" + txnId,
+      transactionId: txnId,
+      invoiceId: invoice ? invoice.id : null,
+      confidence: invoice ? 0.9 : 0.4,
+      reason: invoice
+        ? "Statement amount matches invoice " + invoice.number
+        : "No matching invoice found for this amount, log as a direct transaction?",
+      status: "open"
+    });
+  });
+
+  appendActivity({
+    id: "act_stmt_" + stamp,
+    kind: "payments",
+    dayOffset: 0,
+    actor: "System",
+    what: "Bank statement imported, " + imported + " transactions, " + matched + " matched automatically"
+  });
+
+  const parsedFrom = input.periodFromRaw ? parseStatementDate(input.periodFromRaw) : null;
+  const parsedTo = input.periodToRaw ? parseStatementDate(input.periodToRaw) : null;
+  let periodFromOffset: number | null = parsedFrom;
+  let periodToOffset: number | null = parsedTo;
+  if (importedOffsets.length) {
+    const minOff = Math.min.apply(null, importedOffsets);
+    const maxOff = Math.max.apply(null, importedOffsets);
+    if (periodFromOffset == null) periodFromOffset = minOff;
+    if (periodToOffset == null) periodToOffset = maxOff;
+  }
+  const current = getStore().bankAccounts.find(row => row.id === accountId);
+  updateBankAccount(accountId, {
+    lastImportOffset: 0,
+    periodFromOffset,
+    periodToOffset,
+    importHistory: [{
+      id: "stmt_" + stamp,
+      importedOffset: 0,
+      periodFromOffset,
+      periodToOffset,
+      rowsImported: imported,
+      rowsSkipped: skipped
+    }].concat(current && current.importHistory ? current.importHistory : [])
+  });
+  return { imported, skipped, matched, accountId, skippedReasons };
 }
 
 export type { UpcomingCharge };

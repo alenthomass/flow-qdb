@@ -138,6 +138,15 @@ export interface MatchProposal {
   status: "open" | "confirmed";
 }
 
+export interface StatementImportRecord {
+  id: string;
+  importedOffset: number;
+  periodFromOffset: number | null;
+  periodToOffset: number | null;
+  rowsImported: number;
+  rowsSkipped: number;
+}
+
 export interface BankAccount {
   id: string;
   bank: string;
@@ -146,6 +155,10 @@ export interface BankAccount {
   openingBalanceMinor: number;
   asOfOffset: number;
   sample?: boolean;
+  lastImportOffset?: number | null;
+  periodFromOffset?: number | null;
+  periodToOffset?: number | null;
+  importHistory?: StatementImportRecord[];
 }
 
 export interface GatewayAccount {

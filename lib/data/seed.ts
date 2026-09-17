@@ -180,7 +180,7 @@ export const seed: Seed = {
     { id: "mp_03", transactionId: "txn_10", invoiceId: null, confidence: 0.52, reason: "Payment link with no matching invoice. Log as a direct sale?", status: "open" }
   ],
   bankAccounts: [
-    { id: "bank_01", bank: "Ahli Bank", label: "Ahli Bank current account", currency: "QAR", openingBalanceMinor: 8500000, asOfOffset: -30 }
+    { id: "bank_01", bank: "Ahli Bank", label: "Ahli Bank current account", currency: "QAR", openingBalanceMinor: 8500000, asOfOffset: -30, sample: true }
   ],
   gatewayAccounts: [
     { id: "gw_01", provider: "SkipCash", label: "SkipCash", status: "live" },

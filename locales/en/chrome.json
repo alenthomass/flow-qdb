@@ -49,7 +49,8 @@
     "arabic": "Arabic"
   },
   "modal": {
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "continue": "Continue"
   },
   "toast": {
     "saved": "Changes saved",
@@ -84,6 +85,13 @@
     "linkCreated": "Payment link created",
     "linkCreatedCopied": "Payment link created and copied",
     "reminderSent": "Reminder sent to {{name}}",
-    "reminderSentClient": "Reminder sent to the client"
+    "reminderSentClient": "Reminder sent to the client",
+    "stmtImported": "Imported {{count}} transactions. Skipped {{skipped}} rows.",
+    "stmtBadDate": "Imported {{count}} transactions. {{skipped}} rows had a date format we couldn't read — try DD/MM/YYYY or YYYY-MM-DD.",
+    "stmtNoFile": "Choose a CSV file",
+    "stmtFailed": "Could not import statement",
+    "bankSoon": "Live bank connection is coming soon. This only adds a sample account, it does not import real transactions.",
+    "sampleRemoved": "Sample account removed",
+    "sampleRemoveDenied": "Only sample accounts can be removed"
   }
 }

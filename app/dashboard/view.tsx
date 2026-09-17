@@ -16,10 +16,130 @@ const fieldChip = "flex:0 0 auto; font-size:11px; font-weight:700; color:var(--i
 function BankMark({ logo, initials, size = 42 }: { logo?: string | null; initials: string; size?: number }) {
   const radius = size >= 42 ? 12 : 11;
   return (
-    <span style={sx("position:relative; width:" + size + "px; height:" + size + "px; flex:0 0 " + size + "px; border-radius:" + radius + "px; background:var(--ink-block); color:var(--on-block); display:flex; align-items:center; justify-content:center; font-size:" + (size >= 42 ? 12 : 11.5) + "px; font-weight:700; overflow:hidden")}>
+    <span style={sx("position:relative; width:" + size + "px; height:" + size + "px; flex:0 0 " + size + "px; border:none; box-shadow:none; outline:none; border-radius:" + (logo ? "0" : radius + "px") + "; background:" + (logo ? "transparent" : "var(--ink-block)") + "; color:var(--on-block); display:flex; align-items:center; justify-content:center; font-size:" + (size >= 42 ? 12 : 11.5) + "px; font-weight:700; overflow:" + (logo ? "visible" : "hidden"))}>
       <span>{initials}</span>
-      {logo ? <img alt="" src={logo} style={sx("position:absolute; inset:0; width:100%; height:100%; object-fit:contain; padding:" + (size >= 42 ? 4 : 3) + "px; box-sizing:border-box; background:#fff")} onError={(event) => { event.currentTarget.style.display = "none"; }} /> : null}
+      {logo ? <img alt="" src={logo} style={sx("position:absolute; inset:0; width:100%; height:100%; object-fit:contain; padding:0; box-sizing:border-box; background:transparent; border:none; outline:none; box-shadow:none")} onError={(event) => { event.currentTarget.style.display = "none"; }} /> : null}
     </span>
+  );
+}
+
+function BankPickerList({ banks }: { banks: any[] }) {
+  return (
+    <div style={sx("display:flex; flex-direction:column; gap:8px")}>
+      {(banks || []).map((opt: any, optIdx: any) => <Fragment key={opt?.id || "bp-" + optIdx}>
+        <button type="button" aria-pressed={!!(opt.on)} style={sx("width:100%; display:flex; align-items:center; gap:10px; text-align:left; font-size:13px; font-weight:" + (opt.on ? "700" : "600") + "; color:var(--ink); padding:9px 12px; border-radius:10px; box-sizing:border-box; border:" + (opt.on ? "1.5px solid var(--ink-6)" : "1px solid var(--line)") + "; background:" + (opt.on ? "var(--panel-2)" : "var(--btn-light)"))} onClick={opt.go}>
+          <BankMark logo={opt.logo} initials={opt.initials} />
+          <span style={sx("flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap")}>{opt.label}</span>
+          <span style={sx("flex:0 0 18px; width:18px; height:18px; border-radius:5px; background:" + (opt.on ? "var(--ink)" : "transparent") + "; color:var(--on-block); display:flex; align-items:center; justify-content:center")}>
+            {!!(opt.on) && (<>
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m4 10.2 4.2 4.2L16.5 5.6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </>)}
+          </span>
+        </button>
+      </Fragment>)}
+    </div>
+  );
+}
+
+function BankAccountCards({ v }: { v: Record<string, any> }) {
+  return (
+    <>
+      {(Array.isArray(v.banks) ? v.banks : []).map((bx: any, bxIdx: any) => <Fragment key={bx?.id || bx?.key || "bca-" + bxIdx}>
+        <div style={sx("display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:18px 20px")}>
+          <BankMark logo={bx.logo} initials={bx.initials} size={40} />
+          <div style={sx("flex:1 1 200px; min-width:0")}>
+            <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>{bx.name}</div>
+            <div style={sx("font-size:12.5px; color:var(--ink-4); margin-top:2px")}>{bx.note}</div>
+            {!!(bx.historyOn) && (<>
+              <div style={sx("font-size:12px; color:var(--ink-4); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis")} title={bx.historyLine}>{bx.historyLine}</div>
+            </>)}
+          </div>
+          {!!(bx.reminderOn) && (<>
+            <span style={sx(bx.reminderChip)} title={bx.reminderLabel}>{bx.reminderLabel}</span>
+          </>)}
+          {!!(bx.sampleOn) && (<>
+            <span style={sx("flex:0 0 auto; font-size:12px; color:var(--ink-4)")}>{v.t("ui.bank.sample")}</span>
+          </>)}
+          {!!(bx.liveOn) && (<>
+            <span style={sx("flex:0 0 auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)")}><span style={sx("width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)")} />{v.t("pages.common.connected")}<span style={sx("font-size:11px; font-weight:500; color:var(--ink-5)")}>{v.t("pages.common.simulated")}</span></span>
+          </>)}
+          {!!(bx.removeOn) && (<>
+            <Hoverable as="button" style={sx("flex:0 0 auto; font-size:12px; font-weight:650; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={bx.remove} hoverStyle={sx("filter:brightness(.97)")}>{v.t("ui.bank.removeSample")}</Hoverable>
+          </>)}
+          {!!(bx.uploadOn) && (<>
+            <Hoverable as="button" style={sx("flex:0 0 auto; font-size:12px; font-weight:650; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={bx.upload} hoverStyle={sx("filter:brightness(.97)")}>{v.t("ui.bank.upload")}</Hoverable>
+          </>)}
+        </div>
+      </Fragment>)}
+    </>
+  );
+}
+
+function BankAccountsPanel({ v }: { v: Record<string, any> }) {
+  const preview = v.bankPreview || {};
+  const statements = v.statementMonths || { empty: true, months: [] };
+  const statementsOn = !!(v.bt && v.bt.statements);
+  return (
+    <div style={sx("display:flex; flex-direction:column; gap:12px")}>
+      <div style={sx("display:flex; align-items:center; gap:4px; border-bottom:1px solid var(--divider)")}>
+        {((v.bankViewTabs) || []).map((tb: any, tbIdx: any) => <Fragment key={tb?.key || "bvt-" + tbIdx}>
+          <Hoverable as="button" style={sx(tb.style)} onClick={tb.go} hoverStyle={sx("color:var(--ink)")}>
+            <span>{tb.label}</span>
+          </Hoverable>
+        </Fragment>)}
+      </div>
+      {!statementsOn && (<>
+        {!!(v.overdueBanksOn) && (<>
+          <div style={sx("display:flex; flex-wrap:wrap; align-items:center; gap:12px; background:var(--warn-soft); border:1px solid var(--warn-line); border-radius:11px; padding:14px 16px")}>
+            <div style={sx("flex:1 1 220px; min-width:0; font-size:13px; font-weight:600; color:var(--warn-ink); line-height:1.5")}>{v.overdueBankBanner}</div>
+            <button type="button" style={sx("flex:0 0 auto; font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 18px; border-radius:10px")} onClick={v.bankOn.upload}>{v.t("ui.bank.upload")}</button>
+          </div>
+        </>)}
+        <BankAccountCards v={v} />
+        <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:18px 20px")}>
+          <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>{v.t("ui.bank.needAnother")}</div>
+          <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px")}>{v.t("ui.bank.connectHelp")}</div>
+          <button type="button" style={sx("margin-top:16px; font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 18px; border-radius:10px")} onClick={v.bankOn.upload}>{v.t("ui.bank.upload")}</button>
+        </div>
+      </>)}
+      {!!(statementsOn && statements.empty) && (<>
+        <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:18px 20px")}>
+          <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>{v.t("ui.bank.statementsEmpty")}</div>
+          <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px")}>{v.t("ui.bank.statementsEmptySub")}</div>
+          <button type="button" style={sx("margin-top:16px; font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 18px; border-radius:10px")} onClick={v.bankOn.upload}>{v.t("ui.bank.upload")}</button>
+        </div>
+      </>)}
+      {!!(statementsOn && !statements.empty) && (<>
+        {((statements.months) || []).map((month: any, monthIdx: any) => <Fragment key={month?.id || month?.label || "stm-" + monthIdx}>
+          <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:14px; font-weight:650; letter-spacing:-.02em; color:var(--ink-2); padding:4px 2px 0")}>{month.label}</div>
+          {((month.rows) || []).map((row: any, rowIdx: any) => <Fragment key={row?.id || "str-" + monthIdx + "-" + rowIdx}>
+            <div style={sx("display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:16px 18px")}>
+              <BankMark logo={row.logo} initials={row.initials} size={40} />
+              <div style={sx("flex:1 1 200px; min-width:0")}>
+                <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>{row.name}</div>
+                <div style={sx("font-size:12.5px; color:var(--ink-4); margin-top:2px")}>{row.importedDate}</div>
+                <div style={sx("font-size:12px; color:var(--ink-4); margin-top:4px")}>{row.rowLine}</div>
+                {!!(row.periodLine) && (<>
+                  <div style={sx("font-size:12px; color:var(--ink-4); margin-top:2px")}>{row.periodLine}</div>
+                </>)}
+              </div>
+            </div>
+          </Fragment>)}
+        </Fragment>)}
+      </>)}
+      <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:18px 20px")}>
+        <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>{v.t("ui.bank.previewTitle")}</div>
+        <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px")}>{v.t("ui.bank.previewHelp")}</div>
+        <div style={sx("display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:16px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:14px 16px")}>
+          <BankMark logo={preview.logo} initials={preview.initials || "QN"} size={40} />
+          <div style={sx("flex:1 1 200px; min-width:0")}>
+            <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>{preview.name}</div>
+            <div style={sx("font-size:12.5px; color:var(--ink-4); margin-top:2px")}>{preview.iban}{preview.iban && preview.balance ? " · " : ""}{preview.balance}</div>
+          </div>
+          <button type="button" style={sx("flex:0 0 auto; font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 18px; border-radius:10px")} onClick={v.bankOn.demo}>{v.t("ui.bank.previewCta")}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -336,6 +456,9 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                   <span style={sx("width:40px; height:40px; border-radius:13px; background:linear-gradient(150deg, var(--accent), var(--accent-2)); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 20px -12px rgba(0,0,0,.5)")}>
                     <svg width="19" height="19" viewBox="0 0 20 20" fill="none"><path d={c.d} stroke="var(--on-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   </span>
+                  {!!(c.soonChip) && (<>
+                        <span style={sx(c.soonChip)}>{v.t("pages.common.comingSoon")}</span>
+                      </>)}
                   {!!(c.meta) && (<>
                         <span style={sx("font-size:12px; font-weight:600; color:var(--ink-4); white-space:nowrap")}>{c.meta}</span>
                       </>)}
@@ -1357,53 +1480,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               </>)}
 
           {!!(v.pt.bank) && (<>
-                <div style={sx("display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start")}>
-              <div style={sx("display:flex; flex-direction:column; gap:14px")}>
-              <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px")}>
-                <div style={sx("display:flex; align-items:center; gap:12px")}>
-                  <BankMark logo={v.bank.logo} initials={v.bank.initials} />
-                  <div><div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em")}>{v.bank.name}</div><div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:12.5px; color:var(--ink-4); margin-top:2px")}>{v.bank.note}</div></div>
-                  <span style={sx("margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)")}><span style={sx("width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)")} />{v.t("pages.common.connected")}<span style={sx("font-size:11px; font-weight:500; color:var(--ink-5)")}>{v.t("pages.common.simulated")}</span></span>
-                </div>
-                <div style={sx("display:flex; gap:22px; margin-top:18px; padding-top:16px; border-top:1px solid var(--divider)")}>
-                  <div><div style={sx("font-size:11.5px; color:var(--ink-4); font-weight:600")}>{v.t("ui.bank.activity")}</div><div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; margin-top:3px")}>{v.bank.activity}</div></div>
-                </div>
-                <div style={sx("margin-top:16px; background:linear-gradient(165deg,var(--panel-3),var(--panel)); border:1px solid var(--line); border-radius:12px; padding:12px; font-size:12.5px; color:var(--ink-3); line-height:1.5")}>{v.t("ui.bank.sample")}</div>
-              </div>
-              {(Array.isArray(v.bank?.extra) ? v.bank.extra : []).map((bx: any, bxIdx: any) => <Fragment key={bx?.id || bx?.key || 'bx-' + bxIdx}>
-                      <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:22px")}>
-                  <div style={sx("display:flex; align-items:center; gap:12px")}>
-                    <BankMark logo={bx.logo} initials={bx.initials} />
-                    <div><div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:17px; font-weight:600; letter-spacing:-.02em")}>{bx.name}</div><div style={sx("font-size:12.5px; color:var(--ink-4); margin-top:2px")}>{bx.note}</div></div>
-                    <span style={sx("margin-left:auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)")}><span style={sx("width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)")} />{v.t("pages.common.connected")}<span style={sx("font-size:11px; font-weight:500; color:var(--ink-5)")}>{v.t("pages.common.simulated")}</span></span>
-                  </div>
-                </div>
-                    </Fragment>)}
-              </div>
-              <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px")}>
-                <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>{v.t("ui.bank.needAnother")}</div>
-                <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px")}>{v.t("ui.bank.connectHelp")}</div>
-                {!!(v.bankOn.idle && v.bankOn.hasRemaining) && (<>
-                      <button type="button" style={sx("margin-top:16px; font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 18px; border-radius:10px")} onClick={v.bankOn.start}>{v.t("ui.bank.connectAnother")}</button>
-                    </>)}
-                {!!(v.bankOn.idle && v.bankOn.noneLeft) && (<>
-                      <div style={sx("margin-top:16px; font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.allConnected")}</div>
-                    </>)}
-                {!!(v.bankOn.pick) && (<>
-                      <div style={sx("margin-top:16px; font-size:12.5px; color:var(--ink-3); line-height:1.5")}>{v.t("ui.bank.sampleOnly")}</div>
-                  <div style={sx("display:flex; flex-direction:column; gap:8px; margin-top:12px")}>
-                    {(Array.isArray(v.bankOn.choices) ? v.bankOn.choices : []).map((bk: any, bkIdx: any) => <Fragment key={bk?.id || bk?.key || 'bk-' + bkIdx}>
-                          <button type="button" style={sx("text-align:left; font-size:13px; font-weight:600; padding:11px 14px; border-radius:10px; border:1px solid var(--line); background:var(--btn-light)")} onClick={bk.go}>{bk.label}</button>
-                        </Fragment>)}
-                  </div>
-                    </>)}
-                {!!(v.bankOn.consent) && (<>
-                      <div style={sx("margin-top:16px; font-size:13px; font-weight:600")}>{v.bankOn.picked}</div>
-                  <div style={sx("margin-top:8px; font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.consent")}</div>
-                  <button type="button" style={sx("margin-top:16px; font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 18px; border-radius:10px")} onClick={v.bankOn.confirm}>{v.t("ui.bank.connectSample")}</button>
-                    </>)}
-              </div>
-            </div>
+                <BankAccountsPanel v={v} />
               </>)}
 
           {!!(v.pt.shopify) && (<>
@@ -1581,7 +1658,11 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                     <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:18px 20px; display:flex; align-items:center; gap:16px")}>
                   <div style={sx("min-width:0; flex:1")}>
                     <div style={sx("display:flex; align-items:baseline; gap:10px")}><span style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600")}>{m.amt}</span><span style={sx("font-size:13px; font-weight:600")}>{m.party}</span></div>
-                    <div style={sx("font-size:12.5px; color:var(--ink-3); margin-top:5px")}>{v.t("ui.match.suggested", { inv: v.display(m.inv), why: v.display(m.why) })}</div>
+                    <div style={sx("display:flex; align-items:center; gap:5px; margin-bottom:3px; margin-top:5px")}>
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 0 L7.2 4.2 L11.4 5.4 L7.2 6.6 L6 10.8 L4.8 6.6 L0.6 5.4 L4.8 4.2 Z" fill="var(--accent, var(--ink-3))" /></svg>
+                      <span style={sx("font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-4)")}>{v.t("ui.match.aiTag")}</span>
+                    </div>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3)")}>{v.t("ui.match.suggested", { inv: v.display(m.inv), why: v.display(m.why) })}</div>
                   </div>
                   {!!(m.high) && (<>
                         <span style={sx("font-size:12.5px; font-weight:600; color:var(--ink-3); white-space:nowrap")}>{m.confT} sure</span>
@@ -2001,12 +2082,17 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               </div>
               <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); overflow:hidden")}>
                 <div style={sx("padding:16px 20px; border-bottom:1px solid var(--divider); font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>{v.t("ui.acc.log")}</div>
-                {((v.syncLog) || []).map((sl: any, slIdx: any) => <Fragment key={sl?.id || sl?.key || 'sl-' + slIdx}>
-                      <Hoverable as="button" style={sx("width:100%; display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid var(--divider-2); text-align:left; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={sl.open} hoverStyle={sx("background:var(--panel-2)")}>
-                    <div style={sx("flex:1")}><div style={sx("font-size:12.5px; font-weight:600")}>{sl.target}</div><div style={sx("font-size:11.5px; color:var(--ink-4); margin-top:2px")}>{sl.when} · {sl.itemsT} items</div></div>
-                    <span style={sx(sl.chip)}>{v.statusText(sl.status)}</span>
-                  </Hoverable>
-                    </Fragment>)}
+                {!!(v.syncLog.none) && (<>
+                      <div style={sx("padding:16px 20px; font-size:12.5px; color:var(--ink-4)")}>{v.t("ui.acc.noLog")}</div>
+                    </>)}
+                {!!(v.syncLog.any) && (<>
+                      {((v.syncLog.rows) || []).map((sl: any, slIdx: any) => <Fragment key={sl?.id || sl?.key || 'sl-' + slIdx}>
+                        <Hoverable as="button" style={sx("width:100%; display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid var(--divider-2); text-align:left; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={sl.open} hoverStyle={sx("background:var(--panel-2)")}>
+                      <div style={sx("flex:1")}><div style={sx("font-size:12.5px; font-weight:600")}>{sl.target}</div><div style={sx("font-size:11.5px; color:var(--ink-4); margin-top:2px")}>{sl.when} · {sl.itemsT} items</div></div>
+                      <span style={sx(sl.chip)}>{v.statusText(sl.status)}</span>
+                    </Hoverable>
+                      </Fragment>)}
+                    </>)}
               </div>
             </div>
             <Hoverable as="button" style={sx("display:inline-flex; align-items:center; gap:7px; margin-top:16px; padding:2px 0; background:transparent; border:none; font-size:12.5px; font-weight:600; color:var(--ink-4); transition:color .16s ease")} onClick={v.actGo.sync} hoverStyle={sx("color:var(--ink)")}>
@@ -2094,38 +2180,7 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
 
 
           {!!(v.ct.banks) && (<>
-                <div style={sx("display:flex; flex-direction:column; gap:12px")}>
-            <div style={sx("display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:18px 20px")}>
-              <BankMark logo={v.bank.logo} initials={v.bank.initials} size={40} />
-              <div style={sx("flex:1 1 200px; min-width:0")}>
-                <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>{v.bank.name}</div>
-                <div style={sx("font-size:12.5px; color:var(--ink-4); margin-top:2px")}>{v.bank.note}</div>
-              </div>
-              <span style={sx("flex:0 0 auto; font-size:12px; color:var(--ink-4)")}>{v.t("ui.bank.sample")}</span>
-              <Hoverable as="button" style={sx("flex:0 0 auto; font-size:12px; font-weight:650; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.connMan.bank} hoverStyle={sx("filter:brightness(.97)")}>{v.t("pages.common.manage")}</Hoverable>
-            </div>
-            {(Array.isArray(v.bank?.extra) ? v.bank.extra : []).map((bx: any, bxIdx: any) => <Fragment key={bx?.id || bx?.key || 'bxca-' + bxIdx}>
-                  <div style={sx("display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:18px 20px")}>
-                <BankMark logo={bx.logo} initials={bx.initials} size={40} />
-                <div style={sx("flex:1 1 200px; min-width:0")}>
-                  <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>{bx.name}</div>
-                  <div style={sx("font-size:12.5px; color:var(--ink-4); margin-top:2px")}>{bx.note}</div>
-                </div>
-                <span style={sx("flex:0 0 auto; display:inline-flex; align-items:baseline; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink)")}><span style={sx("width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--pos); transform:translateY(-1px)")} />{v.t("pages.common.connected")}<span style={sx("font-size:11px; font-weight:500; color:var(--ink-5)")}>{v.t("pages.common.simulated")}</span></span>
-                <Hoverable as="button" style={sx("flex:0 0 auto; font-size:12px; font-weight:650; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--btn-light); white-space:nowrap; transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .18s ease, transform .2s cubic-bezier(.32,.72,0,1)")} onClick={v.connMan.bank} hoverStyle={sx("filter:brightness(.97)")}>{v.t("pages.common.manage")}</Hoverable>
-              </div>
-                </Fragment>)}
-            <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); padding:18px 20px")}>
-              <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>{v.t("ui.bank.needAnother")}</div>
-              <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px")}>{v.t("ui.bank.connectHelp")}</div>
-              {!!(v.bankOn.idle && v.bankOn.hasRemaining) && (<>
-                    <button type="button" style={sx("margin-top:16px; font-size:13px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:10px 18px; border-radius:10px")} onClick={v.connMan.bank}>{v.t("ui.bank.connectAnother")}</button>
-                  </>)}
-              {!!(v.bankOn.idle && v.bankOn.noneLeft) && (<>
-                    <div style={sx("margin-top:16px; font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.allConnected")}</div>
-                  </>)}
-            </div>
-            </div>
+                <BankAccountsPanel v={v} />
               </>)}
 
           {!!(v.ct.platforms) && (<>
@@ -2168,6 +2223,18 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
 
         {!!(v.show.reports) && (<>
               {!!(v.rt.overview) && (<>
+                <div style={sx("display:flex; justify-content:flex-end; margin-bottom:16px")}>
+                  <div style={sx("display:flex; background:var(--panel-2); border:1px solid var(--line); border-radius:11px; padding:3px; gap:2px")}>
+                    {((v.reportsTfs) || []).map((x: any, xIdx: any) => <Fragment key={x?.id || x?.key || 'rtf-' + xIdx}>
+                      {!!(x.on) && (<>
+                        <button style={sx("padding:6px 14px; font-size:12px; font-weight:700; border-radius:8px; background:var(--btn-dark); color:var(--on-block)")}>{x.label}</button>
+                      </>)}
+                      {!!(x.off) && (<>
+                        <button style={sx("padding:6px 14px; font-size:12px; font-weight:600; border-radius:8px; color:var(--ink-3)")} onClick={x.go}>{x.label}</button>
+                      </>)}
+                    </Fragment>)}
+                  </div>
+                </div>
                 <div style={sx("display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px")}>
               {((v.pnl.cards) || []).map((c: any, cIdx: any) => <Fragment key={c?.id || c?.key || 'c-' + cIdx}>
                     <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px")}>
@@ -2196,6 +2263,22 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                 <span style={sx(`margin-left:auto; font-size:24px; font-weight:700; letter-spacing:-.03em; color:${v.pnl.netColor}`)}>{v.pnl.net}</span>
               </div>
             </div>
+            {!!((v.aiInsights || []).length) && (<>
+              <div style={sx("background:linear-gradient(165deg,var(--panel-3),var(--panel)); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-top:16px")}>
+                <div style={sx("display:flex; align-items:center; gap:6px; margin-bottom:10px")}>
+                  <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M6 0 L7.2 4.2 L11.4 5.4 L7.2 6.6 L6 10.8 L4.8 6.6 L0.6 5.4 L4.8 4.2 Z" fill="var(--accent, var(--ink-3))" /></svg>
+                  <span style={sx("font-size:12.5px; font-weight:700; letter-spacing:-.01em")}>{v.t("ui.rep.aiTitle")}</span>
+                </div>
+                <div style={sx("display:flex; flex-direction:column; gap:8px")}>
+                  {((v.aiInsights) || []).map((line: any, iIdx: any) => <Fragment key={'ai-' + iIdx}>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.5; display:flex; gap:8px")}>
+                      <span style={sx("flex:0 0 auto; color:var(--ink-5)")}>·</span>
+                      <span>{line}</span>
+                    </div>
+                  </Fragment>)}
+                </div>
+              </div>
+            </>)}
               </>)}
 
           {!!(v.rt.cash) && (<>
@@ -3048,7 +3131,12 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
                 </div>
               </div>
               <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px; margin-top:16px")}>
-                <div style={sx("display:flex; align-items:center; gap:10px")}><div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>{v.t("ui.det.why")}</div><span style={sx("margin-left:auto; font-size:12.5px; font-weight:600; color:var(--ink-3)")}>{v.det.o.confT} sure</span></div>
+                <div style={sx("display:flex; align-items:center; gap:10px")}><div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>{v.t("ui.det.why")}</div>
+                  <div style={sx("display:flex; align-items:center; gap:5px")}>
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 0 L7.2 4.2 L11.4 5.4 L7.2 6.6 L6 10.8 L4.8 6.6 L0.6 5.4 L4.8 4.2 Z" fill="var(--accent, var(--ink-3))" /></svg>
+                    <span style={sx("font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-4)")}>{v.t("ui.match.aiTag")}</span>
+                  </div>
+                  <span style={sx("margin-left:auto; font-size:12.5px; font-weight:600; color:var(--ink-3)")}>{v.det.o.confT} sure</span></div>
                 <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:10px")}>{v.det.o.why}</div>
                 {!!(v.det.o.live) && (<>
                       <div style={sx("display:flex; flex-wrap:wrap; gap:9px; margin-top:18px")}>
@@ -3350,8 +3438,8 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
       </>)}
 
   <Presence show={!!v.searchOpen}>
-        <div className="flow-open-scrim" style={sx("position:fixed; inset:0; background:var(--scrim); backdrop-filter:blur(6px); display:flex; align-items:flex-start; justify-content:center; padding:max(16px, env(safe-area-inset-top)) 12px 24px; z-index:70")} onClick={v.h.closeSearch}>
-      <div className="flow-open-pop" style={sx("width:100%; max-width:560px; background:var(--modal); backdrop-filter:blur(34px) saturate(165%); -webkit-backdrop-filter:blur(34px) saturate(165%); border:1px solid var(--glass-edge); border-radius:11px; box-shadow:inset 0 1px 0 var(--glass-top), 0 40px 90px -40px rgba(0,0,0,.6); overflow:hidden; box-shadow:0 40px 90px -20px rgba(0,0,0,.6)")}>
+        <div className="flow-open-scrim" style={sx("position:fixed; inset:0; background:var(--scrim); backdrop-filter:blur(3px); display:flex; align-items:flex-start; justify-content:center; padding:max(16px, env(safe-area-inset-top)) 12px 24px; z-index:70")} onClick={v.h.closeSearch}>
+      <div className="flow-open-pop" style={sx("width:100%; max-width:560px; background:var(--modal); backdrop-filter:blur(34px) saturate(140%); -webkit-backdrop-filter:blur(34px) saturate(140%); border:1px solid var(--glass-edge); border-radius:11px; box-shadow:inset 0 1px 0 var(--glass-top), 0 40px 90px -20px rgba(0,0,0,.6); overflow:hidden; box-shadow:0 40px 90px -20px rgba(0,0,0,.6)")} onClick={v.h.stop}>
         <div style={sx("display:flex; align-items:center; gap:11px; padding:16px 18px; border-bottom:1px solid var(--divider)")}>
           <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><circle cx="6.2" cy="6.2" r="4.2" stroke="var(--ink-4)" strokeWidth="1.5" /><path d="M9.4 9.4 12 12" stroke="var(--ink-4)" strokeWidth="1.5" strokeLinecap="round" /></svg>
           <input style={sx("flex:1; border:none; outline:none; background:none; font-size:14.5px")} autoFocus={v.true} placeholder={v.t("ui.ph.searchAll")} value={v.f.search} onChange={v.F.search} />
@@ -3381,9 +3469,84 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
     </div>
       </Presence>
 
+  <div style={sx("position:fixed; right:max(18px, env(safe-area-inset-right)); bottom:" + (v.mob.on ? "calc(74px + env(safe-area-inset-bottom))" : "22px") + "; z-index:75; display:flex; flex-direction:column; align-items:flex-end; gap:12px")}>
+  <Presence show={!!v.aiChatOpen}>
+    <div className="flow-open-pop" style={sx("position:relative; width:min(400px, calc(100vw - 36px)); height:min(640px, calc(100vh - 120px)); background:var(--modal); backdrop-filter:blur(34px) saturate(140%); -webkit-backdrop-filter:blur(34px) saturate(140%); border:1px solid var(--glass-edge); border-radius:16px; box-shadow:0 30px 70px -20px rgba(0,0,0,.55); overflow:hidden; display:flex; flex-direction:column")}>
+      <div style={sx("display:flex; align-items:center; gap:10px; padding:15px 16px; border-bottom:1px solid var(--divider)")}>
+        <div style={sx("width:28px; height:28px; border-radius:9px; background:var(--ai-gradient); box-shadow:var(--ai-shadow); display:flex; align-items:center; justify-content:center; flex:0 0 28px")}>
+          <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M6 0 L7.2 4.2 L11.4 5.4 L7.2 6.6 L6 10.8 L4.8 6.6 L0.6 5.4 L4.8 4.2 Z" fill="#fff" /></svg>
+        </div>
+        <div style={sx("flex:1; min-width:0")}>
+          <div style={sx("font-size:13.5px; font-weight:650")}>{v.t("ui.ai.chatTitle")}</div>
+          <div style={sx("font-size:10.5px; color:var(--ink-4)")}>{v.t("ui.ai.chatSubtitle")}</div>
+        </div>
+        <Hoverable as="button" style={sx("width:24px; height:24px; border-radius:7px; background:var(--chip); display:flex; align-items:center; justify-content:center; transition:background-color .15s ease")} onClick={v.h.closeAiChat} hoverStyle={sx("background:var(--panel-3)")}>
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="m3 3 6 6M9 3l-6 6" stroke="var(--ink-3)" strokeWidth="1.7" strokeLinecap="round" /></svg>
+        </Hoverable>
+      </div>
+      <div style={sx("flex:1; min-height:220px; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px")}>
+        {!!(v.aiChatEmpty) && (<>
+          <div style={sx("flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:12px 6px")}>
+            <div style={sx("position:relative; display:flex; flex-direction:column; align-items:center; gap:14px")}>
+            <div style={sx("position:absolute; top:-40px; left:50%; margin-left:-110px; width:220px; height:180px; background:var(--ai-glow); pointer-events:none; animation:flowAiGlow 9s ease-in-out infinite")} />
+            <div style={sx("width:44px; height:44px; border-radius:13px; background:var(--ai-gradient); box-shadow:var(--ai-shadow); display:flex; align-items:center; justify-content:center; position:relative")}>
+              <svg width="19" height="19" viewBox="0 0 12 12" fill="none"><path d="M6 0 L7.2 4.2 L11.4 5.4 L7.2 6.6 L6 10.8 L4.8 6.6 L0.6 5.4 L4.8 4.2 Z" fill="#fff" /></svg>
+            </div>
+            <div>
+              <div style={sx("font-size:15px; font-weight:700; background:var(--ai-gradient-text); -webkit-background-clip:text; background-clip:text; color:transparent")}>{v.t("ui.ai.emptyHeading")}</div>
+              <div style={sx("font-size:11.5px; color:var(--ink-4); line-height:1.6; margin-top:5px; max-width:280px")}>{v.t("ui.ai.chatEmpty")}</div>
+            </div>
+            <div style={sx("display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin-top:2px")}>
+              <Hoverable as="button" style={sx("padding:7px 12px; border-radius:20px; border:1.5px solid transparent; background:linear-gradient(var(--bar-solid), var(--bar-solid)) padding-box, var(--ai-gradient) border-box; font-size:11.5px; font-weight:600; color:var(--ink-2); transition:color .15s ease")} onClick={() => v.h.sendAiChatSuggestion(v.t("ui.ai.suggestRunway"))} hoverStyle={sx("background:var(--ai-gradient); color:#fff")}>{v.t("ui.ai.suggestRunway")}</Hoverable>
+              <Hoverable as="button" style={sx("padding:7px 12px; border-radius:20px; border:1.5px solid transparent; background:linear-gradient(var(--bar-solid), var(--bar-solid)) padding-box, var(--ai-gradient) border-box; font-size:11.5px; font-weight:600; color:var(--ink-2); transition:color .15s ease")} onClick={() => v.h.sendAiChatSuggestion(v.t("ui.ai.suggestOverdue"))} hoverStyle={sx("background:var(--ai-gradient); color:#fff")}>{v.t("ui.ai.suggestOverdue")}</Hoverable>
+              <Hoverable as="button" style={sx("padding:7px 12px; border-radius:20px; border:1.5px solid transparent; background:linear-gradient(var(--bar-solid), var(--bar-solid)) padding-box, var(--ai-gradient) border-box; font-size:11.5px; font-weight:600; color:var(--ink-2); transition:color .15s ease")} onClick={() => v.h.sendAiChatSuggestion(v.t("ui.ai.suggestSpend"))} hoverStyle={sx("background:var(--ai-gradient); color:#fff")}>{v.t("ui.ai.suggestSpend")}</Hoverable>
+              <Hoverable as="button" style={sx("padding:7px 12px; border-radius:20px; border:1.5px solid transparent; background:linear-gradient(var(--bar-solid), var(--bar-solid)) padding-box, var(--ai-gradient) border-box; font-size:11.5px; font-weight:600; color:var(--ink-2); transition:color .15s ease")} onClick={() => v.h.sendAiChatSuggestion(v.t("ui.ai.suggestRevenue"))} hoverStyle={sx("background:var(--ai-gradient); color:#fff")}>{v.t("ui.ai.suggestRevenue")}</Hoverable>
+            </div>
+            </div>
+          </div>
+        </>)}
+        {((v.aiChatMessages) || []).map((msg: any, mIdx: any) => <Fragment key={'aic-' + mIdx}>
+          <div style={sx("display:flex; align-items:flex-end; gap:7px; align-self:" + (msg.role === 'user' ? 'flex-end' : 'flex-start') + "; max-width:92%; flex-direction:" + (msg.role === 'user' ? 'row-reverse' : 'row'))}>
+            {msg.role === 'ai' && (<>
+              <div style={sx("width:20px; height:20px; border-radius:7px; background:var(--ai-gradient); box-shadow:var(--ai-shadow); display:flex; align-items:center; justify-content:center; flex:0 0 20px")}>
+                <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M6 0 L7.2 4.2 L11.4 5.4 L7.2 6.6 L6 10.8 L4.8 6.6 L0.6 5.4 L4.8 4.2 Z" fill="#fff" /></svg>
+              </div>
+            </>)}
+            <div style={sx("padding:9px 12px; border-radius:11px; font-size:12.5px; line-height:1.5; background:" + (msg.role === 'user' ? 'var(--btn-dark)' : 'var(--panel-2)') + "; color:" + (msg.role === 'user' ? 'var(--on-block)' : 'var(--ink-2)') + "")}>{msg.text}</div>
+          </div>
+        </Fragment>)}
+        {!!(v.aiChatThinking) && (<>
+          <div style={sx("display:flex; align-items:center; gap:7px; align-self:flex-start")}>
+            <div style={sx("width:20px; height:20px; border-radius:7px; background:var(--ai-gradient); box-shadow:var(--ai-shadow); display:flex; align-items:center; justify-content:center; flex:0 0 20px")}>
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M6 0 L7.2 4.2 L11.4 5.4 L7.2 6.6 L6 10.8 L4.8 6.6 L0.6 5.4 L4.8 4.2 Z" fill="#fff" /></svg>
+            </div>
+            <div style={sx("padding:10px 13px; border-radius:11px; background:var(--panel-2); display:flex; gap:4px; align-items:center")}>
+              <span style={sx("width:5px; height:5px; border-radius:50%; background:var(--ai-gradient); animation:flowAiDot 1s ease-in-out infinite")} />
+              <span style={sx("width:5px; height:5px; border-radius:50%; background:var(--ai-gradient); animation:flowAiDot 1s ease-in-out .15s infinite")} />
+              <span style={sx("width:5px; height:5px; border-radius:50%; background:var(--ai-gradient); animation:flowAiDot 1s ease-in-out .3s infinite")} />
+            </div>
+          </div>
+        </>)}
+      </div>
+      <div style={sx("display:flex; align-items:center; gap:8px; padding:11px 13px; border-top:1px solid var(--divider)")}>
+        <input style={sx("flex:1; border:1px solid var(--line); border-radius:9px; padding:9px 11px; font-size:12.5px; background:var(--panel); outline:none")} placeholder={v.t("ui.ai.chatPlaceholder")} value={v.f.aiChatDraft} onChange={v.F.aiChatDraft} onKeyDown={(e: any) => { if (e.key === 'Enter') { e.preventDefault(); v.h.sendAiChatMessage(); } }} />
+        <Hoverable as="button" style={sx("height:34px; padding:0 13px; border-radius:9px; font-size:12px; font-weight:650; color:var(--on-block); background:var(--ai-gradient)")} onClick={v.h.sendAiChatMessage} hoverStyle={sx("filter:brightness(1.1)")}>{v.t("ui.ai.chatSend")}</Hoverable>
+      </div>
+    </div>
+  </Presence>
+  <Hoverable as="button" style={sx("width:52px; height:52px; border-radius:50%; background:var(--ai-gradient); border:1px solid var(--glass-edge); box-shadow:var(--ai-shadow); display:flex; align-items:center; justify-content:center; transition:transform .2s cubic-bezier(.32,.72,0,1), filter .18s ease")} onClick={v.h.toggleAiChat} hoverStyle={sx("filter:brightness(1.12)")} aria-label={v.t("ui.ai.chatTitle")} title={v.t("ui.ai.chatTitle")}>
+    {!!(v.aiChatOpen) && (<>
+      <svg width="16" height="16" viewBox="0 0 12 12" fill="none"><path d="m2.5 2.5 7 7M9.5 2.5l-7 7" stroke="var(--on-block)" strokeWidth="1.8" strokeLinecap="round" /></svg>
+    </>)}
+    {!(v.aiChatOpen) && (<>
+      <svg width="20" height="20" viewBox="0 0 12 12" fill="none"><path d="M6 0 L7.2 4.2 L11.4 5.4 L7.2 6.6 L6 10.8 L4.8 6.6 L0.6 5.4 L4.8 4.2 Z" fill="var(--on-block)" /></svg>
+    </>)}
+  </Hoverable>
+</div>
+
   <Presence show={!!v.modal.on}>
-        <div className="flow-open-scrim" style={sx("position:fixed; inset:0; background:var(--scrim); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:32px; z-index:60")} data-flow-modal="1">
-      <div className="flow-open-pop" style={sx("background:var(--modal); backdrop-filter:blur(34px) saturate(165%); -webkit-backdrop-filter:blur(34px) saturate(165%); border:1px solid var(--glass-edge); border-radius:11px; box-shadow:inset 0 1px 0 var(--glass-top), 0 40px 90px -40px rgba(0,0,0,.6); width:100%; max-width:" + (v.modal.wide ? "640px" : "520px") + "; max-height:86vh; overflow-y:auto; box-shadow:0 40px 90px -20px rgba(0,0,0,.6)")}>
+        <div className="flow-open-scrim" style={sx("position:fixed; inset:0; background:var(--scrim); display:flex; align-items:center; justify-content:center; padding:32px; z-index:60")} data-flow-modal="1">
+      <div className="flow-open-pop" style={sx("background:var(--modal); border:1px solid var(--glass-edge); border-radius:11px; box-shadow:inset 0 1px 0 var(--glass-top), 0 40px 90px -40px rgba(0,0,0,.6); width:100%; max-width:" + (v.modal.wide ? "640px" : "520px") + "; max-height:86vh; overflow-y:auto; box-shadow:0 40px 90px -20px rgba(0,0,0,.6)")}>
         <div style={sx("display:flex; align-items:center; gap:12px; padding:20px 22px 14px; border-bottom:1px solid var(--divider)")}>
           <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:19px; font-weight:600; letter-spacing:-.025em")}>{v.modal.title}</div>
           <div style={sx("flex:1")} />
@@ -3706,6 +3869,108 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               </>)}
           {!!(v.modal.reset) && (<>
                 <div style={sx("font-size:13px; color:var(--ink-2); line-height:1.65")}>{v.t("settings.reset.body")}</div>
+              </>)}
+          {!!(v.modal.removeBank) && (<>
+                <div style={sx("font-size:13px; color:var(--ink-2); line-height:1.65")}>{v.t("ui.bank.removeSampleBody")}</div>
+              </>)}
+          {!!(v.modal.reminderPreview) && (<>
+            <div style={sx("display:flex; align-items:center; gap:6px; margin-bottom:10px")}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 0 L7.2 4.2 L11.4 5.4 L7.2 6.6 L6 10.8 L4.8 6.6 L0.6 5.4 L4.8 4.2 Z" fill="var(--accent, var(--ink-3))" /></svg>
+              <span style={sx("font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-4)")}>{v.t("ui.match.aiTag")}</span>
+            </div>
+            <div style={sx("font-size:12px; color:var(--ink-4); margin-bottom:10px")}>{v.t("ui.rem.previewSub")}</div>
+            <textarea style={sx("width:100%; min-height:140px; border:1px solid var(--line); border-radius:10px; padding:13px; font-size:13.5px; line-height:1.6; background:var(--panel); resize:vertical")} value={v.f.reminderDraft} onChange={v.F.reminderDraft} />
+              </>)}
+          {!!(v.modal.bankDemo) && (<>
+                <div style={sx("display:flex; flex-direction:column; gap:14px")}>
+              {!!(v.bankDemoStep === 0) && (<>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.demoStep1Body")}</div>
+                    <BankPickerList banks={(v.bankDemo && v.bankDemo.banks) || []} />
+                  </>)}
+              {!!(v.bankDemoStep === 1) && (<>
+                    <div style={sx("display:flex; align-items:center; gap:12px")}>
+                      <BankMark logo={v.bankDemo && v.bankDemo.previewLogo} initials={(v.bankDemo && v.bankDemo.previewInitials) || "QN"} size={40} />
+                      <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>{(v.bankDemo && v.bankDemo.picked && v.bankDemo.picked.bank) || ""}</div>
+                    </div>
+                    <label style={sx("display:block")}><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>{v.t("ui.bank.demoLoginId")}</div>
+                      <input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel)")} autoComplete="off" spellCheck={false} value={v.f.bankDemoLoginId} onChange={v.F.bankDemoLoginId} onFocus={(e) => e.currentTarget.select()} onClick={(e) => e.currentTarget.select()} />
+                    </label>
+                    <label style={sx("display:block")}><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>{v.t("ui.bank.demoLoginPw")}</div>
+                      <input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel)")} type="password" autoComplete="off" value={v.f.bankDemoLoginPw} onChange={v.F.bankDemoLoginPw} onFocus={(e) => e.currentTarget.select()} onClick={(e) => e.currentTarget.select()} />
+                    </label>
+                    <div style={sx("font-size:12px; color:var(--ink-5); cursor:default")}>{v.t("ui.bank.demoForgot")}</div>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.demoCredentialsNote")}</div>
+                  </>)}
+              {!!(v.bankDemoStep === 2) && (<>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.demoOtpBody", { bank: (v.bankDemo && v.bankDemo.picked && v.bankDemo.picked.bank) || "" })}</div>
+                    <div style={sx("display:flex; gap:8px")}>
+                      {(((v.bankDemo && v.bankDemo.otp) || [])).map((box: any, boxIdx: any) => <Fragment key={"bdo-" + boxIdx}>
+                            <input style={sx("width:40px; height:44px; text-align:center; font-size:16px; font-weight:650; padding:0; border:1px solid var(--line); border-radius:10px; outline:none; background:var(--panel)")} inputMode="numeric" maxLength={1} autoComplete="off" value={box.value} onChange={box.set} onFocus={(e) => e.currentTarget.select()} onClick={(e) => e.currentTarget.select()} />
+                          </Fragment>)}
+                    </div>
+                    <div style={sx("font-size:12px; color:var(--ink-5); cursor:default")}>{v.t("ui.bank.demoResend")}</div>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.demoCredentialsNote")}</div>
+                  </>)}
+              {!!(v.bankDemoStep === 3) && (<>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.demoAccountsBody", { bank: (v.bankDemo && v.bankDemo.picked && v.bankDemo.picked.bank) || "" })}</div>
+                    <div style={sx("display:flex; flex-direction:column; gap:8px")}>
+                      {(((v.bankDemo && v.bankDemo.accounts) || [])).map((acct: any, acctIdx: any) => <Fragment key={acct?.id || "bda-" + acctIdx}>
+                            <label style={sx("display:flex; align-items:center; gap:12px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:12px 14px; cursor:pointer")}>
+                              <input type="checkbox" checked={!!(acct.on)} onChange={acct.toggle} />
+                              <div style={sx("flex:1; min-width:0")}>
+                                <div style={sx("font-size:13.5px; font-weight:650")}>{acct.name}</div>
+                                <div style={sx("font-size:12px; color:var(--ink-4); margin-top:2px")}>{acct.note}</div>
+                              </div>
+                            </label>
+                          </Fragment>)}
+                    </div>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.demoCredentialsNote")}</div>
+                  </>)}
+              {!!(v.bankDemoStep === 4) && (<>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.demoConnectedLabel")}</div>
+                    <div style={sx("display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:14px 16px")}>
+                      <BankMark logo={v.bankDemo && v.bankDemo.previewLogo} initials={(v.bankDemo && v.bankDemo.previewInitials) || "QN"} size={40} />
+                      <div style={sx("flex:1 1 200px; min-width:0")}>
+                        <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16px; font-weight:600; letter-spacing:-.02em")}>{(v.bankDemo && v.bankDemo.previewLabel) || ""}</div>
+                        <div style={sx("font-size:12.5px; color:var(--ink-4); margin-top:2px")}>{(v.bankDemo && v.bankDemo.previewIban) || ""}{(v.bankDemo && v.bankDemo.previewIban && v.bankDemo.previewBalance) ? " · " : ""}{(v.bankDemo && v.bankDemo.previewBalance) || ""}</div>
+                      </div>
+                    </div>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.demoConsentNote")}</div>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.demoCredentialsNote")}</div>
+                  </>)}
+            </div>
+              </>)}
+          {!!(v.modal.statement) && (<>
+                <div style={sx("display:flex; flex-direction:column; gap:14px")}>
+              <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6")}>{v.t("ui.bank.csvHint")}</div>
+              <label style={sx("display:block")}><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>{v.t("ui.bank.account")}</div>
+                <select style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel)")} value={v.f.stmtAccount} onChange={v.F.stmtAccount}>
+                  {((v.stmt && v.stmt.accounts) || []).map((opt: any, optIdx: any) => <option key={opt?.id || 'sa-' + optIdx} value={opt.id}>{opt.label}</option>)}
+                </select>
+                {!!(v.stmt && v.stmt.updatingOn) && (<>
+                      <div style={sx("font-size:12.5px; color:var(--ink-3); line-height:1.6; margin-top:8px")}>{v.stmt.updatingLine}</div>
+                    </>)}
+              </label>
+              {!!(v.stmt && v.stmt.creating) && (<>
+                    <div>
+                      <div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>{v.t("ui.bank.bankName")}</div>
+                      <BankPickerList banks={(v.stmt && v.stmt.banks) || []} />
+                    </div>
+                    <label style={sx("display:block")}><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>{v.t("ui.bank.accountLabel")}</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px")} value={v.f.stmtLabel} onChange={v.F.stmtLabel} placeholder={v.t("ui.bank.accountLabelPh")} /></label>
+                  </>)}
+              <div style={sx("display:grid; grid-template-columns:1fr 1fr; gap:12px")}>
+                <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>{v.t("ui.bank.periodFrom")}</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel); color:var(--ink)")} type="date" value={v.f.stmtPeriodFrom} onChange={v.F.stmtPeriodFrom} /></label>
+                <label><div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>{v.t("ui.bank.periodTo")}</div><input style={sx("width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; outline:none; font-size:13.5px; background:var(--panel); color:var(--ink)")} type="date" value={v.f.stmtPeriodTo} onChange={v.F.stmtPeriodTo} /></label>
+              </div>
+              <div>
+                <div style={sx("font-size:12px; font-weight:600; color:var(--ink-3); margin-bottom:6px")}>{v.t("ui.bank.csvFile")}</div>
+                <input style={sx("display:none")} id="flow-stmt-file" type="file" accept=".csv,text/csv" onChange={v.stmt.onFile} />
+                <button type="button" style={sx("font-size:12.5px; font-weight:600; padding:9px 16px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light)")} onClick={v.stmt.pickFile}>{v.t("ui.bank.chooseCsv")}</button>
+                {!!(v.stmt && v.stmt.hasFile) && (<>
+                      <div style={sx("margin-top:8px; font-size:12.5px; color:var(--ink-4)")}>{v.stmt.fileName}</div>
+                    </>)}
+              </div>
+            </div>
               </>)}
         </div>
         {!(v.modal.hideFoot) && (<>

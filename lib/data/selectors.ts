@@ -338,6 +338,19 @@ export function getSpend(period: Period) {
   return { total, tags, vendors, refunds, insight };
 }
 
+export function getAiInsights(period: Period) {
+  const spend = getSpend(period);
+  const runway = getRunway(period);
+  const insights: string[] = [];
+  if (spend.insight) insights.push(spend.insight);
+  if (!runway.profitable && runway.months != null) {
+    insights.push("At the current burn rate, cash on hand covers roughly " + runway.months + (runway.months === 1 ? " month" : " months") + " of runway.");
+  } else if (runway.profitable) {
+    insights.push("This period is cash-flow positive, so runway isn't a near-term concern.");
+  }
+  return { insights };
+}
+
 export function getCashForecast(period: Period) {
   const days = PERIOD_DAYS[period];
   const bucketCount = period === "month" ? 6 : period === "week" ? 7 : 1;
@@ -354,7 +367,10 @@ export function getCashForecast(period: Period) {
       : dateFor(start).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
     buckets.push({ label, start, end, inflow, outflow, projected: false });
   }
-  buckets.push({ label: "Next", start: 1, end: 1, inflow: 0, outflow: 0, projected: true });
+  const histN = buckets.length;
+  const avgIn = histN ? Math.round(buckets.reduce((sum, b) => sum + b.inflow, 0) / histN) : 0;
+  const avgOut = histN ? Math.round(buckets.reduce((sum, b) => sum + b.outflow, 0) / histN) : 0;
+  buckets.push({ label: "Next", start: 1, end: 1, inflow: avgIn, outflow: avgOut, projected: true });
   return buckets;
 }
 

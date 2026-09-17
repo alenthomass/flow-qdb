@@ -68,10 +68,12 @@ function withDefaults(row: Seed): Seed {
   return {
     ...base,
     ...row,
-    invoices: (row.invoices && row.invoices.length) ? row.invoices : base.invoices,
-    clients: (row.clients && row.clients.length) ? row.clients : base.clients,
+    transactions: mergeMissingById(row.transactions, base.transactions),
+    invoices: mergeMissingById(row.invoices, base.invoices),
+    clients: mergeMissingById(row.clients, base.clients),
     merchant: { ...base.merchant, ...(row.merchant || {}) },
-    paymentLinks: (row.paymentLinks && row.paymentLinks.length) ? row.paymentLinks : base.paymentLinks,
+    paymentLinks: mergeMissingById(row.paymentLinks, base.paymentLinks),
+    matchProposals: mergeMissingById(row.matchProposals, base.matchProposals),
     checkoutPages: row.checkoutPages || [],
     subscriptionPlans: row.subscriptionPlans || [],
     subscribers: row.subscribers || [],
@@ -115,6 +117,16 @@ function cleanTagParents(tags: string[], parents: Record<string, string>): Recor
     next[child] = parent;
   });
   return next;
+}
+
+// Earlier saved sessions can omit later seed rows (previous-period
+// ledger, extra shopify sales). Missing ids are restored so vs-prior
+// Money In / Money Out still compute. User-created rows stay.
+function mergeMissingById<T extends { id: string }>(saved: T[] | undefined, base: T[]): T[] {
+  if (!saved || !saved.length) return base.slice();
+  const have = new Set(saved.map(row => row.id));
+  const missing = base.filter(row => !have.has(row.id));
+  return missing.length ? saved.concat(missing) : saved;
 }
 
 let live: Seed = cloneSeed();
@@ -388,6 +400,25 @@ export function appendBankAccount(account: BankAccount): BankAccount {
   live.bankAccounts = [...live.bankAccounts, account];
   persist();
   return account;
+}
+
+export function updateBankAccount(id: string, patch: Partial<BankAccount>): BankAccount | undefined {
+  let next: BankAccount | undefined;
+  live.bankAccounts = live.bankAccounts.map(row => {
+    if (row.id !== id) return row;
+    next = Object.assign({}, row, patch, { id: row.id });
+    return next;
+  });
+  persist();
+  return next;
+}
+
+export function removeBankAccount(id: string): BankAccount | undefined {
+  const row = live.bankAccounts.find(account => account.id === id);
+  if (!row || row.sample !== true) return undefined;
+  live.bankAccounts = live.bankAccounts.filter(account => account.id !== id);
+  persist();
+  return row;
 }
 
 export function appendRecurringInvoice(row: RecurringInvoice): RecurringInvoice {

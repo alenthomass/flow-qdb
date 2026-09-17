@@ -16,7 +16,7 @@
       "checkout": { "title": "Payment Page", "sub": "A page customers open, fill in and pay on" },
       "subs": { "title": "Subscriptions", "sub": "Charge customers automatically, on repeat" },
       "gateway": { "title": "Payment Setup", "sub": "Your gateway, branding and test mode" },
-      "bank": { "title": "Connect Your Bank", "sub": "Link your bank to see money as it arrives" },
+      "bank": { "title": "Connect Your Bank", "sub": "Upload a statement. Live bank feeds are coming soon." },
       "shopify": { "title": "Shopify Store", "sub": "Take payments on your online store" }
     },
     "transactions": {
@@ -207,7 +207,11 @@
     "editTag": "Edit tag",
     "saveChanges": "Save changes",
     "help": "About this build",
-    "gotIt": "Got it"
+    "gotIt": "Got it",
+    "removeBank": "Remove sample account",
+    "removeSample": "Remove sample account",
+    "statement": "Upload bank statement",
+    "importStatement": "Import"
   },
   "hub": {
     "needLook": "{{count}} need a look",

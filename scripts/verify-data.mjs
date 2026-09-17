@@ -1,11 +1,11 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { dashboardSnapshot, dashboardState } from "../lib/data/view.ts";
+import { dashboardSnapshot, dashboardState, bankLogoSrc, bankReminderView } from "../lib/data/view.ts";
 import { Component } from "../lib/dashboard/component.js";
-import { formatDate, formatMoney, offsetFromLabel, dateInputValue, previousMonthLabel } from "../lib/format.ts";
+import { formatDate, formatMoney, offsetFromLabel, dateInputValue, previousMonthLabel, monthYearLabel } from "../lib/format.ts";
 import { chartScale } from "../lib/chart.ts";
 import { dateFor, seed } from "../lib/data/seed.ts";
 import { SAMPLE_BILL, SAMPLE_BILLS, EXTRACT_DELAY_MS, EXTRACT_DELAY_MIN_MS, EXTRACT_DELAY_MAX_MS, extractBill, extractDelayMs, extractedBillForm } from "../lib/data/sample-bill.ts";
-import { appendTransaction, getStore, hydrateFromStorage, resetStore } from "../lib/data/store.ts";
+import { appendTransaction, getStore, hydrateFromStorage, removeBankAccount, resetStore, updateBankAccount } from "../lib/data/store.ts";
 import {
   addClient,
   addSubscriber,
@@ -14,6 +14,7 @@ import {
   checkoutPageUnavailable,
   confirmMatch,
   connectSampleBank,
+  importBankStatement,
   connectShopify,
   createTag,
   createInvoice,
@@ -49,7 +50,8 @@ import {
   settlePayment,
   simulatePayment
 } from "../lib/data/spine.ts";
-import { SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS, SAMPLE_SHOPIFY_ORDER } from "../lib/data/sample-checkout.ts";
+import { CONNECTED_BANKING_PREVIEW, QATAR_BANKS, SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS, SAMPLE_SHOPIFY_ORDER } from "../lib/data/sample-checkout.ts";
+import { parseBankStatementCsv, parseStatementDate } from "../lib/data/statement.ts";
 import { buildTallyExport, exportTallyXml, simulateZohoSync, transactionsInTallyRange } from "../lib/data/tally-export.ts";
 import { resetGateway } from "../lib/gateway/index.ts";
 import {
@@ -79,6 +81,7 @@ import {
   getReminderInvoices,
   getRunway,
   getSpend,
+  getAiInsights,
   getTotalInvoiced,
   getVatRate,
   signedAmount,
@@ -114,7 +117,7 @@ const FlowStore = {
   publishCheckoutPage, payPublishedCheckout, settleCheckoutPayment, saveCheckoutSettings, checkoutPageUnavailable,
   createSubscriptionPlan, addSubscriber, runSimulatedBilling, settleBilling,
   cancelSubscriber, deactivatePaymentLink, connectShopify, ingestShopifyOrder,
-  connectSampleBank, setSmartCheckout, SAMPLE_CHECKOUT_ANALYTICS,
+  connectSampleBank, importBankStatement, setSmartCheckout, SAMPLE_CHECKOUT_ANALYTICS,
   createInvoice, duplicateInvoice, addClient, postPayroll, payrollPostedFor, defaultPayrollPeriod,
   generatePayslips, payslipsForPeriod,
   dateInputValue, previousMonthLabel, formatDate,
@@ -161,6 +164,7 @@ const rootSource = readFileSync(new URL("../lib/dashboard/component.js", import.
 const enChrome = readFileSync(new URL("../locales/en/chrome.json", import.meta.url), "utf8");
 const enSettings = readFileSync(new URL("../locales/en/settings.json", import.meta.url), "utf8");
 const enUi = readFileSync(new URL("../locales/en/ui.json", import.meta.url), "utf8");
+const enPages = readFileSync(new URL("../locales/en/pages.json", import.meta.url), "utf8");
 const root = new Component();
 check("Home defaults to 30 days", root.state.tf === "month", root.periodOf().label);
 const homeToggle = root.renderVals().tfs.map(item => item.label).join(" / ");
@@ -581,12 +585,16 @@ check(
 root.setState({ detail: null });
 root.setState({ page: "invoicing", detail: { type: "invoice", id: "inv_0148" } });
 root.renderVals().det.o.sendReminder();
+const reminderPreviewed = root.state.modal === "reminderPreview" && /Lusail Hospitality/.test(root.state.form.reminderDraft || "");
+root.submitModal();
 check(
   "Send reminder toasts the client, not the clipboard",
-  root.state.toast === "Reminder sent to Lusail Hospitality",
+  reminderPreviewed &&
+    root.state.toast === "Reminder sent to Lusail Hospitality" &&
+    !/clipboard/.test(rootSource.slice(rootSource.indexOf("sendInvoiceReminder"), rootSource.indexOf("draftReminderMessage"))),
   root.state.toast || "(none)"
 );
-root.setState({ detail: null, toast: "" });
+root.setState({ detail: null, toast: "", modal: null });
 
 const peekedNumber = peekNextInvoiceNumber();
 const created = createInvoice({
@@ -1045,6 +1053,17 @@ check("Export XML downloads a file",
 
 resetStore();
 root.applyStore();
+root.setState(st => ({ page: "accounting", detail: null, tab: Object.assign({}, st.tab, { accounting: "zoho" }) }));
+const emptyZohoLog = root.renderVals().syncLog;
+check("Zoho sync log empty state matches Tally export history",
+  emptyZohoLog && emptyZohoLog.none === true && emptyZohoLog.any === false && (emptyZohoLog.rows || []).length === 0 &&
+    /v\.syncLog\.none/.test(html) &&
+    /ui\.acc\.noLog/.test(html) &&
+    /"noLog": "No sync history is stored\."/.test(enUi) &&
+    /v\.exports\.none/.test(html) &&
+    /ui\.tally\.noHist/.test(html) &&
+    !/\(\(v\.syncLog\) \|\| \[\]\)\.map/.test(html),
+  "No sync history is stored.");
 root.runTallyExport();
 root.runZohoSync();
 check("Tally export history appears in the UI",
@@ -1055,6 +1074,17 @@ check("Zoho sync success is visible",
   root.state.zoho && root.state.zoho.hasLast && String(root.state.zoho.line).includes("simulated") &&
     (root.state.syncLog || []).some(row => row.status === "Simulated"),
   root.state.zoho ? root.state.zoho.line : "missing");
+const filledZohoLog = root.renderVals().syncLog;
+check("Zoho sync log lists rows after Sync now",
+  filledZohoLog && filledZohoLog.any === true && filledZohoLog.none === false &&
+    (filledZohoLog.rows || []).some(row => row.status === "Simulated"),
+  (filledZohoLog && filledZohoLog.rows ? filledZohoLog.rows.length : 0) + " log row(s)");
+const zohoLogId = ((filledZohoLog && filledZohoLog.rows) || []).find(row => row.status === "Simulated");
+root.setState({ detail: { type: "synclog", id: zohoLogId && zohoLogId.id } });
+const zohoLogDet = root.renderVals().det;
+check("Zoho sync log detail still opens from a row",
+  !!(zohoLogDet && zohoLogDet.synclog && zohoLogDet.o && zohoLogDet.o.status === "Simulated" && zohoLogDet.o.itemsT),
+  zohoLogDet && zohoLogDet.o ? String(zohoLogDet.o.target || "") : "missing");
 resetStore();
 resetGateway();
 
@@ -1315,11 +1345,630 @@ check("Sample bank connect is labelled and does not change cash",
   live().bankAccounts.some(row => row.id === SAMPLE_BANKS[0].id && row.sample === true && row.openingBalanceMinor === 0) &&
     getCashOnHand() === cash0,
   money(getCashOnHand()));
-check("Bank onboarding is wired in the UI",
-  /bankOn\.start/.test(html) && /ui\.bank\.connectSample/.test(html) && /Connect sample bank/.test(enUi),
-  "onboarding steps");
+check("Connected banking is a static preview, not a wizard",
+  /function BankAccountsPanel/.test(html) &&
+    /v\.pt\.bank[\s\S]{0,120}BankAccountsPanel/.test(html) &&
+    /v\.ct\.banks[\s\S]{0,120}BankAccountsPanel/.test(html) &&
+    /ui\.bank\.previewTitle/.test(html) && /What connected banking will look like/.test(enUi) &&
+    /bankOn\.demo/.test(html) && /ui\.bank\.previewCta/.test(html) && /See how it works/.test(enUi) &&
+    /v\.modal\.bankDemo/.test(html) && /function BankPickerList/.test(html) &&
+    !/bankOn\.start/.test(html) && !/bankOn\.confirm/.test(html) &&
+    !/connectSampleBank/.test(rootSource) && !/bankOnboarding/.test(rootSource),
+  "preview card + demo");
+check("Upload statement is the primary bank action",
+  /bankOn\.upload/.test(html) && /ui\.bank\.upload/.test(html) && /Upload statement/.test(enUi) &&
+    /v\.modal\.statement/.test(html) && /flow-stmt-file/.test(html) && /accept="\.csv,text\/csv"/.test(html) &&
+    /ui\.bank\.upload[\s\S]+ui\.bank\.previewTitle/.test(html) &&
+    !/ui\.bank\.connectAnother/.test(html) && !/ui\.bank\.connectSample/.test(html),
+  "upload first + csv modal");
+check("Live bank connect is labelled Coming soon",
+  /c\.soonChip/.test(html) && /'Coming soon': \['var\(--ink-3\)', 'var\(--chip\)'\]/.test(rootSource) &&
+    /Upload a statement\. Live bank feeds are coming soon\./.test(enPages) &&
+    /A preview only\. Live bank feeds are not connected yet\./.test(enUi) &&
+    !/Link your bank to see money as it arrives/.test(enPages),
+  "dest coming soon + preview-only copy");
+check("Connected banking preview is not a store account",
+  dashboardState().bankPreview &&
+    dashboardState().bankPreview.logo === bankLogoSrc(CONNECTED_BANKING_PREVIEW.bank) &&
+    dashboardState().bankPreview.balance === money(CONNECTED_BANKING_PREVIEW.balanceMinor) &&
+    dashboardState().bankPreview.iban === CONNECTED_BANKING_PREVIEW.ibanMasked &&
+    !live().bankAccounts.some(row => row.openingBalanceMinor === CONNECTED_BANKING_PREVIEW.balanceMinor) &&
+    !dashboardState().banks.some(row => row.name === dashboardState().bankPreview.name && row.id),
+  dashboardState().bankPreview.balance);
+check("Statement upload bank picker uses Qatar majors",
+  QATAR_BANKS.length === 8 &&
+    dashboardState().qatarBanks.length === 8 &&
+    QATAR_BANKS.map(row => row.bank).join(" · ") ===
+      "Qatar National Bank · Doha Bank · Commercial Bank of Qatar · Qatar Islamic Bank · Qatar International Islamic Bank · Dukhan Bank · Ahli Bank · Masraf Al Rayan" &&
+    /stmt\.banks/.test(html) && /v\.stmt && v\.stmt\.banks/.test(html) &&
+    /qatarBankCatalog/.test(rootSource) && !/Masraf Al Rayan/.test(rootSource) &&
+    !/placeholder=\{v\.t\("ui\.bank\.bankNamePh"\)\}/.test(html),
+  QATAR_BANKS.map(row => row.short || row.bank).join(", "));
+const qatarLogoByBank = {
+  "Qatar National Bank": "/banks/qnb.png",
+  "Doha Bank": "/banks/doha.jpg",
+  "Commercial Bank of Qatar": "/banks/cbq.png",
+  "Qatar Islamic Bank": "/banks/qib.png",
+  "Qatar International Islamic Bank": "/banks/qiib.png",
+  "Dukhan Bank": "/banks/dukhan.png",
+  "Ahli Bank": "/banks/ahli.png",
+  "Masraf Al Rayan": "/banks/alrayan.png"
+};
+check("Qatar bank picker logos map every catalog name",
+  QATAR_BANKS.every(row => bankLogoSrc(row.bank) === qatarLogoByBank[row.bank]) &&
+    dashboardState().qatarBanks.every(row => row.logo === qatarLogoByBank[row.bank] && row.initials) &&
+    bankLogoSrc("Commercial Bank") === "/banks/cbq.png" &&
+    bankLogoSrc("QIIB") === "/banks/qiib.png" &&
+    bankLogoSrc("QIB") === "/banks/qib.png" &&
+    bankLogoSrc("QIIB") !== bankLogoSrc("QIB") &&
+    bankLogoSrc("Unknown Credit Union") == null &&
+    /BankMark logo=\{opt\.logo\} initials=\{opt\.initials\}/.test(html) &&
+    /onError=\{\(event\) => \{ event\.currentTarget\.style\.display = "none"; \}\}/.test(html),
+  QATAR_BANKS.map(row => bankLogoSrc(row.bank)).join(", "));
+check("Statement bank picker selected row is high-contrast",
+  /border:" \+ \(opt\.on \? "1\.5px solid var\(--ink-6\)" : "1px solid var\(--line\)"\)/.test(html) &&
+    /background:" \+ \(opt\.on \? "var\(--panel-2\)" : "var\(--btn-light\)"\)/.test(html) &&
+    /font-weight:" \+ \(opt\.on \? "700" : "600"\)/.test(html) &&
+    /opt\.on[\s\S]{0,500}m4 10\.2 4\.2 4\.2L16\.5 5\.6/.test(html) &&
+    !/border:2px solid " \+ \(opt\.on \? "var\(--ink\)"/.test(html) &&
+    !/opt\.on \? "var\(--accent-soft\)"/.test(html) &&
+    !/opt\.on \? "var\(--bar-solid\)"/.test(html),
+  "1.5px ink-6 border + check");
+check("Bank pages have Accounts and Statements nested tabs",
+  /tabOf\('bankView', 'accounts'\)/.test(rootSource) &&
+    /tabList\('bankView'/.test(rootSource) &&
+    /v\.bankViewTabs/.test(html) &&
+    /v\.bt && v\.bt\.statements/.test(html) &&
+    /ui\.bank\.tabAccounts/.test(html) && /Accounts/.test(enUi) &&
+    /ui\.bank\.tabStatements/.test(html) && /Statements/.test(enUi) &&
+    /ui\.bank\.statementsEmpty/.test(html) &&
+    /v\.bt\.statements[\s\S]+ui\.bank\.previewTitle/.test(html) &&
+    /v\.pt\.bank[\s\S]{0,120}BankAccountsPanel/.test(html) &&
+    /v\.ct\.banks[\s\S]{0,120}BankAccountsPanel/.test(html),
+  "bankView accounts|statements");
+const debitCsv = "date,description,debit,credit\n" + dateInputValue(0) + ",Counter sale,,210.00\n" + dateInputValue(-1) + ",Kahramaa,95.00,\n,,missing,10.00\n";
+const parsedDebit = parseBankStatementCsv(debitCsv);
+check("Statement CSV accepts debit and credit columns",
+  parsedDebit.rows.length === 2 && parsedDebit.skipped === 1 &&
+    parsedDebit.rows[0].signedMinor === 21000 && parsedDebit.rows[1].signedMinor === -9500,
+  parsedDebit.rows.length + " rows · skipped " + parsedDebit.skipped);
+const stmtIsoOffset = offsetFromLabel("2026-09-05");
+const spineSource = readFileSync(new URL("../lib/data/spine.ts", import.meta.url), "utf8");
+check("Statement date parser accepts Gulf and English bank dates",
+  stmtIsoOffset != null &&
+    parseStatementDate("2026-09-05") === stmtIsoOffset &&
+    parseStatementDate("05/09/2026") === stmtIsoOffset &&
+    parseStatementDate("05-09-2026") === stmtIsoOffset &&
+    parseStatementDate("5 Sep 2026") === stmtIsoOffset &&
+    parseStatementDate("05 Sep 2026") === stmtIsoOffset &&
+    parseStatementDate("5 Sept 2026") === stmtIsoOffset &&
+    parseStatementDate("Sep 5, 2026") === stmtIsoOffset &&
+    parseStatementDate("not-a-date") == null &&
+    offsetFromLabel("5 Sep 2026") == null,
+  "ISO " + stmtIsoOffset + " · Sep " + parseStatementDate("5 Sep 2026") + " · Sept " + parseStatementDate("5 Sept 2026"));
+check("Statement import names unreadable dates in the toast",
+  /skippedReasons/.test(rootSource) &&
+    /chrome\.toast\.stmtBadDate/.test(rootSource) &&
+    /try DD\/MM\/YYYY or YYYY-MM-DD/.test(enChrome) &&
+    /parseStatementDate\(row\.dateRaw\)/.test(spineSource) &&
+    !/offsetFromLabel\(row\.dateRaw\)/.test(spineSource),
+  "stmtBadDate toast + parseStatementDate");
+resetStore();
+check("Seed statement history is empty",
+  dashboardState().statementMonths.empty === true &&
+    dashboardState().statementMonths.months.length === 0 &&
+    live().bankAccounts.every(row => !(row.importHistory && row.importHistory.length)),
+  "no imports");
+const moneyInBeforeStmt = getMoneyIn("month");
+const moneyOutBeforeStmt = getMoneyOut("month");
+const matchBefore = getMatchRate();
+const openBefore = getOpenMatches().length;
+const csv = [
+  "date,description,amount",
+  dateInputValue(0) + ",Lusail Hospitality,9200.00",
+  dateInputValue(-1) + ",Walk-in till,125.50",
+  dateInputValue(-2) + ",Ahli Bank fees,-80.00",
+  "not-a-date,Skipped row,10.00"
+].join("\n");
+const imported = importBankStatement({
+  csvText: csv,
+  accountId: "bank_01"
+});
+const matchAfter = getMatchRate();
+const stmtIn = live().transactions.find(txn => txn.id.startsWith("txn_stmt_") && txn.counterparty === "Lusail Hospitality");
+const stmtOut = live().transactions.find(txn => txn.id.startsWith("txn_stmt_") && txn.counterparty === "Ahli Bank fees");
+const stmtWalk = live().transactions.find(txn => txn.id.startsWith("txn_stmt_") && txn.counterparty === "Walk-in till");
+const stmtProposal = live().matchProposals.find(row => row.transactionId === stmtIn?.id);
+const walkProposal = live().matchProposals.find(row => row.transactionId === stmtWalk?.id);
+check("Bank statement import writes settled bank rows",
+  imported.imported === 3 && imported.skipped === 1 && imported.matched === 1 &&
+    imported.skippedReasons.badDate === 1 && imported.skippedReasons.missingFields === 0 &&
+    stmtIn && stmtIn.source === "bank" && stmtIn.direction === "in" && stmtIn.status === "settled" &&
+    stmtIn.amountMinor === 920000 && stmtIn.invoiceId === "inv_0147" &&
+    stmtOut && stmtOut.direction === "out" && stmtOut.type === "expense" && stmtOut.tag === "Fees" &&
+    stmtOut.amountMinor === 8000 && !live().matchProposals.some(row => row.transactionId === stmtOut.id),
+  imported.imported + " imported · skipped " + imported.skipped + " · badDate " + imported.skippedReasons.badDate);
+const importedAccount = live().bankAccounts.find(row => row.id === "bank_01");
+check("Statement import updates lastImportOffset and importHistory",
+  importedAccount && importedAccount.lastImportOffset === 0 &&
+    Array.isArray(importedAccount.importHistory) && importedAccount.importHistory.length === 1 &&
+    importedAccount.importHistory[0].id.indexOf("stmt_") === 0 &&
+    importedAccount.importHistory[0].importedOffset === 0 &&
+    importedAccount.importHistory[0].rowsImported === 3 &&
+    importedAccount.importHistory[0].rowsSkipped === 1 &&
+    importedAccount.periodFromOffset === -2 && importedAccount.periodToOffset === 0 &&
+    bankReminderView(importedAccount).status == null &&
+    dashboardState().banks.find(row => row.id === "bank_01").reminder.status == null,
+  "lastImport " + (importedAccount && importedAccount.lastImportOffset) + " · history " + ((importedAccount && importedAccount.importHistory) || []).length);
+const stmtMonthsAfterImport = dashboardState().statementMonths;
+const stmtMonthAfterImport = stmtMonthsAfterImport.months[0];
+const stmtRowAfterImport = stmtMonthAfterImport && stmtMonthAfterImport.rows[0];
+check("Statements tab groups seed-empty then imported history by month",
+  stmtMonthsAfterImport.empty === false &&
+    stmtMonthsAfterImport.months.length === 1 &&
+    stmtMonthAfterImport.label === monthYearLabel(0) &&
+    stmtMonthAfterImport.rows.length === 1 &&
+    stmtRowAfterImport.accountId === "bank_01" &&
+    String(stmtRowAfterImport.name).indexOf("Ahli") >= 0 &&
+    stmtRowAfterImport.logo === bankLogoSrc("Ahli Bank") &&
+    stmtRowAfterImport.rowsImported === 3 &&
+    stmtRowAfterImport.rowsSkipped === 1 &&
+    stmtRowAfterImport.periodOn === true &&
+    stmtRowAfterImport.importedDate === formatDate(0),
+  stmtMonthAfterImport ? stmtMonthAfterImport.label + " · " + stmtMonthAfterImport.rows.length + " row" : "missing");
+check("Statement amount match uses open invoices",
+  stmtProposal && stmtProposal.status === "open" && stmtProposal.confidence === 0.9 &&
+    stmtProposal.invoiceId === "inv_0147" &&
+    stmtProposal.reason === "Statement amount matches invoice INV-0147" &&
+    walkProposal && walkProposal.confidence === 0.4 && walkProposal.invoiceId == null,
+  stmtProposal ? stmtProposal.reason : "missing proposal");
+check("Statement import keeps matched + open = total",
+  matchAfter.matched + getOpenMatches().length === matchAfter.total &&
+    matchAfter.total === matchBefore.total + 2 &&
+    getOpenMatches().length === openBefore + 2 &&
+    matchAfter.matched === matchBefore.matched,
+  matchAfter.matched + " + " + getOpenMatches().length + " = " + matchAfter.total);
+check("Statement import lifts Money In and Out from the ledger",
+  getMoneyIn("month") === moneyInBeforeStmt + 920000 + 12550 &&
+    getMoneyOut("month") === moneyOutBeforeStmt + 8000 &&
+    getNet("month") === getProfitAndLoss("month").netProfit,
+  "In " + money(getMoneyIn("month")) + " · Out " + money(getMoneyOut("month")));
+check("Statement import writes one activity summary",
+  live().activityLog.some(row => row.what === "Bank statement imported, 3 transactions, 1 matched automatically"),
+  live().activityLog[0] ? live().activityLog[0].what : "missing");
+const createdBank = importBankStatement({
+  csvText: "date,description,amount\n" + dateInputValue(-3) + ",QNB transfer,50.00\n",
+  bankName: "Qatar National Bank",
+  label: "Collections"
+});
+check("New statement bank account is appended like sample banks",
+  live().bankAccounts.some(row => row.id === createdBank.accountId && row.bank === "Qatar National Bank" &&
+    row.label === "Collections" && row.openingBalanceMinor === 0 && row.asOfOffset === 0 && !row.sample),
+  createdBank.accountId);
+const stmtMonthsTwoAccounts = dashboardState().statementMonths;
+check("Statements tab flattens imports across accounts in one month",
+  stmtMonthsTwoAccounts.empty === false &&
+    stmtMonthsTwoAccounts.months.length === 1 &&
+    stmtMonthsTwoAccounts.months[0].rows.length === 2 &&
+    stmtMonthsTwoAccounts.months[0].rows[0].accountId === createdBank.accountId &&
+    stmtMonthsTwoAccounts.months[0].rows[1].accountId === "bank_01",
+  stmtMonthsTwoAccounts.months[0] ? stmtMonthsTwoAccounts.months[0].rows.map(row => row.accountId).join(" · ") : "missing");
+resetStore();
+updateBankAccount("bank_01", {
+  importHistory: [
+    { id: "stmt_now", importedOffset: 0, periodFromOffset: -10, periodToOffset: 0, rowsImported: 4, rowsSkipped: 0 },
+    { id: "stmt_prev", importedOffset: -40, periodFromOffset: -50, periodToOffset: -40, rowsImported: 2, rowsSkipped: 1 }
+  ]
+});
+const stmtMonthsGrouped = dashboardState().statementMonths;
+check("Statements tab sorts months and rows newest-first",
+  stmtMonthsGrouped.months.length === 2 &&
+    stmtMonthsGrouped.months[0].label === monthYearLabel(0) &&
+    stmtMonthsGrouped.months[1].label === monthYearLabel(-40) &&
+    stmtMonthsGrouped.months[0].label !== stmtMonthsGrouped.months[1].label &&
+    stmtMonthsGrouped.months[0].rows[0].id === "stmt_now" &&
+    stmtMonthsGrouped.months[1].rows[0].id === "stmt_prev" &&
+    stmtMonthsGrouped.months[1].rows[0].periodOn === true &&
+    stmtMonthsGrouped.months[1].rows[0].periodFrom === formatDate(-50) &&
+    stmtMonthsGrouped.months[1].rows[0].periodTo === formatDate(-40),
+  stmtMonthsGrouped.months.map(month => month.label).join(" → "));
+resetStore();
+const gulfCsv = [
+  "date,description,amount",
+  "05/09/2026,Gulf dated sale,10.00",
+  "5 Sep 2026,English dated sale,20.00",
+  "32/13/2026,Bad calendar,5.00",
+  ",Missing date,5.00"
+].join("\n");
+const gulfImported = importBankStatement({
+  csvText: gulfCsv,
+  accountId: "bank_01"
+});
+const gulfSale = live().transactions.find(txn => txn.counterparty === "Gulf dated sale");
+const engSale = live().transactions.find(txn => txn.counterparty === "English dated sale");
+check("Statement import accepts DD/MM/YYYY and 5 Sep 2026",
+  gulfImported.imported === 2 && gulfImported.skipped === 2 &&
+    gulfImported.skippedReasons.badDate === 1 && gulfImported.skippedReasons.missingFields === 1 &&
+    gulfSale && gulfSale.dayOffset === stmtIsoOffset && gulfSale.amountMinor === 1000 &&
+    engSale && engSale.dayOffset === stmtIsoOffset && engSale.amountMinor === 2000 &&
+    !live().transactions.some(txn => txn.counterparty === "Bad calendar"),
+  gulfImported.imported + " imported · skipped " + gulfImported.skipped +
+    " · offsets " + (gulfSale && gulfSale.dayOffset) + "/" + (engSale && engSale.dayOffset));
+const gulfAccount = live().bankAccounts.find(row => row.id === "bank_01");
+check("Statement period falls back to imported row offsets",
+  gulfAccount && gulfAccount.periodFromOffset === stmtIsoOffset && gulfAccount.periodToOffset === stmtIsoOffset &&
+    gulfAccount.lastImportOffset === 0,
+  "period " + (gulfAccount && gulfAccount.periodFromOffset) + ".." + (gulfAccount && gulfAccount.periodToOffset));
+resetStore();
+const datedImport = importBankStatement({
+  csvText: "date,description,amount\n" + dateInputValue(-5) + ",Period sale,15.00\n",
+  accountId: "bank_01",
+  periodFromRaw: dateInputValue(-20),
+  periodToRaw: dateInputValue(-1)
+});
+const datedAccount = live().bankAccounts.find(row => row.id === "bank_01");
+check("Statement import stores the submitted period when provided",
+  datedImport.imported === 1 && datedAccount && datedAccount.periodFromOffset === -20 && datedAccount.periodToOffset === -1 &&
+    datedAccount.importHistory[0].periodFromOffset === -20 && datedAccount.importHistory[0].periodToOffset === -1,
+  "from " + (datedAccount && datedAccount.periodFromOffset) + " · to " + (datedAccount && datedAccount.periodToOffset));
+resetStore();
+const seedAhli = live().bankAccounts.find(row => row.id === "bank_01");
+check("Seed current account is sample and has no reminder",
+  seedAhli && seedAhli.sample === true && bankReminderView(seedAhli).status == null &&
+    dashboardState().overdueBankCount === 0 &&
+    dashboardState().banks.find(row => row.id === "bank_01").sample === true &&
+    dashboardState().banks.find(row => row.id === "bank_01").reminder.status == null,
+  bankReminderView(seedAhli).status);
+const sampleAcc = connectSampleBank(SAMPLE_BANKS[0].id);
+const sampleExtra = connectSampleBank(SAMPLE_BANKS[1].id);
+check("Sample bank accounts never get a statement reminder status",
+  sampleAcc.sample === true && sampleExtra.sample === true && seedAhli.sample === true &&
+    bankReminderView(seedAhli).status == null &&
+    bankReminderView(sampleAcc).status == null && bankReminderView(sampleExtra).status == null &&
+    dashboardState().banks.filter(row => row.sample).every(row => row.reminder.status == null) &&
+    dashboardState().overdueBankCount === 0 &&
+    /bx\.sampleOn/.test(html) && /ui\.bank\.sample/.test(html) &&
+    /bx\.removeOn/.test(html) && /ui\.bank\.removeSample/.test(html) &&
+    /Array\.isArray\(v\.banks\)/.test(html),
+  SAMPLE_BANKS.map(row => row.id).concat("bank_01").join(", "));
+check("removeBankAccount removes extra sample accounts from the old wizard",
+  sampleAcc.id !== "bank_01" && sampleExtra.id !== "bank_01" &&
+    !!removeBankAccount(sampleAcc.id) && !!removeBankAccount(sampleExtra.id) &&
+    !live().bankAccounts.some(row => row.id === sampleAcc.id || row.id === sampleExtra.id) &&
+    live().bankAccounts.some(row => row.id === "bank_01" && row.sample === true),
+  sampleAcc.id + " · " + sampleExtra.id);
+resetStore();
+const liveStmt = importBankStatement({
+  csvText: "date,description,amount\n" + dateInputValue(0) + ",Live sale,10.00\n",
+  bankName: "Qatar National Bank",
+  label: "Collections"
+});
+const liveBank = live().bankAccounts.find(row => row.id === liveStmt.accountId);
+check("An account importing today is current, not overdue",
+  liveBank && !liveBank.sample && bankReminderView(liveBank).status === "current" &&
+    dashboardState().overdueBankCount === 0,
+  bankReminderView(liveBank).label);
+updateBankAccount(liveStmt.accountId, { lastImportOffset: -30 });
+check("Statement reminder is overdue after 30 days",
+  bankReminderView(live().bankAccounts.find(row => row.id === liveStmt.accountId)).status === "overdue" &&
+    dashboardState().overdueBankCount === 1 &&
+    /overdueBanksOn/.test(html) && /ui\.bank\.overdueBanner/.test(rootSource) &&
+    /'Up to date': \['var\(--pos\)'/.test(rootSource) &&
+    /stmtPeriodFrom/.test(rootSource) && /ui\.bank\.periodFrom/.test(html),
+  dashboardState().overdueBankCount + " overdue");
+const refusedMissing = removeBankAccount("bank_missing");
+const refusedLive = removeBankAccount(liveStmt.accountId);
+check("removeBankAccount refuses to remove a non-sample account",
+  refusedMissing == null && refusedLive == null &&
+    live().bankAccounts.some(row => row.id === liveStmt.accountId && !row.sample),
+  liveStmt.accountId);
+const removedSample = removeBankAccount("bank_01");
+check("removeBankAccount removes a sample account",
+  removedSample && removedSample.id === "bank_01" && removedSample.sample === true &&
+    !live().bankAccounts.some(row => row.id === "bank_01") &&
+    live().bankAccounts.some(row => row.id === liveStmt.accountId),
+  removedSample && removedSample.id);
 resetStore();
 resetGateway();
+
+root.applyStore();
+root.openModal("statement")();
+check("Upload statement defaults to New account on a fresh demo",
+  dashboardState().banks.every(row => Object.prototype.hasOwnProperty.call(row, "lastImportOffset")) &&
+    dashboardState().banks[0] && dashboardState().banks[0].id === "bank_01" &&
+    dashboardState().banks[0].sample === true &&
+    dashboardState().banks[0].lastImportOffset == null &&
+    root.defaultStmtAccount(dashboardState().banks) === "__new__" &&
+    root.state.form.stmtAccount === "__new__" &&
+    !/form\.stmtAccount = \(s\.banks && s\.banks\[0\]/.test(rootSource) &&
+    /this\.defaultStmtAccount\(s\.banks\)/.test(rootSource) &&
+    /v\.stmt && v\.stmt\.updatingOn/.test(html) &&
+    /Updating \{\{bank\}\} · \{\{label\}\}/.test(enUi),
+  root.state.form.stmtAccount);
+const olderLive = importBankStatement({
+  csvText: "date,description,amount\n" + dateInputValue(-8) + ",Older live sale,10.00\n",
+  bankName: "Qatar National Bank",
+  label: "New 1"
+});
+const olderStamp = Date.now();
+while (Date.now() === olderStamp) { /* next bank id must not collide */ }
+const newerLive = importBankStatement({
+  csvText: "date,description,amount\n" + dateInputValue(-1) + ",Newer live sale,12.00\n",
+  bankName: "Doha Bank",
+  label: "Ops"
+});
+updateBankAccount(olderLive.accountId, { lastImportOffset: -10 });
+updateBankAccount(newerLive.accountId, { lastImportOffset: -1 });
+updateBankAccount("bank_01", { lastImportOffset: 0 });
+root.applyStore();
+root.openModal("statement")();
+const stmtLiveVals = root.renderVals();
+check("Upload statement defaults to the most recently imported live account",
+  olderLive.accountId !== newerLive.accountId &&
+    live().bankAccounts[0].id === "bank_01" &&
+    dashboardState().banks[0].id === "bank_01" &&
+    dashboardState().banks.find(row => row.id === olderLive.accountId).lastImportOffset === -10 &&
+    dashboardState().banks.find(row => row.id === newerLive.accountId).lastImportOffset === -1 &&
+    dashboardState().banks.find(row => row.id === "bank_01").lastImportOffset === 0 &&
+    root.defaultStmtAccount([
+      { id: "bank_01", sample: true, lastImportOffset: 0 },
+      { id: "bank_old", sample: false, lastImportOffset: -10 },
+      { id: "bank_new", sample: false, lastImportOffset: -1 }
+    ]) === "bank_new" &&
+    root.defaultStmtAccount(dashboardState().banks) === newerLive.accountId &&
+    root.state.form.stmtAccount === newerLive.accountId &&
+    root.state.form.stmtAccount !== "bank_01" &&
+    stmtLiveVals.stmt.updatingOn === true &&
+    stmtLiveVals.stmt.updatingLine === "Updating Doha Bank · Ops",
+  root.state.form.stmtAccount);
+root.setState(st => ({ form: Object.assign({}, st.form, { stmtAccount: "__new__" }) }));
+const stmtNewVals = root.renderVals();
+root.setState(st => ({ form: Object.assign({}, st.form, { stmtAccount: olderLive.accountId }) }));
+const stmtOlderVals = root.renderVals();
+check("Upload statement confirmation follows the selected account",
+  stmtNewVals.stmt.updatingOn === false && stmtNewVals.stmt.updatingLine === "" &&
+    stmtOlderVals.stmt.updatingOn === true &&
+    stmtOlderVals.stmt.updatingLine === "Updating Qatar National Bank · New 1",
+  stmtOlderVals.stmt.updatingLine);
+const bankCards = root.renderVals().banks;
+root.openStatementForAccount(olderLive.accountId);
+check("Per-account Upload statement locks the modal to that account",
+  bankCards.some(row => row.sampleOn && row.removeOn && !row.uploadOn) &&
+    bankCards.some(row => row.id === olderLive.accountId && row.liveOn && row.uploadOn && !row.removeOn && typeof row.upload === "function") &&
+    /uploadOn: !row\.sample/.test(rootSource) &&
+    /openStatementForAccount/.test(rootSource) &&
+    /modalOpenState/.test(rootSource) &&
+    /bx\.uploadOn/.test(html) && /onClick=\{bx\.upload\}/.test(html) &&
+    root.state.modal === "statement" &&
+    root.state.form.stmtAccount === olderLive.accountId &&
+    root.state.form.stmtAccount !== newerLive.accountId,
+  root.state.form.stmtAccount);
+root.openStatementForAccount(newerLive.accountId);
+check("Per-account Upload statement can target a different live account",
+  root.state.modal === "statement" && root.state.form.stmtAccount === newerLive.accountId,
+  root.state.form.stmtAccount);
+root.openModal("statement")();
+check("Generic upload still defaults to the most recently imported live account",
+  root.state.form.stmtAccount === newerLive.accountId,
+  root.state.form.stmtAccount);
+const banksBeforeDemo = JSON.stringify(live().bankAccounts);
+const txnCountBeforeDemo = live().transactions.length;
+root.openModal("bankDemo")();
+const demo0 = root.renderVals();
+const demoSecond = (demo0.bankDemo.banks || []).find(row => !row.on);
+if (demoSecond && typeof demoSecond.go === "function") demoSecond.go();
+const demo0Picked = root.renderVals();
+root.submitModal();
+const demo1 = root.renderVals();
+root.submitModal();
+const demo2 = root.renderVals();
+root.submitModal();
+const demo3 = root.renderVals();
+const demoCurrent = (demo3.bankDemo.accounts || []).find(row => row.id === "current");
+if (demoCurrent && typeof demoCurrent.toggle === "function") demoCurrent.toggle({ target: { checked: false } });
+const demo3Toggled = root.renderVals();
+root.submitModal();
+const demo4 = root.renderVals();
+check("Connected banking demo is UI-only and does not write the store",
+  banksBeforeDemo === JSON.stringify(live().bankAccounts) &&
+    live().transactions.length === txnCountBeforeDemo &&
+    root.state.modal === "bankDemo" &&
+    demo0.modal.bankDemo === true &&
+    demo0.bankDemoStep === 0 && demo0.bankDemo.step0 === true &&
+    demo0.modal.title === "Choose a bank" && demo0.modal.cta === "Continue" &&
+    demo0.bankDemo.picked.bank === QATAR_BANKS[0].bank &&
+    demo0Picked.bankDemo.picked.bank === (demoSecond && demoSecond.bank) &&
+    demo1.bankDemoStep === 1 && demo1.bankDemo.step1 === true &&
+    demo1.modal.title === "Sign in" && demo1.modal.cta === "Continue" &&
+    demo1.f.bankDemoLoginId === "demo_user" && demo1.f.bankDemoLoginPw === "demo1234" &&
+    demo2.bankDemoStep === 2 && demo2.bankDemo.step2 === true &&
+    demo2.modal.title === "Enter the code" &&
+    (demo2.bankDemo.otp || []).map(box => box.value).join("") === "482913" &&
+    demo3.bankDemoStep === 3 && demo3.bankDemo.step3 === true &&
+    demo3.modal.title === "Choose accounts" && demo3.modal.cta === "Link account(s)" &&
+    (demo3.bankDemo.accounts || []).length === 2 &&
+    (demo3.bankDemo.accounts || []).every(row => row.on) &&
+    (demo3Toggled.bankDemo.accounts || []).some(row => row.id === "current" && !row.on) &&
+    (demo3Toggled.bankDemo.accounts || []).some(row => row.id === "savings" && row.on) &&
+    demo4.bankDemoStep === 4 && demo4.bankDemo.step4 === true &&
+    demo4.modal.title === "Connected preview" && demo4.modal.cta === "Got it" &&
+    demo4.bankDemo.previewIban === CONNECTED_BANKING_PREVIEW.ibanMasked &&
+    /k === 'bankDemo'/.test(rootSource) &&
+    /bankDemoStep \|\| 0\) < 4/.test(rootSource) &&
+    !/k === 'bankDemo'[\s\S]{0,280}applyStore/.test(rootSource) &&
+    !/FlowStore\./.test(rootSource.slice(rootSource.indexOf("} else if (k === 'bankDemo')"), rootSource.indexOf("} else if (k === 'bankDemo')") + 280)) &&
+    /chrome\.modal\.continue/.test(rootSource) && /"continue": "Continue"/.test(enChrome),
+  "step " + root.state.bankDemoStep + " · accounts " + live().bankAccounts.length);
+root.submitModal();
+check("Connected banking demo Got it closes without persisting",
+  root.state.modal == null &&
+    banksBeforeDemo === JSON.stringify(live().bankAccounts) &&
+    live().transactions.length === txnCountBeforeDemo,
+  String(root.state.modal));
+root.openModal("bankDemo")();
+root.setState(st => ({ form: Object.assign({}, st.form, { bankDemoLoginId: "changed", bankDemoOtp: "000000" }) }));
+root.submitModal();
+root.renderVals().h.closeModal();
+root.openModal("bankDemo")();
+const demoReopen = root.renderVals();
+check("Connected banking demo restarts at step 0 after close",
+  root.state.modal === "bankDemo" &&
+    root.state.bankDemoStep === 0 &&
+    demoReopen.bankDemo.step0 === true &&
+    root.state.form.bankDemoPick === QATAR_BANKS[0].bank &&
+    root.state.form.bankDemoLoginId === "demo_user" &&
+    root.state.form.bankDemoLoginPw === "demo1234" &&
+    root.state.form.bankDemoOtp === "482913" &&
+    JSON.stringify(root.state.form.bankDemoAccountsPicked) === JSON.stringify(["current", "savings"]) &&
+    banksBeforeDemo === JSON.stringify(live().bankAccounts),
+  "step " + root.state.bankDemoStep);
+resetStore();
+resetGateway();
+
+root.applyStore();
+const monthAiSrc = getAiInsights("month").insights;
+const dayAiSrc = getAiInsights("day").insights;
+check("Flow AI insights are derived from spend and runway",
+  monthAiSrc.length >= 1 &&
+    monthAiSrc.length <= 4 &&
+    monthAiSrc.some(line => /Salaries/.test(line)) &&
+    monthAiSrc.some(line => /cash-flow positive/.test(line)) &&
+    JSON.stringify(monthAiSrc) !== JSON.stringify(dayAiSrc),
+  monthAiSrc.length + " month · " + dayAiSrc.length + " day");
+root.setState(st => ({ page: "reports", reportsTf: "month", detail: null }));
+const monthRepAi = root.renderVals();
+root.setState({ reportsTf: "week" });
+const weekRepAi = root.renderVals();
+root.setState({ reportsTf: "day" });
+const dayRepAi = root.renderVals();
+const aiBlock = rootSource.slice(rootSource.indexOf("const aiInsights = [];"), rootSource.indexOf("const aiInsights = [];") + 1200);
+check("Reports Overview Flow AI panel is local and period-specific",
+  Array.isArray(monthRepAi.aiInsights) &&
+    monthRepAi.aiInsights.length >= 1 &&
+    monthRepAi.aiInsights.length <= 4 &&
+    JSON.stringify(monthRepAi.aiInsights) !== JSON.stringify(weekRepAi.aiInsights) &&
+    JSON.stringify(monthRepAi.aiInsights) !== JSON.stringify(dayRepAi.aiInsights) &&
+    /ui\.rep\.aiTitle/.test(html) &&
+    /Flow AI insights/.test(enUi) &&
+    /v\.aiInsights/.test(html) &&
+    /v\.reportsTfs/.test(html) &&
+    !/openai|anthropic|\bllm\b|fetch\(/.test(aiBlock),
+  "month " + monthRepAi.aiInsights.length + " · week " + weekRepAi.aiInsights.length + " · day " + dayRepAi.aiInsights.length);
+root.setState(st => ({
+  page: "transactions",
+  reportsTf: "month",
+  tab: Object.assign({}, st.tab, { transactions: "matching" })
+}));
+const matchAi = root.renderVals();
+check("Match cards label reasoning as Flow AI",
+  /ui\.match\.aiTag/.test(html) &&
+    /"aiTag": "Flow AI"/.test(enUi) &&
+    /ui\.det\.why/.test(html) &&
+    matchAi.matches.length > 0 &&
+    typeof matchAi.matches[0].why === "string" &&
+    typeof matchAi.matches[0].confT === "string" &&
+    /v\.t\("ui\.match\.suggested"/.test(html),
+  matchAi.matches.length + " open · " + matchAi.matches[0].confT);
+const monthForecast = dashboardState().periods.month.forecastSummary;
+check("Forecast summary narrates projected cash-forecast buckets",
+  monthForecast &&
+    monthForecast.hasProjection === true &&
+    typeof monthForecast.netMinor === "number" &&
+    typeof monthForecast.netText === "string" &&
+    typeof monthForecast.positive === "boolean" &&
+    monthRepAi.aiInsights.some(line => /Projected to (bring in|spend)/.test(line)),
+  (monthForecast.positive ? "in " : "out ") + monthForecast.netText);
+const overdueInv = (root.state.invoices || []).find(i => i.id === "inv_0147");
+const upcomingInv = (root.state.invoices || []).find(i => i.id === "inv_0148");
+const overdueDraft = overdueInv ? root.draftReminderMessage(Object.assign({}, overdueInv, { amt: root.fmt(overdueInv.amount) })) : "";
+const upcomingDraft = upcomingInv ? root.draftReminderMessage(Object.assign({}, upcomingInv, { amt: root.fmt(upcomingInv.amount) })) : "";
+check("Reminder drafts change tone for overdue vs upcoming",
+  !!overdueInv &&
+    !!upcomingInv &&
+    /now overdue/i.test(overdueDraft) &&
+    /due on/i.test(upcomingDraft) &&
+    overdueDraft !== upcomingDraft &&
+    /openReminderPreview/.test(rootSource) &&
+    /reminderPreview/.test(html) &&
+    /"previewTitle": "Review reminder"/.test(enUi),
+  (overdueInv && overdueInv.status) + " vs " + (upcomingInv && upcomingInv.status));
+root.openReminderPreview(Object.assign({}, overdueInv, { amt: root.fmt(overdueInv.amount) }));
+const previewOpen = root.state.modal === "reminderPreview" && String(root.state.form.reminderDraft || "").length > 20;
+root.setState({ form: Object.assign({}, root.state.form, { reminderDraft: "Edited reminder copy" }) });
+const edited = root.state.form.reminderDraft === "Edited reminder copy";
+root.submitModal();
+check("Remind opens an editable preview then the existing toast",
+  previewOpen &&
+    edited &&
+    root.state.modal == null &&
+    /Reminder sent/.test(String(root.state.toast || "")),
+  String(root.state.toast || "").slice(0, 48));
+root.setState({ modal: null, reportsTf: "month", aiChatOpen: true, aiChatMessages: [] });
+const cashA = root.answerAiChat("what's my cash runway");
+const overdueA = root.answerAiChat("show overdue receivables");
+const spendMonth = root.answerAiChat("how much did I spend this month");
+const revA = root.answerAiChat("what's my revenue trend");
+root.setState({ reportsTf: "day" });
+const spendDay = root.answerAiChat("how much did I spend this month");
+const weather = root.answerAiChat("what's the weather");
+const chatFn = rootSource.slice(rootSource.indexOf("answerAiChat("), rootSource.indexOf("postPayrollToLedger()"));
+const origTimeout = setTimeout;
+const origClear = clearTimeout;
+const queuedAi = [];
+globalThis.setTimeout = (fn) => { queuedAi.push(fn); return queuedAi.length; };
+globalThis.clearTimeout = () => {};
+root.setState({ aiChatMessages: [], aiChatThinking: false, form: Object.assign({}, root.state.form, { aiChatDraft: "" }) });
+root.sendAiChatMessage("what's my cash runway");
+const thinkingOn = root.state.aiChatThinking === true &&
+  (root.state.aiChatMessages || []).length === 1 &&
+  (root.state.aiChatMessages || [])[0].role === "user";
+queuedAi.forEach((fn) => fn());
+const thinkingOff = root.state.aiChatThinking === false &&
+  (root.state.aiChatMessages || []).length === 2 &&
+  (root.state.aiChatMessages || [])[1].role === "ai" &&
+  /QR/.test(String((root.state.aiChatMessages || [])[1].text || ""));
+globalThis.setTimeout = origTimeout;
+globalThis.clearTimeout = origClear;
+check("Flow AI chat answers from live Flow data, not an external model",
+  /QR/.test(cashA) &&
+    /outstanding invoice/i.test(overdueA) &&
+    spendMonth !== spendDay &&
+    /Net income|Not enough data/.test(revA) &&
+    /cash and runway/.test(weather) &&
+    thinkingOn && thinkingOff &&
+    /toggleAiChat/.test(html) &&
+    /z-index:75/.test(html) &&
+    /v\.h\.toggleAiChat/.test(html) &&
+    /sendAiChatSuggestion/.test(html) &&
+    /aiChatThinking/.test(html) &&
+    /flowAiDot/.test(html) &&
+    /--ai-gradient/.test(html) &&
+    /#3A4668/.test(html) &&
+    /#7A8AB4/.test(html) &&
+    !/#4F5BFF/.test(html) &&
+    !/#8B5CF6/.test(html) &&
+    !/#C061E8/.test(html) &&
+    /--ai-glow/.test(html) &&
+    /position:relative; width:min\(400px, calc\(100vw - 36px\)\)/.test(html) &&
+    /top:-40px/.test(html) &&
+    /width:220px; height:180px/.test(html) &&
+    /flowAiGlow/.test(html) &&
+    !/width:280px; height:200px/.test(html) &&
+    /background:var\(--ai-gradient\)/.test(html) &&
+    !/var\(--accent, #6C5CE7\)/.test(html) &&
+    /ui\.ai\.emptyHeading/.test(html) &&
+    /width:min\(400px, calc\(100vw - 36px\)\)/.test(html) &&
+    /height:min\(640px, calc\(100vh - 120px\)\)/.test(html) &&
+    !/max-height:min\(520px/.test(html) &&
+    !/onClick=\{v\.h\.openAiChat\}/.test(html) &&
+    /v\.aiChatOpen/.test(html) &&
+    /"chatTitle": "Flow AI"/.test(enUi) &&
+    /"chatSubtitle": "Answers from your live data"/.test(enUi) &&
+    /"emptyHeading": "Ask Flow AI anything"/.test(enUi) &&
+    /"suggestRunway": "What's my cash runway\?"/.test(enUi) &&
+    !/openai|anthropic|\bllm\b|fetch\(/.test(chatFn),
+  "spend month vs day · thinking delay · chips");
+root.setState(st => ({ page: "dashboard", reportsTf: "month", aiChatOpen: false, aiChatMessages: [], aiChatThinking: false, tab: Object.assign({}, st.tab, { transactions: "all" }) }));
 
 assertPhase1Invariants();
 check("Phase 1 invariants hold on the seed", true, "Home Net / Outstanding / match / payroll / cash / invoice status");
@@ -1588,6 +2237,11 @@ check("HTML has Reset demo data and confirm modal",
     /modal\.reset/.test(html) && /s\.modal === 'reset'/.test(html) &&
     /Reset demo data/.test(enSettings) && /This restores the seed/.test(enSettings),
   "button + confirm modal");
+const searchOverlay = html.slice(html.indexOf("show={!!v.searchOpen}"), html.indexOf("show={!!v.modal.on}"));
+check("Search overlay clicks stay inside the panel",
+  /onClick=\{v\.h\.closeSearch\}/.test(searchOverlay) &&
+    /className="flow-open-pop"[\s\S]*onClick=\{v\.h\.stop\}/.test(searchOverlay),
+  "stopPropagation on search pop");
 check("SANDBOX tooltip string present",
   /chrome\.sandboxTip/.test(html) && /this\.t\('chrome\.sandbox'\)/.test(rootSource) &&
     enChrome.includes("Simulated gateway. Live payment processing pending Qatar commercial registration."),
@@ -1606,6 +2260,30 @@ check("getVatRate still 0 after Stage 6",
   String(getVatRate()));
 resetStore();
 resetGateway();
+const staleLedger = JSON.parse(JSON.stringify(live()));
+staleLedger.transactions = staleLedger.transactions.filter(txn => {
+  const n = Number(String(txn.id).replace(/^txn_/, ""));
+  return n >= 1 && n <= 20;
+});
+const staleIn = staleLedger.transactions
+  .filter(txn => txn.direction === "in" && txn.status !== "pending" && txn.dayOffset >= -29 && txn.dayOffset <= 0)
+  .reduce((sum, txn) => sum + txn.amountMinor, 0);
+check("Older saved ledgers omit later seed rows",
+  staleIn === 4651000,
+  money(staleIn));
+globalThis.localStorage.setItem("flow-live-v1", JSON.stringify(staleLedger));
+hydrateFromStorage();
+const restoredMonth = dashboardState().periods.month;
+check("Hydrate restores missing seed rows and vs-prior %",
+  getMoneyIn("month") === 5601000 &&
+    getMoneyOut("month") === 3336500 &&
+    getMoneyInPrevious("month") > 0 &&
+    restoredMonth.moneyInShare === "+40%" &&
+    restoredMonth.moneyOutShare === "-2%",
+  "In " + money(getMoneyIn("month")) + " " + restoredMonth.moneyInShare +
+    " · Out " + money(getMoneyOut("month")) + " " + restoredMonth.moneyOutShare);
+resetStore();
+resetGateway();
 
 const doc = [
   "# Data verification",
@@ -1621,7 +2299,7 @@ const doc = [
   "- Merchant profile in the seed: CR-114820, phone +974 4012 8800, accounts@albidda.qa, Ahli Bank, account 001234567890, SWIFT AHLBQAQA. Opening balance is stored on bank_01 (QR 85,000 as of ANCHOR_DATE minus 30 days).",
   "- Four paid payment links are in the seed (collected QR 6,540, times paid 4). Subscription plans, checkout product price and saved report packs are not, so those lists start empty. Checkout drop-off uses labelled sample analytics in lib/data/sample-checkout.ts.",
   "- Shopify starts disconnected. Seed shopify transactions stay as historical rows; only new incoming after connect are tagged by the plugin.",
-  "- Extra bank connections are labelled sample and store opening QR 0 so cash on hand does not change.",
+  "- Extra sample bank rows from connectSampleBank are labelled sample and store opening QR 0 so cash on hand does not change. Connected-banking UI is a static preview plus a UI-only walkthrough that does not write bankAccounts. Statement import history starts empty and is listed on the Banks Statements tab. Upload Statement defaults to the most recently imported live account, or New account when none exist. Live account cards open the same modal locked to that account.",
   "- Recurring invoice schedules, sync payloads and approval caps are not in the seed.",
   "- Other Flow billing tiers besides the current Starter plan are not in the seed.",
   "- Reports profit and loss, the four stat cards and the branch table use their own 30-day period. They do not follow the Home 24h / 7 days / 30 days toggle.",
