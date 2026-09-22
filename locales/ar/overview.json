@@ -105,7 +105,10 @@
     "line": "{{tier}} · {{price}}/شهر",
     "limit": "{{limit}} معاملة",
     "tier": {
-      "Starter": "الأساسية"
+      "Starter": "الأساسية",
+      "Growth": "النمو",
+      "Business": "الأعمال",
+      "Enterprise": "المؤسسات"
     }
   },
   "mob": {

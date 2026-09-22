@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { formatMoney } from "../../lib/format";
 import type { CurrencyCode } from "../../lib/data/types";
-import { PAY_RAILS, payerFeeMinor, type PayRailId } from "../../lib/pay/rails";
+import { PAY_RAILS, type PayRailId } from "../../lib/pay/rails";
 
 function BrandMark({ name }: { name: string }) {
   if (name === "visa") return <span className="mark"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Visa%20Inc.%20logo%20(2021%E2%80%93present).svg" alt="VISA" /></span>;
@@ -63,8 +63,6 @@ export function CheckoutModal({
   const [rail, setRail] = useState<PayRailId>("cards");
   const [editingPhone, setEditingPhone] = useState(false);
   const [card, setCard] = useState({ number: "", expiry: "", cvv: "", save: false });
-  const fee = payerFeeMinor(amountMinor);
-  const total = amountMinor + fee;
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -93,9 +91,7 @@ export function CheckoutModal({
             </div>
             <div className="ck-summary">
               <h2>Price Summary</h2>
-              <div className="ck-row"><span>Amount</span><span>{formatMoney(amountMinor, currency)}</span></div>
-              <div className="ck-row"><span>Processing fee</span><span>{formatMoney(fee, currency)}</span></div>
-              <div className="ck-row ck-total"><span>Total</span><span>{formatMoney(total, currency)}</span></div>
+              <div className="ck-row ck-total"><span>Total</span><span>{formatMoney(amountMinor, currency)}</span></div>
             </div>
             <div className="ck-using">
               <span>Using as </span>
@@ -157,7 +153,7 @@ export function CheckoutModal({
                 event?.preventDefault?.();
                 if (!processing) onPay();
               }}>
-                {processing ? "Processing…" : rail === "cards" ? "Continue" : "Pay " + formatMoney(total, currency)}
+                {processing ? "Processing…" : rail === "cards" ? "Continue" : "Pay " + formatMoney(amountMinor, currency)}
               </button>
             </form>
           </section>

@@ -96,7 +96,10 @@
     "line": "{{tier}} · {{price}}/mo",
     "limit": "{{limit}} transactions",
     "tier": {
-      "Starter": "Starter"
+      "Starter": "Starter",
+      "Growth": "Growth",
+      "Business": "Business",
+      "Enterprise": "Enterprise"
     }
   },
   "mob": {

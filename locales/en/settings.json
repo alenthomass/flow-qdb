@@ -104,14 +104,18 @@
     "perMonth": "/mo",
     "free": "Free",
     "growth": "Growth",
-    "custom": "Custom",
+    "business": "Business",
+    "custom": "Enterprise",
     "notOnAccount": "Not on this account",
+    "flatSub": "Flat monthly subscription",
     "downgrade": "Downgrade",
     "upgrade": "Upgrade",
-    "talk": "Talk to us",
+    "talk": "Custom pricing",
     "customSub": "Multiple branches, dedicated support",
     "contact": "Contact sales",
-    "usage": "This month's usage"
+    "usage": "This month's usage",
+    "trialTitle": "Free for your first 3 months",
+    "trialBody": "Every new business is free for its first {{months}} months. After that, Starter is QR 99/mo — flat, no per-transaction fees."
   },
   "reset": {
     "title": "Reset demo data",

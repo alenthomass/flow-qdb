@@ -63,17 +63,48 @@ function emptyExtras(): Pick<
   };
 }
 
+function isPlaceholderLabel(raw: string): boolean {
+  const name = String(raw || "").trim().toLowerCase();
+  if (!name) return false;
+  if (/port\s*test/.test(name)) return true;
+  if (/\btest\s*payment\b/.test(name)) return true;
+  if (/^(test|demo|asdf|placeholder|xxx+)$/.test(name)) return true;
+  return false;
+}
+
+function stripPlaceholderTxns(transactions: Transaction[]): Transaction[] {
+  return transactions.filter(txn => !isPlaceholderLabel(txn.counterparty));
+}
+
 function withDefaults(row: Seed): Seed {
   const base = cloneSeed();
+  const transactions = stripPlaceholderTxns(mergeMissingById(row.transactions, base.transactions));
+  const keepTxn = new Set(transactions.map(txn => txn.id));
+  const paymentLinks = mergeMissingById(row.paymentLinks, base.paymentLinks).filter(link => {
+    if (isPlaceholderLabel(link.description || "")) return false;
+    if (link.txnId && !keepTxn.has(link.txnId)) return false;
+    return true;
+  });
+  const matchProposals = mergeMissingById(row.matchProposals, base.matchProposals)
+    .filter(row => keepTxn.has(row.transactionId));
+  const activityLog = (row.activityLog && row.activityLog.length ? row.activityLog : base.activityLog)
+    .filter(entry => !isPlaceholderLabel(entry.what || ""));
+  const savedMerchant = row.merchant || {};
   return {
     ...base,
     ...row,
-    transactions: mergeMissingById(row.transactions, base.transactions),
+    transactions,
     invoices: mergeMissingById(row.invoices, base.invoices),
     clients: mergeMissingById(row.clients, base.clients),
-    merchant: { ...base.merchant, ...(row.merchant || {}) },
-    paymentLinks: mergeMissingById(row.paymentLinks, base.paymentLinks),
-    matchProposals: mergeMissingById(row.matchProposals, base.matchProposals),
+    merchant: {
+      ...base.merchant,
+      ...savedMerchant,
+      // Flow subscription price always comes from seed (catalog source of truth).
+      plan: { ...((savedMerchant as Merchant).plan || {}), ...base.merchant.plan }
+    },
+    paymentLinks,
+    matchProposals,
+    activityLog,
     checkoutPages: row.checkoutPages || [],
     subscriptionPlans: row.subscriptionPlans || [],
     subscribers: row.subscribers || [],

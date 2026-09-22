@@ -3,7 +3,7 @@ import { dashboardSnapshot, dashboardState, bankLogoSrc, bankReminderView } from
 import { Component } from "../lib/dashboard/component.js";
 import { formatDate, formatMoney, offsetFromLabel, dateInputValue, previousMonthLabel, monthYearLabel } from "../lib/format.ts";
 import { chartScale } from "../lib/chart.ts";
-import { dateFor, seed } from "../lib/data/seed.ts";
+import { dateFor, FLOW_PLANS, FLOW_TRIAL_MONTHS, seed } from "../lib/data/seed.ts";
 import { SAMPLE_BILL, SAMPLE_BILLS, EXTRACT_DELAY_MS, EXTRACT_DELAY_MIN_MS, EXTRACT_DELAY_MAX_MS, extractBill, extractDelayMs, extractedBillForm } from "../lib/data/sample-bill.ts";
 import { appendTransaction, getStore, hydrateFromStorage, removeBankAccount, resetStore, updateBankAccount } from "../lib/data/store.ts";
 import {
@@ -160,6 +160,7 @@ const html = [
   readFileSync(new URL("../lib/dashboard/component.js", import.meta.url), "utf8")
 ].join("\n");
 const payPage = readFileSync(new URL("../app/pay/pay-checkout.tsx", import.meta.url), "utf8");
+const payModal = readFileSync(new URL("../app/pay/checkout-modal.tsx", import.meta.url), "utf8");
 const rootSource = readFileSync(new URL("../lib/dashboard/component.js", import.meta.url), "utf8");
 const enChrome = readFileSync(new URL("../locales/en/chrome.json", import.meta.url), "utf8");
 const enSettings = readFileSync(new URL("../locales/en/settings.json", import.meta.url), "utf8");
@@ -2258,6 +2259,45 @@ check("Simulated labels on Payment Setup and Connected Apps",
 check("getVatRate still 0 after Stage 6",
   getVatRate() === 0,
   String(getVatRate()));
+check("Flow subscription prices are QR 99 / 149 / 249 plus Enterprise",
+  seed.merchant.plan.monthlyPrice === 9900 &&
+    FLOW_PLANS.map(p => p.monthlyPrice).join(",") === "9900,14900,24900," &&
+    FLOW_TRIAL_MONTHS === 3 &&
+    dashboardState().plan.price === "QR 99" &&
+    /Starter · QR 99\/mo/.test(dashboardState().plan.line) &&
+    (dashboardState().billingPlans || []).length === 4 &&
+    (dashboardState().billingPlans || []).every(p => p.custom ? p.tier === "Enterprise" : !!p.price) &&
+    /settings\.billing\.trialTitle/.test(html) &&
+    /Free for your first 3 months/.test(enSettings) &&
+    !/QR 39/.test(html) && !/monthlyPrice: 3900/.test(rootSource) &&
+    !/Processing fee/.test(payModal),
+  dashboardState().plan.line + " · trial " + FLOW_TRIAL_MONTHS);
+const portLedger = JSON.parse(JSON.stringify(live()));
+portLedger.transactions = [{
+  id: "txn_port_test",
+  dayOffset: 0,
+  counterparty: "Port test payment",
+  source: "link",
+  direction: "in",
+  type: "sale",
+  tag: "Sales",
+  status: "settled",
+  amountMinor: 450000,
+  branchId: "br_01",
+  invoiceId: null
+}].concat(portLedger.transactions);
+portLedger.merchant = Object.assign({}, portLedger.merchant, {
+  plan: Object.assign({}, portLedger.merchant.plan, { monthlyPrice: 3900 })
+});
+globalThis.localStorage.setItem("flow-live-v1", JSON.stringify(portLedger));
+hydrateFromStorage();
+check("Hydrate strips Port test payment and restores Starter QR 99",
+  !live().transactions.some(txn => /port\s*test/i.test(txn.counterparty || "")) &&
+    live().merchant.plan.monthlyPrice === 9900 &&
+    getMoneyIn("month") === 5601000 &&
+    getMatchRate().matched === 11 && getMatchRate().total === 14 && getMatchRate().percent === 79 &&
+    getOpenMatches().length === 3,
+  "In " + money(getMoneyIn("month")) + " · match " + getMatchRate().matched + "/" + getMatchRate().total);
 resetStore();
 resetGateway();
 const staleLedger = JSON.parse(JSON.stringify(live()));
@@ -2301,7 +2341,7 @@ const doc = [
   "- Shopify starts disconnected. Seed shopify transactions stay as historical rows; only new incoming after connect are tagged by the plugin.",
   "- Extra sample bank rows from connectSampleBank are labelled sample and store opening QR 0 so cash on hand does not change. Connected-banking UI is a static preview plus a UI-only walkthrough that does not write bankAccounts. Statement import history starts empty and is listed on the Banks Statements tab. Upload Statement defaults to the most recently imported live account, or New account when none exist. Live account cards open the same modal locked to that account.",
   "- Recurring invoice schedules, sync payloads and approval caps are not in the seed.",
-  "- Other Flow billing tiers besides the current Starter plan are not in the seed.",
+  "- Flow subscription catalog is QR 99 / 149 / 249 plus custom Enterprise, with a 3-month free trial. The merchant seed plan is Starter at QR 99/mo (flat — no per-transaction fee).",
   "- Reports profit and loss, the four stat cards and the branch table use their own 30-day period. They do not follow the Home 24h / 7 days / 30 days toggle.",
   ""
 ].join("\n");

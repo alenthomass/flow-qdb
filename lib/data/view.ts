@@ -1,6 +1,6 @@
 import { dateInputValue, formatDate, formatMoney, monthYearLabel, offsetFromLabel } from "../format";
 import { chartScale } from "../chart";
-import { dateFor, seed } from "./seed";
+import { dateFor, FLOW_PLANS, FLOW_TRIAL_MONTHS, seed } from "./seed";
 import { getStore } from "./store";
 import { SAMPLE_BILL, SAMPLE_BILLS } from "./sample-bill";
 import { CONNECTED_BANKING_PREVIEW, QATAR_BANKS, SAMPLE_BANKS, SAMPLE_CHECKOUT_ANALYTICS } from "./sample-checkout";
@@ -472,10 +472,20 @@ export function dashboardState() {
     },
     plan: {
       tier: seed.merchant.plan.tier,
-      price: formatMoney(seed.merchant.plan.monthlyPrice, currency as CurrencyCode),
-      line: seed.merchant.plan.tier + " · " + formatMoney(seed.merchant.plan.monthlyPrice, currency as CurrencyCode) + "/mo",
+      price: formatMoney(seed.merchant.plan.monthlyPrice, currency as CurrencyCode, { trimWhole: true }),
+      line: seed.merchant.plan.tier + " · " + formatMoney(seed.merchant.plan.monthlyPrice, currency as CurrencyCode, { trimWhole: true }) + "/mo",
       limitLabel: usage.limit.toLocaleString("en-US") + " transactions"
     },
+    billingPlans: FLOW_PLANS.map(plan => ({
+      id: plan.id,
+      tier: plan.tier,
+      price: plan.monthlyPrice == null
+        ? null
+        : formatMoney(plan.monthlyPrice, currency as CurrencyCode, { trimWhole: true }),
+      custom: plan.monthlyPrice == null,
+      current: plan.tier === seed.merchant.plan.tier
+    })),
+    billingTrialMonths: FLOW_TRIAL_MONTHS,
     usage: {
       used: usage.used,
       limit: usage.limit,

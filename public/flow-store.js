@@ -103,6 +103,13 @@ var FlowStore = (() => {
     return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   }
   var ANCHOR_DATE = midnight(/* @__PURE__ */ new Date());
+  var FLOW_PLANS = [
+    { id: "starter", tier: "Starter", monthlyPrice: 9900 },
+    { id: "growth", tier: "Growth", monthlyPrice: 14900 },
+    { id: "business", tier: "Business", monthlyPrice: 24900 },
+    { id: "enterprise", tier: "Enterprise", monthlyPrice: null }
+  ];
+  var FLOW_TRIAL_MONTHS = 3;
   function dateFor(dayOffset) {
     const date = new Date(ANCHOR_DATE.getTime());
     date.setUTCDate(date.getUTCDate() + dayOffset);
@@ -206,7 +213,7 @@ var FlowStore = (() => {
       address: "Building 42, Al Sadd, Doha, Qatar",
       ownerName,
       accountantName,
-      plan: { tier: "Starter", monthlyPrice: 3900, txnLimit: 5e3 },
+      plan: { tier: "Starter", monthlyPrice: 9900, txnLimit: 5e3 },
       bankName: "Ahli Bank",
       accountName: "Al Bidda Trading W.L.L.",
       iban: "QA58 AHLB 0000 0000 0000 0000 001",
@@ -323,17 +330,44 @@ var FlowStore = (() => {
       tagParents: {}
     };
   }
+  function isPlaceholderLabel(raw) {
+    const name = String(raw || "").trim().toLowerCase();
+    if (!name) return false;
+    if (/port\s*test/.test(name)) return true;
+    if (/\btest\s*payment\b/.test(name)) return true;
+    if (/^(test|demo|asdf|placeholder|xxx+)$/.test(name)) return true;
+    return false;
+  }
+  function stripPlaceholderTxns(transactions2) {
+    return transactions2.filter((txn) => !isPlaceholderLabel(txn.counterparty));
+  }
   function withDefaults(row) {
     const base = cloneSeed();
+    const transactions2 = stripPlaceholderTxns(mergeMissingById(row.transactions, base.transactions));
+    const keepTxn = new Set(transactions2.map((txn) => txn.id));
+    const paymentLinks = mergeMissingById(row.paymentLinks, base.paymentLinks).filter((link) => {
+      if (isPlaceholderLabel(link.description || "")) return false;
+      if (link.txnId && !keepTxn.has(link.txnId)) return false;
+      return true;
+    });
+    const matchProposals = mergeMissingById(row.matchProposals, base.matchProposals).filter((row2) => keepTxn.has(row2.transactionId));
+    const activityLog2 = (row.activityLog && row.activityLog.length ? row.activityLog : base.activityLog).filter((entry) => !isPlaceholderLabel(entry.what || ""));
+    const savedMerchant = row.merchant || {};
     return {
       ...base,
       ...row,
-      transactions: mergeMissingById(row.transactions, base.transactions),
+      transactions: transactions2,
       invoices: mergeMissingById(row.invoices, base.invoices),
       clients: mergeMissingById(row.clients, base.clients),
-      merchant: { ...base.merchant, ...row.merchant || {} },
-      paymentLinks: mergeMissingById(row.paymentLinks, base.paymentLinks),
-      matchProposals: mergeMissingById(row.matchProposals, base.matchProposals),
+      merchant: {
+        ...base.merchant,
+        ...savedMerchant,
+        // Flow subscription price always comes from seed (catalog source of truth).
+        plan: { ...savedMerchant.plan || {}, ...base.merchant.plan }
+      },
+      paymentLinks,
+      matchProposals,
+      activityLog: activityLog2,
       checkoutPages: row.checkoutPages || [],
       subscriptionPlans: row.subscriptionPlans || [],
       subscribers: row.subscribers || [],
@@ -1607,10 +1641,18 @@ var FlowStore = (() => {
       },
       plan: {
         tier: seed.merchant.plan.tier,
-        price: formatMoney(seed.merchant.plan.monthlyPrice, currency),
-        line: seed.merchant.plan.tier + " \xB7 " + formatMoney(seed.merchant.plan.monthlyPrice, currency) + "/mo",
+        price: formatMoney(seed.merchant.plan.monthlyPrice, currency, { trimWhole: true }),
+        line: seed.merchant.plan.tier + " \xB7 " + formatMoney(seed.merchant.plan.monthlyPrice, currency, { trimWhole: true }) + "/mo",
         limitLabel: usage.limit.toLocaleString("en-US") + " transactions"
       },
+      billingPlans: FLOW_PLANS.map((plan) => ({
+        id: plan.id,
+        tier: plan.tier,
+        price: plan.monthlyPrice == null ? null : formatMoney(plan.monthlyPrice, currency, { trimWhole: true }),
+        custom: plan.monthlyPrice == null,
+        current: plan.tier === seed.merchant.plan.tier
+      })),
+      billingTrialMonths: FLOW_TRIAL_MONTHS,
       usage: {
         used: usage.used,
         limit: usage.limit,

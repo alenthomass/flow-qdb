@@ -2890,28 +2890,36 @@ export function DashboardView({ v }: { v: Record<string, any> }) {
               </>)}
 
           {!!(v.st.billing) && (<>
+                <div style={sx("margin-bottom:14px; padding:14px 16px; border-radius:11px; border:1px solid var(--line); background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); box-shadow:var(--shadow-card)")}>
+                  <div style={sx("font-size:13.5px; font-weight:650")}>{v.t("settings.billing.trialTitle")}</div>
+                  <div style={sx("font-size:12.5px; color:var(--ink-3); margin-top:4px; line-height:1.5")}>{v.t("settings.billing.trialBody", { months: v.billingTrialMonths })}</div>
+                </div>
                 <div style={sx("display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px")}>
+              {((v.billingPlans) || []).map((bp: any, bpIdx: any) => <Fragment key={bp?.id || 'bp-' + bpIdx}>
               <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px")}>
-                <div style={sx("display:flex; align-items:center; gap:8px")}><span style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>{v.plan.tier}</span><span style={sx("font-size:10.5px; font-weight:650; color:var(--accent); background:var(--accent-soft); padding:3px 8px; border-radius:6px")}>{v.t("settings.billing.current")}</span></div>
-                <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:24px; font-weight:600; margin-top:10px")}>{v.plan.price}<span style={sx("font-size:12px; color:var(--ink-4)")}>{v.t("settings.billing.perMonth")}</span></div>
-                <div style={sx("font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5")}>{v.plan.limitLabel}</div>
+                <div style={sx("display:flex; align-items:center; gap:8px")}>
+                  <span style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>{v.t("overview.plan.tier." + (bp.tier || "Starter"))}</span>
+                  {!!(bp.current) && (<>
+                    <span style={sx("font-size:10.5px; font-weight:650; color:var(--accent); background:var(--accent-soft); padding:3px 8px; border-radius:6px")}>{v.t("settings.billing.current")}</span>
+                  </>)}
+                </div>
+                {!!(bp.custom) && (<>
+                  <div style={sx("font-size:18px; font-weight:650; margin-top:12px")}>{v.t("settings.billing.talk")}</div>
+                  <div style={sx("font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5")}>{v.t("settings.billing.customSub")}</div>
+                  <button style={sx("margin-top:14px; width:100%; font-size:12.5px; font-weight:600; padding:9px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light)")} onClick={v.h.note} data-note={v.t("ui.note.sales")}>{v.t("settings.billing.contact")}</button>
+                </>)}
+                {!(bp.custom) && (<>
+                  <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:24px; font-weight:600; margin-top:10px")}>{bp.price}<span style={sx("font-size:12px; color:var(--ink-4)")}>{v.t("settings.billing.perMonth")}</span></div>
+                  {!!(bp.current) && (<>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5")}>{v.plan.limitLabel}</div>
+                  </>)}
+                  {!(bp.current) && (<>
+                    <div style={sx("font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5")}>{v.t("settings.billing.flatSub")}</div>
+                    <button style={sx("margin-top:14px; width:100%; font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:9px; border-radius:9px")} onClick={v.h.note} data-note={v.t("ui.note.up")}>{v.t("settings.billing.upgrade")}</button>
+                  </>)}
+                </>)}
               </div>
-              <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px")}>
-                <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>{v.t("settings.billing.free")}</div>
-                <div style={sx("font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5")}>{v.t("settings.billing.notOnAccount")}</div>
-                <button style={sx("margin-top:14px; width:100%; font-size:12.5px; font-weight:600; padding:9px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light)")} onClick={v.h.note} data-note={v.t("ui.note.down")}>{v.t("settings.billing.downgrade")}</button>
-              </div>
-              <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px")}>
-                <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>{v.t("settings.billing.growth")}</div>
-                <div style={sx("font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5")}>{v.t("settings.billing.notOnAccount")}</div>
-                <button style={sx("margin-top:14px; width:100%; font-size:12.5px; font-weight:650; color:var(--on-block); background:var(--btn-dark); box-shadow:0 6px 16px var(--accent-shadow); padding:9px; border-radius:9px")} onClick={v.h.note} data-note={v.t("ui.note.up")}>{v.t("settings.billing.upgrade")}</button>
-              </div>
-              <div style={sx("background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:20px")}>
-                <div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>{v.t("settings.billing.custom")}</div>
-                <div style={sx("font-size:18px; font-weight:650; margin-top:12px")}>{v.t("settings.billing.talk")}</div>
-                <div style={sx("font-size:12.5px; color:var(--ink-3); margin-top:10px; line-height:1.5")}>{v.t("settings.billing.customSub")}</div>
-                <button style={sx("margin-top:14px; width:100%; font-size:12.5px; font-weight:600; padding:9px; border-radius:9px; border:1px solid var(--line); background:var(--btn-light)")} onClick={v.h.note} data-note={v.t("ui.note.sales")}>{v.t("settings.billing.contact")}</button>
-              </div>
+              </Fragment>)}
             </div>
             <div style={sx("margin-top:16px; background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow-card); backdrop-filter:blur(20px); padding:22px")}>
               <div style={sx("display:flex; align-items:center; gap:10px")}><div style={sx("font-family:'Urbanist','Cairo',sans-serif; font-size:16.5px; font-weight:600; letter-spacing:-.02em")}>{v.t("settings.billing.usage")}</div><div style={sx("margin-left:auto; font-size:12.5px; color:var(--ink-3)")}>{v.usage.label}</div></div>

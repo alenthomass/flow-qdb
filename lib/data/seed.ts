@@ -6,6 +6,16 @@ function midnight(date: Date): Date {
 
 export const ANCHOR_DATE = midnight(new Date());
 
+/** Flat Flow subscription catalog. Prices are integer minor units. Enterprise is custom-priced. */
+export const FLOW_PLANS: Array<{ id: string; tier: string; monthlyPrice: number | null }> = [
+  { id: "starter", tier: "Starter", monthlyPrice: 9900 },
+  { id: "growth", tier: "Growth", monthlyPrice: 14900 },
+  { id: "business", tier: "Business", monthlyPrice: 24900 },
+  { id: "enterprise", tier: "Enterprise", monthlyPrice: null }
+];
+
+export const FLOW_TRIAL_MONTHS = 3;
+
 export function dateFor(dayOffset: number): Date {
   const date = new Date(ANCHOR_DATE.getTime());
   date.setUTCDate(date.getUTCDate() + dayOffset);
@@ -120,7 +130,7 @@ export const seed: Seed = {
     address: "Building 42, Al Sadd, Doha, Qatar",
     ownerName,
     accountantName,
-    plan: { tier: "Starter", monthlyPrice: 3900, txnLimit: 5000 },
+    plan: { tier: "Starter", monthlyPrice: 9900, txnLimit: 5000 },
     bankName: "Ahli Bank",
     accountName: "Al Bidda Trading W.L.L.",
     iban: "QA58 AHLB 0000 0000 0000 0000 001",

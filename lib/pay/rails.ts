@@ -1,4 +1,4 @@
-/** Payer-facing processing fee. The SkipCash sandbox does not charge the customer. */
+/** Flow pricing is a flat subscription — no payer-facing processing fee. */
 export function payerFeeMinor(_amountMinor: number): number {
   return 0;
 }
